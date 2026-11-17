@@ -1,5 +1,5 @@
-import { Toaster as SonnerToaster } from "sonner"
+import { AppToaster } from "@/components/shared/AppToaster"
 
 export function Toaster() {
-  return <SonnerToaster position="bottom-right" richColors />
+  return <AppToaster />
 }

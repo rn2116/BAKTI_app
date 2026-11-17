@@ -18,6 +18,8 @@ import {
 } from "@/components/ui/dialog"
 import { Plus, Trash2, Edit3, HelpCircle, CheckCircle2 } from "lucide-react"
 import type { Category } from "@/types"
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog"
+import { notify } from "@/lib/notify"
 
 interface QuestionFormItem {
   id?: string
@@ -60,6 +62,8 @@ export function KuisManagementClient({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [selectedQuiz, setSelectedQuiz] = useState<QuizItem | null>(null)
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   // Soal state saat form aktif
   const [questions, setQuestions] = useState<QuestionFormItem[]>([
@@ -102,7 +106,7 @@ export function KuisManagementClient({
 
   function removeQuestion(index: number) {
     if (questions.length <= 1) {
-      alert("Kuis minimal memiliki 1 soal.")
+      notify.warning("Kuis harus memiliki minimal 1 butir soal")
       return
     }
     setQuestions((prev) => prev.filter((_, i) => i !== index))
@@ -135,13 +139,17 @@ export function KuisManagementClient({
     for (let i = 0; i < questions.length; i++) {
       const q = questions[i]
       if (!q.question.trim()) {
-        setError(`Pertanyaan soal nomor ${i + 1} tidak boleh kosong`)
+        const msg = `Pertanyaan soal nomor ${i + 1} tidak boleh kosong`
+        setError(msg)
+        notify.warning(msg)
         setLoading(false)
         return
       }
       for (let j = 0; j < q.options.length; j++) {
         if (!q.options[j].trim()) {
-          setError(`Pilihan jawaban ${String.fromCharCode(65 + j)} pada soal ${i + 1} tidak boleh kosong`)
+          const msg = `Pilihan jawaban ${String.fromCharCode(65 + j)} pada soal ${i + 1} tidak boleh kosong`
+          setError(msg)
+          notify.warning(msg)
           setLoading(false)
           return
         }
@@ -159,19 +167,28 @@ export function KuisManagementClient({
 
     if (res.success) {
       setOpen(false)
+      notify.success(
+        selectedQuiz ? "Paket kuis berhasil diperbarui" : "Paket kuis baru berhasil dibuat"
+      )
       router.refresh()
     } else {
       setError(res.error || "Gagal menyimpan kuis")
+      notify.error(res.error || "Gagal menyimpan kuis")
     }
   }
 
-  async function handleDelete(id: string) {
-    if (!confirm("Hapus kuis dan seluruh butir soalnya?")) return
-    const res = await deleteQuiz(id)
+  async function handleConfirmDelete() {
+    if (!deleteTargetId) return
+    setIsDeleting(true)
+    const res = await deleteQuiz(deleteTargetId)
+    setIsDeleting(false)
+
     if (res.success) {
+      notify.success("Paket kuis berhasil dihapus")
+      setDeleteTargetId(null)
       router.refresh()
     } else {
-      alert(res.error || "Gagal menghapus kuis")
+      notify.error(res.error || "Gagal menghapus kuis")
     }
   }
 
@@ -463,7 +480,7 @@ export function KuisManagementClient({
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => handleDelete(q.id)}
+                    onClick={() => setDeleteTargetId(q.id)}
                     className="h-8 px-2 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
                   >
                     <Trash2 className="w-3.5 h-3.5 mr-1" /> Hapus
@@ -480,6 +497,18 @@ export function KuisManagementClient({
           </div>
         )}
       </div>
+
+      {/* Dialog Konfirmasi Hapus Kuis */}
+      <ConfirmDialog
+        open={!!deleteTargetId}
+        onOpenChange={(isOpen) => !isOpen && setDeleteTargetId(null)}
+        variant="danger"
+        title="Hapus Paket Kuis & Butir Soal?"
+        description="Paket kuis beserta seluruh butir soal pilihan ganda dan riwayat pengerjaan siswa akan dihapus secara permanen."
+        confirmText="Ya, Hapus Kuis"
+        isLoading={isDeleting}
+        onConfirm={handleConfirmDelete}
+      />
     </div>
   )
 }

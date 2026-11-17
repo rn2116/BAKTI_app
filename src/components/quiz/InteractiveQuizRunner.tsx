@@ -5,7 +5,8 @@ import { motion, AnimatePresence } from "framer-motion"
 import { submitQuizAttempt } from "@/actions/quiz"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { toast } from "@/components/ui/use-toast"
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog"
+import { notify } from "@/lib/notify"
 import {
   Clock,
   Volume2,
@@ -71,6 +72,7 @@ export function InteractiveQuizRunner({ quiz }: InteractiveQuizRunnerProps) {
   const [timeLeft, setTimeLeft] = useState(quiz.timeLimit * 60)
   const [isMuted, setIsMuted] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [showSubmitConfirm, setShowSubmitConfirm] = useState(false)
   const [result, setResult] = useState<QuizResultData | null>(null)
 
   // Initialize sound preferences
@@ -188,17 +190,20 @@ export function InteractiveQuizRunner({ quiz }: InteractiveQuizRunnerProps) {
           origin: { y: 0.6 },
           colors: ["#3C22BB", "#065F46", "#D97706", "#FDE047"],
         })
-        toast.success("Selamat! Anda telah lulus kuis ini!")
+        notify.success("Selamat! Anda berhasil lulus kuis ini!")
+        if (xpEarned > 0) {
+          notify.reward("Poin XP Berhasil Diraih!", xpEarned, `Nilai akhir: ${score}/${maxScore}`)
+        }
       } else {
-        toast.error("Belum mencapai KKM kelulusan. Pelajari kembali materi dan coba lagi!")
+        notify.warning("Belum mencapai KKM kelulusan. Pelajari kembali materi dan coba lagi!")
       }
     } else {
-      toast.error(res.error ?? "Gagal menyimpan jawaban kuis")
+      notify.error(res.error ?? "Gagal menyimpan jawaban kuis")
     }
   }
 
   function handleAutoSubmit() {
-    toast.error("Waktu telah habis! Mengumpulkan jawaban otomatis...")
+    notify.warning("Waktu pengerjaan telah habis! Jawaban Anda dikumpulkan secara otomatis.")
     handleSubmit()
   }
 
@@ -509,7 +514,7 @@ export function InteractiveQuizRunner({ quiz }: InteractiveQuizRunnerProps) {
 
         {currentIndex === totalQuestions - 1 ? (
           <Button
-            onClick={handleSubmit}
+            onClick={() => setShowSubmitConfirm(true)}
             disabled={isSubmitting}
             className="rounded-xl bg-[#065F46] hover:bg-[#044a36] text-white gap-2 text-xs font-bold px-5 h-10 shadow-md"
           >
@@ -526,6 +531,24 @@ export function InteractiveQuizRunner({ quiz }: InteractiveQuizRunnerProps) {
           </Button>
         )}
       </div>
+
+      {/* Dialog Konfirmasi Kumpulkan Kuis */}
+      <ConfirmDialog
+        open={showSubmitConfirm}
+        onOpenChange={setShowSubmitConfirm}
+        variant="primary"
+        title="Kumpulkan Jawaban Kuis?"
+        description={`Anda telah menjawab ${
+          Object.keys(userAnswers).length
+        } dari ${totalQuestions} butir soal. Apakah Anda yakin ingin menyelesaikan dan mengirim jawaban sekarang?`}
+        confirmText="Ya, Kumpulkan Jawaban"
+        cancelText="Periksa Kembali"
+        isLoading={isSubmitting}
+        onConfirm={async () => {
+          setShowSubmitConfirm(false)
+          await handleSubmit()
+        }}
+      />
     </div>
   )
 }

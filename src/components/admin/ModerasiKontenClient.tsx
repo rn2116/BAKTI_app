@@ -14,6 +14,8 @@ import { CategoryBadge } from "@/components/shared/CategoryBadge"
 import { ResponsiveTable } from "@/components/shared/ResponsiveTable"
 import { Trash2, CheckCircle2, XCircle, BookOpen, ClipboardList } from "lucide-react"
 import type { Category, Role } from "@/types"
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog"
+import { notify } from "@/lib/notify"
 
 interface MaterialItem {
   id: string
@@ -50,15 +52,26 @@ export function ModerasiKontenClient({
   const router = useRouter()
   const [tab, setTab] = useState<"MATERI" | "KUIS">("MATERI")
   const [loadingId, setLoadingId] = useState<string | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<{
+    id: string
+    type: "MATERI" | "KUIS"
+    title: string
+  } | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   async function handleToggleMaterial(id: string, currentStatus: boolean) {
     setLoadingId(id)
     const res = await toggleMaterialPublish(id, !currentStatus)
     setLoadingId(null)
     if (res.success) {
+      notify.success(
+        !currentStatus
+          ? "Materi pembelajaran disetujui & live untuk siswa"
+          : "Materi pembelajaran dicabut dari status terbit"
+      )
       router.refresh()
     } else {
-      alert(res.error || "Gagal mengubah status publikasi")
+      notify.error(res.error || "Gagal mengubah status publikasi")
     }
   }
 
@@ -67,24 +80,39 @@ export function ModerasiKontenClient({
     const res = await toggleQuizPublish(id, !currentStatus)
     setLoadingId(null)
     if (res.success) {
+      notify.success(
+        !currentStatus
+          ? "Paket kuis disetujui & live untuk siswa"
+          : "Paket kuis dicabut dari status terbit"
+      )
       router.refresh()
     } else {
-      alert(res.error || "Gagal mengubah status publikasi")
+      notify.error(res.error || "Gagal mengubah status publikasi")
     }
   }
 
-  async function handleDeleteMaterial(id: string) {
-    if (!confirm("Hapus materi ini secara permanen dari sistem?")) return
-    const res = await deleteMaterial(id)
-    if (res.success) router.refresh()
-    else alert(res.error || "Gagal menghapus materi")
-  }
+  async function handleConfirmDelete() {
+    if (!deleteTarget) return
+    setIsDeleting(true)
 
-  async function handleDeleteQuiz(id: string) {
-    if (!confirm("Hapus kuis ini secara permanen dari sistem?")) return
-    const res = await deleteQuiz(id)
-    if (res.success) router.refresh()
-    else alert(res.error || "Gagal menghapus kuis")
+    const res =
+      deleteTarget.type === "MATERI"
+        ? await deleteMaterial(deleteTarget.id)
+        : await deleteQuiz(deleteTarget.id)
+
+    setIsDeleting(false)
+
+    if (res.success) {
+      notify.success(
+        deleteTarget.type === "MATERI"
+          ? "Materi berhasil dihapus dari sistem"
+          : "Paket kuis berhasil dihapus dari sistem"
+      )
+      setDeleteTarget(null)
+      router.refresh()
+    } else {
+      notify.error(res.error || "Gagal menghapus konten")
+    }
   }
 
   return (
@@ -164,7 +192,9 @@ export function ModerasiKontenClient({
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => handleDeleteMaterial(m.id)}
+                  onClick={() =>
+                    setDeleteTarget({ id: m.id, type: "MATERI", title: m.title })
+                  }
                   className="h-8 px-2 text-xs text-red-600 hover:bg-red-50"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -217,7 +247,9 @@ export function ModerasiKontenClient({
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => handleDeleteQuiz(q.id)}
+                  onClick={() =>
+                    setDeleteTarget({ id: q.id, type: "KUIS", title: q.title })
+                  }
                   className="h-8 px-2 text-xs text-red-600 hover:bg-red-50"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -293,7 +325,9 @@ export function ModerasiKontenClient({
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => handleDeleteMaterial(m.id)}
+                        onClick={() =>
+                          setDeleteTarget({ id: m.id, type: "MATERI", title: m.title })
+                        }
                         className="h-7 w-7 text-red-600 hover:bg-red-50"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -349,7 +383,9 @@ export function ModerasiKontenClient({
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => handleDeleteQuiz(q.id)}
+                        onClick={() =>
+                          setDeleteTarget({ id: q.id, type: "KUIS", title: q.title })
+                        }
                         className="h-7 w-7 text-red-600 hover:bg-red-50"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -371,6 +407,22 @@ export function ModerasiKontenClient({
           </tbody>
         </ResponsiveTable>
       </div>
+
+      {/* Dialog Konfirmasi Hapus Konten Moderasi */}
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(isOpen) => !isOpen && setDeleteTarget(null)}
+        variant="danger"
+        title={
+          deleteTarget?.type === "MATERI"
+            ? "Hapus Materi Pembelajaran?"
+            : "Hapus Paket Kuis Pembelajaran?"
+        }
+        description={`"${deleteTarget?.title}" akan dihapus secara permanen dari basis data sistem dan tidak dapat dipulihkan.`}
+        confirmText="Ya, Hapus Konten"
+        isLoading={isDeleting}
+        onConfirm={handleConfirmDelete}
+      />
     </div>
   )
 }

@@ -18,6 +18,8 @@ import {
 } from "@/components/ui/dialog"
 import { Plus, Trash2, Edit3, BookOpen, Clock } from "lucide-react"
 import type { Category } from "@/types"
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog"
+import { notify } from "@/lib/notify"
 
 interface MaterialItem {
   id: string
@@ -46,6 +48,8 @@ export function MateriManagementClient({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [selectedMaterial, setSelectedMaterial] = useState<MaterialItem | null>(null)
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   function openCreate() {
     setSelectedMaterial(null)
@@ -74,19 +78,30 @@ export function MateriManagementClient({
 
     if (res.success) {
       setOpen(false)
+      notify.success(
+        selectedMaterial
+          ? "Materi pembelajaran berhasil diperbarui"
+          : "Materi baru berhasil ditambahkan"
+      )
       router.refresh()
     } else {
       setError(res.error || "Gagal menyimpan materi")
+      notify.error(res.error || "Gagal menyimpan materi")
     }
   }
 
-  async function handleDelete(id: string) {
-    if (!confirm("Hapus materi pembelajaran ini?")) return
-    const res = await deleteMaterial(id)
+  async function handleConfirmDelete() {
+    if (!deleteTargetId) return
+    setIsDeleting(true)
+    const res = await deleteMaterial(deleteTargetId)
+    setIsDeleting(false)
+
     if (res.success) {
+      notify.success("Materi pembelajaran berhasil dihapus")
+      setDeleteTargetId(null)
       router.refresh()
     } else {
-      alert(res.error || "Gagal menghapus materi")
+      notify.error(res.error || "Gagal menghapus materi")
     }
   }
 
@@ -286,7 +301,7 @@ export function MateriManagementClient({
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => handleDelete(m.id)}
+                    onClick={() => setDeleteTargetId(m.id)}
                     className="h-8 px-2 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
@@ -303,6 +318,18 @@ export function MateriManagementClient({
           </div>
         )}
       </div>
+
+      {/* Dialog Konfirmasi Hapus Materi */}
+      <ConfirmDialog
+        open={!!deleteTargetId}
+        onOpenChange={(isOpen) => !isOpen && setDeleteTargetId(null)}
+        variant="danger"
+        title="Hapus Materi Pembelajaran?"
+        description="Materi beserta riwayat bacaan siswa terkait akan dihapus secara permanen dari sistem. Tindakan ini tidak dapat dibatalkan."
+        confirmText="Ya, Hapus Materi"
+        isLoading={isDeleting}
+        onConfirm={handleConfirmDelete}
+      />
     </div>
   )
 }

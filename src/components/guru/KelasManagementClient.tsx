@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { toast } from "@/components/ui/use-toast"
+import { notify } from "@/lib/notify"
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog"
 import {
   Dialog,
   DialogContent,
@@ -39,6 +40,8 @@ export function KelasManagementClient({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [copiedId, setCopiedId] = useState<string | null>(null)
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   async function handleCreate(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -53,21 +56,26 @@ export function KelasManagementClient({
 
     if (res.success) {
       setOpen(false)
-      toast.success("Rombel kelas berhasil ditambahkan!")
+      notify.success("Rombel kelas berhasil ditambahkan!")
       router.refresh()
     } else {
       setError(res.error || "Gagal membuat kelas")
+      notify.error(res.error || "Gagal membuat kelas")
     }
   }
 
-  async function handleDelete(id: string) {
-    if (!confirm("Apakah Anda yakin ingin menghapus rombongan belajar ini?")) return
-    const res = await deleteClass(id)
+  async function handleConfirmDelete() {
+    if (!deleteTargetId) return
+    setIsDeleting(true)
+    const res = await deleteClass(deleteTargetId)
+    setIsDeleting(false)
+
     if (res.success) {
-      toast.success("Kelas berhasil dihapus")
+      notify.success("Rombongan belajar berhasil dihapus")
+      setDeleteTargetId(null)
       router.refresh()
     } else {
-      alert(res.error || "Gagal menghapus kelas")
+      notify.error(res.error || "Gagal menghapus kelas")
     }
   }
 
@@ -76,7 +84,7 @@ export function KelasManagementClient({
     const code = `BK-${className.replace(/\s+/g, "").slice(0, 3).toUpperCase()}-${classId.slice(0, 4).toUpperCase()}`
     navigator.clipboard.writeText(code)
     setCopiedId(classId)
-    toast.success(`Kode kelas ${className} berhasil disalin: ${code}`)
+    notify.success("Kode berhasil disalin ke papan klip!", `Kode ${className}: ${code}`)
 
     setTimeout(() => {
       setCopiedId(null)
@@ -179,7 +187,7 @@ export function KelasManagementClient({
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => handleDelete(cls.id)}
+                    onClick={() => setDeleteTargetId(cls.id)}
                     className="h-7 w-7 text-zinc-400 hover:text-red-600 hover:bg-red-50"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -236,6 +244,18 @@ export function KelasManagementClient({
           </div>
         )}
       </div>
+
+      {/* Dialog Konfirmasi Hapus Rombel */}
+      <ConfirmDialog
+        open={!!deleteTargetId}
+        onOpenChange={(isOpen) => !isOpen && setDeleteTargetId(null)}
+        variant="danger"
+        title="Hapus Rombongan Belajar?"
+        description="Rombongan belajar ini akan dihapus. Siswa yang berada di kelas ini tidak akan terhapus, tetapi relasi kelasnya akan dikosongkan."
+        confirmText="Ya, Hapus Rombel"
+        isLoading={isDeleting}
+        onConfirm={handleConfirmDelete}
+      />
     </div>
   )
 }
