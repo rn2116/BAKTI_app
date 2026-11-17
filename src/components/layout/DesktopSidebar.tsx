@@ -167,6 +167,13 @@ export default function DesktopSidebar({ user }: DesktopSidebarProps) {
             <span>Keluar Akun</span>
           </button>
         </form>
+
+        {/* Kredit Resmi Instansi di Bawah Sidebar */}
+        <div className="pt-2 border-t border-white/10 text-center">
+          <p className="text-[10px] text-indigo-300/70 font-medium leading-tight">
+            Bakti by Balai Bahasa Provinsi Sulawesi Tengah
+          </p>
+        </div>
       </div>
     </aside>
   )

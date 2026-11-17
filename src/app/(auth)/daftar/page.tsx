@@ -1,26 +1,54 @@
 import Link from "next/link"
-import { PageHeader } from "@/components/shared/PageHeader"
 import RegisterForm from "@/components/auth/RegisterForm"
+import { AuthVisualPanel } from "@/components/auth/AuthVisualPanel"
+import { BrandLogo } from "@/components/shared/BrandLogo"
+import { ShieldCheck } from "lucide-react"
 
 export default function RegisterPage() {
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Daftar"
-        description="Buat akun siswa baru dan pilih sekolah serta kelas Anda."
-      />
-      <div className="mx-auto">
-        <RegisterForm />
+    <div className="min-h-screen grid grid-cols-1 lg:grid-cols-12 bg-[#FAFAF8]">
+      {/* 1. Panel Visual Desktop Kiri */}
+      <AuthVisualPanel />
+
+      {/* 2. Panel Formulir Kanan */}
+      <div className="lg:col-span-6 flex flex-col justify-between p-6 sm:p-10 lg:p-12 xl:p-16 min-h-screen">
+        {/* Header Mobile Logo (< lg) */}
+        <div className="lg:hidden flex items-center justify-between pb-6 border-b border-zinc-200/80">
+          <BrandLogo light={false} />
+        </div>
+
+        {/* Form Container */}
+        <div className="my-auto max-w-md w-full mx-auto space-y-6 py-6">
+          <div className="space-y-1.5 text-center sm:text-left">
+            <h1 className="text-2xl sm:text-3xl font-black text-zinc-900 tracking-tight">
+              Daftar Akun Siswa Baru 🚀
+            </h1>
+            <p className="text-xs sm:text-sm text-zinc-500 leading-relaxed">
+              Bergabunglah dengan ribuan pelajar Sulawesi Tengah untuk belajar dan berprestasi bersama.
+            </p>
+          </div>
+
+          <div className="rounded-3xl border border-zinc-200/90 bg-white p-6 sm:p-8 shadow-sm">
+            <RegisterForm />
+          </div>
+
+          <p className="text-center text-xs text-zinc-500">
+            Sudah memiliki akun?{" "}
+            <Link
+              href="/masuk"
+              className="font-bold text-[#3C22BB] hover:underline"
+            >
+              Masuk ke akun Anda
+            </Link>
+          </p>
+        </div>
+
+        {/* Kredit Resmi di Mobile & Desktop Footer */}
+        <div className="pt-6 border-t border-zinc-200/80 flex items-center justify-center gap-2 text-center text-[11px] text-zinc-500">
+          <ShieldCheck className="w-4 h-4 text-[#3C22BB] shrink-0" />
+          <span>Bakti by Balai Bahasa Provinsi Sulawesi Tengah</span>
+        </div>
       </div>
-      <p className="text-center text-sm text-muted-foreground">
-        Sudah punya akun?{" "}
-        <Link
-          href="/masuk"
-          className="text-primary font-medium hover:underline transition-colors"
-        >
-          Masuk
-        </Link>
-      </p>
     </div>
   )
 }

@@ -137,6 +137,9 @@ export async function getAdminSystemStats() {
     totalMaterials,
     totalQuizzes,
     totalAttempts,
+    materialBahasa,
+    materialKarakter,
+    materialBudaya,
   ] = await Promise.all([
     prisma.masterSchool.count({ where: { isActive: true } }),
     prisma.masterClass.count({ where: { isActive: true } }),
@@ -146,6 +149,9 @@ export async function getAdminSystemStats() {
     prisma.learningMaterial.count(),
     prisma.quiz.count(),
     prisma.quizAttempt.count(),
+    prisma.learningMaterial.count({ where: { category: Category.BAHASA_INDONESIA } }),
+    prisma.learningMaterial.count({ where: { category: Category.KARAKTER } }),
+    prisma.learningMaterial.count({ where: { category: Category.BUDAYA_SULTENG } }),
   ])
 
   return {
@@ -157,7 +163,70 @@ export async function getAdminSystemStats() {
     totalMaterials,
     totalQuizzes,
     totalAttempts,
+    pillars: {
+      bahasa: materialBahasa,
+      karakter: materialKarakter,
+      budaya: materialBudaya,
+    },
   }
+}
+
+export async function getAdminRegencyStats() {
+  const regencies = await prisma.masterRegency.findMany({
+    include: {
+      schools: {
+        include: {
+          users: {
+            where: { role: Role.SISWA, isActive: true },
+            select: {
+              id: true,
+              quizAttempts: {
+                select: {
+                  score: true,
+                  maxScore: true,
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    orderBy: { name: "asc" },
+  })
+
+  return regencies.map((reg) => {
+    let studentCount = 0
+    let totalScore = 0
+    let totalMaxScore = 0
+    let attemptCount = 0
+
+    for (const school of reg.schools) {
+      studentCount += school.users.length
+      for (const u of school.users) {
+        for (const att of u.quizAttempts) {
+          if (att.maxScore > 0) {
+            totalScore += att.score
+            totalMaxScore += att.maxScore
+            attemptCount++
+          }
+        }
+      }
+    }
+
+    const avgScore =
+      totalMaxScore > 0 ? Math.round((totalScore / totalMaxScore) * 100) : 0
+
+    return {
+      id: reg.id,
+      name: reg.name.replace("Kabupaten ", "Kab. "),
+      fullName: reg.name,
+      code: reg.code,
+      schoolCount: reg.schools.length,
+      studentCount,
+      attemptCount,
+      avgScore,
+    }
+  })
 }
 
 // ========================

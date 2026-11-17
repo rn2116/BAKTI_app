@@ -187,7 +187,11 @@ export function KuisManagementClient({
 
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button onClick={openCreate} size="sm" className="gap-2 text-xs">
+            <Button
+              onClick={openCreate}
+              size="sm"
+              className="gap-2 text-xs bg-[#3C22BB] hover:bg-[#2E1994] text-white rounded-xl shadow-xs"
+            >
               <Plus className="w-4 h-4" /> Buat Kuis Baru
             </Button>
           </DialogTrigger>
@@ -398,7 +402,11 @@ export function KuisManagementClient({
                 >
                   Batal
                 </Button>
-                <Button type="submit" disabled={loading}>
+                <Button
+                  type="submit"
+                  disabled={loading}
+                  className="bg-[#3C22BB] hover:bg-[#2E1994] text-white rounded-xl shadow-xs"
+                >
                   {loading ? "Menyimpan..." : "Simpan Kuis & Soal"}
                 </Button>
               </div>
@@ -409,7 +417,7 @@ export function KuisManagementClient({
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {quizzes.map((q) => (
-          <Card key={q.id} className="border-input flex flex-col justify-between hover:shadow-sm transition-all">
+          <Card key={q.id} className="border-zinc-200/90 rounded-2xl bg-white shadow-xs flex flex-col justify-between hover:border-[#3C22BB]/40 hover:shadow-md transition-all">
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between mb-2">
                 <CategoryBadge category={q.category} />
