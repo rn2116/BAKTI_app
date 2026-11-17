@@ -1,0 +1,85 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Palet warna identitas BAHASA & KARAKTER - Royal Indigo & Sulteng */
+    --background: #FAFAF8;
+    --foreground: #18181B;
+
+    --card: #FFFFFF;
+    --card-foreground: #18181B;
+
+    --popover: #FFFFFF;
+    --popover-foreground: #18181B;
+
+    /* Royal Indigo Utama */
+    --primary: #3C22BB;
+    --primary-foreground: #FFFFFF;
+
+    /* Hijau Zamrud Lore Lindu */
+    --secondary: #065F46;
+    --secondary-foreground: #FFFFFF;
+
+    --muted: #F4F4F5;
+    --muted-foreground: #71717A;
+
+    /* Emas Amber Poin / Level / Top 3 */
+    --accent: #D97706;
+    --accent-foreground: #FFFFFF;
+
+    --destructive: #DC2626;
+    --destructive-foreground: #FFFFFF;
+
+    --border: #E4E4E7;
+    --input: #E4E4E7;
+    --ring: #3C22BB;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: #18181B;
+    --foreground: #FAFAF8;
+    --card: #27272A;
+    --card-foreground: #FAFAF8;
+    --popover: #27272A;
+    --popover-foreground: #FAFAF8;
+    --primary: #6366F1;
+    --primary-foreground: #FFFFFF;
+    --secondary: #10B981;
+    --secondary-foreground: #FFFFFF;
+    --muted: #27272A;
+    --muted-foreground: #A1A1AA;
+    --accent: #F59E0B;
+    --accent-foreground: #18181B;
+    --destructive: #EF4444;
+    --destructive-foreground: #FFFFFF;
+    --border: #3F3F46;
+    --input: #3F3F46;
+    --ring: #6366F1;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    background-color: #FAFAF8;
+    color: #18181B;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+@layer base {
+  h1, h2, h3, h4, h5, h6 {
+    @apply tracking-tight font-sans break-words;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
