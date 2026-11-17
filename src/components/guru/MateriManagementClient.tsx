@@ -104,7 +104,11 @@ export function MateriManagementClient({
 
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button onClick={openCreate} size="sm" className="gap-2 text-xs">
+            <Button
+              onClick={openCreate}
+              size="sm"
+              className="gap-2 text-xs bg-[#3C22BB] hover:bg-[#2E1994] text-white rounded-xl shadow-xs"
+            >
               <Plus className="w-4 h-4" /> Buat Materi Baru
             </Button>
           </DialogTrigger>
@@ -220,7 +224,11 @@ export function MateriManagementClient({
                 >
                   Batal
                 </Button>
-                <Button type="submit" disabled={loading}>
+                <Button
+                  type="submit"
+                  disabled={loading}
+                  className="bg-[#3C22BB] hover:bg-[#2E1994] text-white rounded-xl shadow-xs"
+                >
                   {loading ? "Menyimpan..." : "Simpan Materi"}
                 </Button>
               </div>
@@ -231,7 +239,7 @@ export function MateriManagementClient({
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {materials.map((m) => (
-          <Card key={m.id} className="border-input flex flex-col justify-between hover:shadow-sm transition-all">
+          <Card key={m.id} className="border-zinc-200/90 rounded-2xl bg-white shadow-xs flex flex-col justify-between hover:border-[#3C22BB]/40 hover:shadow-md transition-all">
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between mb-2">
                 <CategoryBadge category={m.category} />

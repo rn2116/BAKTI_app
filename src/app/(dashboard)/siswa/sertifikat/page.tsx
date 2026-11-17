@@ -67,6 +67,16 @@ export default async function SertifikatSiswaPage() {
           </Card>
         )}
       </div>
+
+      {/* Footer Kredit Resmi Sertifikat */}
+      <div className="pt-6 border-t border-zinc-200/80 text-center space-y-1">
+        <p className="text-xs font-bold text-zinc-700">
+          Sertifikat Elektronik Resmi Platform Pembelajaran BAHASA & KARAKTER
+        </p>
+        <p className="text-[11px] text-zinc-500">
+          Bakti by Balai Bahasa Provinsi Sulawesi Tengah • Kementerian Pendidikan Dasar dan Menengah RI
+        </p>
+      </div>
     </div>
   )
 }

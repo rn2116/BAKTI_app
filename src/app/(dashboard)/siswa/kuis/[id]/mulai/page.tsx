@@ -1,8 +1,8 @@
 import { getCurrentUser } from "@/lib/auth"
-import { getQuizById, getUserQuizAttempts } from "@/services/quiz"
-import { KuisMulaiForm } from "@/components/quiz/KuisMulaiForm"
-import { PageHeader } from "@/components/shared/PageHeader"
+import { getQuizById } from "@/services/quiz"
+import { InteractiveQuizRunner } from "@/components/quiz/InteractiveQuizRunner"
 import Link from "next/link"
+import { ArrowLeft } from "lucide-react"
 
 export default async function KuisMulaiPage({
   params,
@@ -13,62 +13,39 @@ export default async function KuisMulaiPage({
   const user = await getCurrentUser()
   if (!user) return null
 
-  const [quiz, existingAttempts] = await Promise.all([
-    getQuizById(id),
-    getUserQuizAttempts(user.id, id),
-  ])
+  const quiz = await getQuizById(id)
 
   if (!quiz) {
     return (
-      <div className="p-10 text-center">
-        <h1 className="text-2xl font-bold">Kuis tidak ditemukan</h1>
+      <div className="p-12 text-center max-w-md mx-auto space-y-4">
+        <h1 className="text-xl font-bold text-zinc-900">Kuis tidak ditemukan</h1>
+        <p className="text-xs text-zinc-500">
+          Paket kuis mungkin telah dihapus atau belum dipublikasikan oleh guru.
+        </p>
         <Link
           href="/siswa/kuis"
-          className="mt-4 inline-flex items-center gap-2 rounded-md border border-input bg-background px-4 py-2 text-sm font-medium hover:bg-accent transition-colors"
+          className="inline-flex items-center gap-2 rounded-xl bg-[#3C22BB] text-white px-4 py-2 text-xs font-bold hover:bg-[#2E1994] transition-colors"
         >
-          Kembali ke Daftar Kuis
+          <ArrowLeft className="w-4 h-4" /> Kembali ke Daftar Kuis
         </Link>
       </div>
     )
   }
 
-  const bestAttempt = existingAttempts
-    .filter((a) => a.passed)
-    .sort((a, b) => b.score - a.score)[0]
-
-  if (bestAttempt) {
-    return (
-      <div className="space-y-6">
-        <PageHeader title={quiz.title} description={quiz.description ?? ""} />
-        <div className="flex flex-col lg:flex-row gap-6 items-start">
-          <div className="flex-1">
-            <div className="rounded-xl border border-input bg-card p-6 shadow-sm">
-              <h2 className="text-lg font-semibold">Anda sudah lulus kuis ini</h2>
-              <div className="mt-4 text-lg font-bold">
-                {bestAttempt.score} / {bestAttempt.maxScore}
-              </div>
-              <div className="mt-1 text-sm text-secondary">
-                XP diperoleh: {bestAttempt.xpEarned}
-              </div>
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <Link
-              href="/siswa/kuis"
-              className="inline-flex items-center gap-2 rounded-md border border-input bg-background px-4 py-2 text-sm font-medium hover:bg-accent transition-colors"
-            >
-              Kembali
-            </Link>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
   return (
-    <div className="space-y-6">
-      <PageHeader title={quiz.title} description={quiz.description ?? ""} />
-      <KuisMulaiForm quiz={quiz} userId={user.id} />
+    <div className="space-y-4">
+      {/* Tombol Navigasi Keluar Mode Kuis */}
+      <div className="max-w-2xl mx-auto flex items-center justify-between text-xs font-bold text-zinc-500">
+        <Link
+          href="/siswa/kuis"
+          className="inline-flex items-center gap-1.5 text-zinc-600 hover:text-[#3C22BB] transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" /> Keluar dari Kuis
+        </Link>
+        <span className="text-[11px] font-semibold text-zinc-400">Mode Fokus Ujian</span>
+      </div>
+
+      <InteractiveQuizRunner quiz={quiz} />
     </div>
   )
 }

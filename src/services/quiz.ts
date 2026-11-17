@@ -23,6 +23,8 @@ export async function getQuizById(id: string) {
           options: true,
           points: true,
           orderIndex: true,
+          correctIndex: true,
+          explanation: true,
         },
       },
     },
