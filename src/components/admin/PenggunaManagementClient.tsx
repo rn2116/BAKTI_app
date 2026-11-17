@@ -17,6 +17,8 @@ import {
 } from "@/components/ui/dialog"
 import { Plus, Trash2, Edit3, Sparkles } from "lucide-react"
 import type { Role } from "@/types"
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog"
+import { notify } from "@/lib/notify"
 
 interface UserAdminItem {
   id: string
@@ -58,6 +60,8 @@ export function PenggunaManagementClient({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [selectedUser, setSelectedUser] = useState<UserAdminItem | null>(null)
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const [roleFilter, setRoleFilter] = useState<string>("ALL")
   const [search, setSearch] = useState("")
@@ -96,19 +100,28 @@ export function PenggunaManagementClient({
 
     if (res.success) {
       setOpen(false)
+      notify.success(
+        selectedUser ? "Data pengguna berhasil diperbarui" : "Pengguna baru berhasil ditambahkan"
+      )
       router.refresh()
     } else {
       setError(res.error || "Gagal menyimpan akun pengguna")
+      notify.error(res.error || "Gagal menyimpan akun pengguna")
     }
   }
 
-  async function handleDelete(id: string) {
-    if (!confirm("Hapus pengguna ini dari sistem?")) return
-    const res = await deleteUserAdmin(id)
+  async function handleConfirmDelete() {
+    if (!deleteTargetId) return
+    setIsDeleting(true)
+    const res = await deleteUserAdmin(deleteTargetId)
+    setIsDeleting(false)
+
     if (res.success) {
+      notify.success("Pengguna berhasil dihapus")
+      setDeleteTargetId(null)
       router.refresh()
     } else {
-      alert(res.error || "Gagal menghapus pengguna")
+      notify.error(res.error || "Gagal menghapus pengguna")
     }
   }
 
@@ -395,7 +408,7 @@ export function PenggunaManagementClient({
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => handleDelete(u.id)}
+                  onClick={() => setDeleteTargetId(u.id)}
                   className="h-7 px-2 text-xs text-red-600 hover:bg-red-50"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
@@ -492,7 +505,7 @@ export function PenggunaManagementClient({
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => handleDelete(u.id)}
+                      onClick={() => setDeleteTargetId(u.id)}
                       className="h-7 w-7 text-red-600 hover:bg-red-50"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -512,6 +525,18 @@ export function PenggunaManagementClient({
           </tbody>
         </ResponsiveTable>
       </div>
+
+      {/* Dialog Konfirmasi Hapus Pengguna */}
+      <ConfirmDialog
+        open={!!deleteTargetId}
+        onOpenChange={(isOpen) => !isOpen && setDeleteTargetId(null)}
+        variant="danger"
+        title="Hapus Akun Pengguna?"
+        description="Akun pengguna ini akan dihapus dari sistem beserta catatan aktivitasnya. Tindakan ini tidak dapat dibatalkan."
+        confirmText="Ya, Hapus Pengguna"
+        isLoading={isDeleting}
+        onConfirm={handleConfirmDelete}
+      />
     </div>
   )
 }

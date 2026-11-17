@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
@@ -11,6 +12,8 @@ import { AuthUser } from "@/types"
 import { cn } from "@/lib/utils"
 import { logout } from "@/actions/auth"
 import { BrandLogo } from "@/components/shared/BrandLogo"
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog"
+import { NotificationBell } from "@/components/layout/NotificationBell"
 import {
   LayoutDashboard,
   BookOpen,
@@ -61,6 +64,13 @@ interface DesktopSidebarProps {
 export default function DesktopSidebar({ user }: DesktopSidebarProps) {
   const pathname = usePathname()
   const isSiswa = user.role === "SISWA"
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
+
+  async function handleConfirmLogout() {
+    setIsLoggingOut(true)
+    await logout()
+  }
 
   const items =
     user.role === "GURU"
@@ -70,15 +80,19 @@ export default function DesktopSidebar({ user }: DesktopSidebarProps) {
         : SISWA_MENU_ITEMS
 
   return (
-    <aside className="hidden md:flex md:flex-col md:fixed md:inset-y-0 md:left-0 md:w-64 bg-[#1E135E] text-white z-40 justify-between h-full select-none shadow-xl border-r border-[#2E1994]">
-      {/* 1. BAGIAN ATAS: LOGO & BRANDING DENGAN VEKTOR SULTENG */}
-      <div>
-        <div className="p-5 border-b border-white/10">
-          <BrandLogo light={true} />
-        </div>
+    <>
+      <aside className="hidden md:flex md:flex-col md:fixed md:inset-y-0 md:left-0 md:w-64 bg-[#1E135E] text-white z-40 justify-between h-full select-none shadow-xl border-r border-[#2E1994]">
+        {/* 1. BAGIAN ATAS: LOGO & BRANDING DENGAN VEKTOR SULTENG + NOTIFIKASI */}
+        <div>
+          <div className="p-4 border-b border-white/10 flex items-center justify-between">
+            <BrandLogo light={true} />
+            <div className="text-white">
+              <NotificationBell userId={user.id} />
+            </div>
+          </div>
 
-        {/* 2. BAGIAN TENGAH: DAFTAR NAVIGASI */}
-        <div className="p-3">
+          {/* 2. BAGIAN TENGAH: DAFTAR NAVIGASI */}
+          <div className="p-3">
           <div className="px-3 pb-2 text-[10px] font-bold tracking-wider text-indigo-300/80 uppercase">
             Menu Utama
           </div>
@@ -158,15 +172,14 @@ export default function DesktopSidebar({ user }: DesktopSidebarProps) {
         </div>
 
         {/* Tombol Keluar */}
-        <form action={logout}>
-          <button
-            type="submit"
-            className="w-full flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-xs font-bold text-red-200 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 hover:text-white transition-colors"
-          >
-            <LogOut className="w-4 h-4" />
-            <span>Keluar Akun</span>
-          </button>
-        </form>
+        <button
+          type="button"
+          onClick={() => setShowLogoutConfirm(true)}
+          className="w-full flex items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-xs font-bold text-red-200 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 hover:text-white transition-colors min-h-[44px]"
+        >
+          <LogOut className="w-4 h-4" />
+          <span>Keluar Akun</span>
+        </button>
 
         {/* Kredit Resmi Instansi di Bawah Sidebar */}
         <div className="pt-2 border-t border-white/10 text-center">
@@ -176,5 +189,18 @@ export default function DesktopSidebar({ user }: DesktopSidebarProps) {
         </div>
       </div>
     </aside>
-  )
+
+    {/* Modal Konfirmasi Keluar Akun Desktop */}
+    <ConfirmDialog
+      open={showLogoutConfirm}
+      onOpenChange={setShowLogoutConfirm}
+      variant="warning"
+      title="Keluar dari Akun?"
+      description="Sesi login Anda akan diakhiri. Anda dapat masuk kembali kapan saja dengan email dan kata sandi Anda."
+      confirmText="Ya, Keluar Akun"
+      isLoading={isLoggingOut}
+      onConfirm={handleConfirmLogout}
+    />
+  </>
+)
 }

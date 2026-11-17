@@ -28,6 +28,8 @@ import {
   CheckCircle2,
   XCircle,
 } from "lucide-react"
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog"
+import { notify } from "@/lib/notify"
 
 interface SchoolItem {
   id: string
@@ -62,6 +64,8 @@ export function SekolahManagementClient({
 
   const [search, setSearch] = useState("")
   const [selectedRegency, setSelectedRegency] = useState("ALL")
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   function openCreate() {
     setSelectedSchool(null)
@@ -90,19 +94,30 @@ export function SekolahManagementClient({
 
     if (res.success) {
       setOpen(false)
+      notify.success(
+        selectedSchool
+          ? "Data satuan pendidikan berhasil diperbarui"
+          : "Satuan pendidikan baru berhasil ditambahkan"
+      )
       router.refresh()
     } else {
       setError(res.error || "Gagal menyimpan sekolah")
+      notify.error(res.error || "Gagal menyimpan sekolah")
     }
   }
 
-  async function handleDelete(id: string) {
-    if (!confirm("Hapus satuan pendidikan ini beserta seluruh relasinya?")) return
-    const res = await deleteSchool(id)
+  async function handleConfirmDelete() {
+    if (!deleteTargetId) return
+    setIsDeleting(true)
+    const res = await deleteSchool(deleteTargetId)
+    setIsDeleting(false)
+
     if (res.success) {
+      notify.success("Satuan pendidikan berhasil dihapus")
+      setDeleteTargetId(null)
       router.refresh()
     } else {
-      alert(res.error || "Gagal menghapus sekolah")
+      notify.error(res.error || "Gagal menghapus sekolah")
     }
   }
 
@@ -295,7 +310,7 @@ export function SekolahManagementClient({
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => handleDelete(s.id)}
+                  onClick={() => setDeleteTargetId(s.id)}
                   className="h-8 w-8 text-red-600 hover:bg-red-50 rounded-lg"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -394,7 +409,7 @@ export function SekolahManagementClient({
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => handleDelete(s.id)}
+                      onClick={() => setDeleteTargetId(s.id)}
                       className="h-8 w-8 text-red-600 hover:bg-red-50 rounded-lg"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -414,6 +429,18 @@ export function SekolahManagementClient({
           </tbody>
         </ResponsiveTable>
       </div>
+
+      {/* Dialog Konfirmasi Hapus Sekolah */}
+      <ConfirmDialog
+        open={!!deleteTargetId}
+        onOpenChange={(isOpen) => !isOpen && setDeleteTargetId(null)}
+        variant="danger"
+        title="Hapus Satuan Pendidikan?"
+        description="Satuan pendidikan ini beserta seluruh rombel dan relasi data di dalamnya akan dihapus. Pastikan tidak ada data krusial yang hilang."
+        confirmText="Ya, Hapus Sekolah"
+        isLoading={isDeleting}
+        onConfirm={handleConfirmDelete}
+      />
     </div>
   )
 }

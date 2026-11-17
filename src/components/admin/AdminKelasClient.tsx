@@ -16,6 +16,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Plus, Trash2, Building2, Users, Search, Filter, Layers } from "lucide-react"
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog"
+import { notify } from "@/lib/notify"
 
 interface ClassItem {
   id: string
@@ -44,6 +46,8 @@ export function AdminKelasClient({
   const [error, setError] = useState<string | null>(null)
   const [filterSchool, setFilterSchool] = useState<string>("ALL")
   const [search, setSearch] = useState("")
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -56,19 +60,26 @@ export function AdminKelasClient({
 
     if (res.success) {
       setOpen(false)
+      notify.success("Rombongan belajar baru berhasil dibuat")
       router.refresh()
     } else {
       setError(res.error || "Gagal membuat kelas")
+      notify.error(res.error || "Gagal membuat kelas")
     }
   }
 
-  async function handleDelete(id: string) {
-    if (!confirm("Hapus rombongan belajar (kelas) ini?")) return
-    const res = await deleteClass(id)
+  async function handleConfirmDelete() {
+    if (!deleteTargetId) return
+    setIsDeleting(true)
+    const res = await deleteClass(deleteTargetId)
+    setIsDeleting(false)
+
     if (res.success) {
+      notify.success("Rombongan belajar berhasil dihapus")
+      setDeleteTargetId(null)
       router.refresh()
     } else {
-      alert(res.error || "Gagal menghapus kelas")
+      notify.error(res.error || "Gagal menghapus kelas")
     }
   }
 
@@ -223,7 +234,7 @@ export function AdminKelasClient({
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => handleDelete(c.id)}
+                onClick={() => setDeleteTargetId(c.id)}
                 className="h-8 w-8 text-red-600 hover:bg-red-50 rounded-lg shrink-0"
               >
                 <Trash2 className="w-4 h-4" />
@@ -280,7 +291,7 @@ export function AdminKelasClient({
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => handleDelete(c.id)}
+                    onClick={() => setDeleteTargetId(c.id)}
                     className="h-8 w-8 text-red-600 hover:bg-red-50 rounded-lg"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -299,6 +310,18 @@ export function AdminKelasClient({
           </tbody>
         </ResponsiveTable>
       </div>
+
+      {/* Dialog Konfirmasi Hapus Rombel Admin */}
+      <ConfirmDialog
+        open={!!deleteTargetId}
+        onOpenChange={(isOpen) => !isOpen && setDeleteTargetId(null)}
+        variant="danger"
+        title="Hapus Rombongan Belajar?"
+        description="Rombongan belajar ini akan dihapus dari sistem. Siswa yang berada di kelas ini tidak terhapus, tetapi relasi kelasnya akan dikosongkan."
+        confirmText="Ya, Hapus Rombel"
+        isLoading={isDeleting}
+        onConfirm={handleConfirmDelete}
+      />
     </div>
   )
 }

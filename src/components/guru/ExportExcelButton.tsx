@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button"
 import { Download } from "lucide-react"
 import * as XLSX from "xlsx"
+import { notify } from "@/lib/notify"
 
 interface ExportData {
   nama: string
@@ -28,7 +29,7 @@ export function ExportExcelButton({
 }: ExportExcelButtonProps) {
   const handleExport = () => {
     if (!data || data.length === 0) {
-      alert("Tidak ada data untuk diekspor.")
+      notify.warning("Tidak ada data rekapitulasi nilai untuk diekspor")
       return
     }
 
@@ -55,6 +56,7 @@ export function ExportExcelButton({
     const workbook = XLSX.utils.book_new()
     XLSX.utils.book_append_sheet(workbook, worksheet, "Rekap Nilai")
     XLSX.writeFile(workbook, filename)
+    notify.success("Laporan rekap nilai berhasil diekspor ke Excel (.xlsx)")
   }
 
   return (
