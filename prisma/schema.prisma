@@ -1,0 +1,286 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  SISWA
+  GURU
+  ADMIN
+}
+
+enum Category {
+  BAHASA_INDONESIA
+  KARAKTER
+  BUDAYA_SULTENG
+}
+
+model MasterRegency {
+  id        String   @id @db.Char(36)
+  name      String   @db.VarChar(100)
+  code      String   @unique @db.Char(10)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  schools   MasterSchool[]
+
+  @@index([name])
+  @@map("master_regencies")
+}
+
+model MasterSchool {
+  id          String   @id @db.Char(36)
+  name        String   @db.VarChar(100)
+  npsn        String   @unique @db.Char(8)
+  regencyId   String   @db.Char(36)
+  address     String   @db.Text
+  phone       String   @db.VarChar(20)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  regency     MasterRegency @relation(fields: [regencyId], references: [id], onDelete: Cascade)
+  classes     MasterClass[]
+  users       MasterUser[]
+
+  @@index([regencyId])
+  @@index([name])
+  @@map("master_schools")
+}
+
+model MasterClass {
+  id        String   @id @db.Char(36)
+  name      String   @db.VarChar(50)
+  grade     Int
+  schoolId  String   @db.Char(36)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  school    MasterSchool @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  users     MasterUser[]
+
+  @@index([schoolId])
+  @@index([schoolId, name])
+  @@map("master_classes")
+}
+
+model MasterUser {
+  id            String      @id @db.Char(36)
+  email         String      @unique @db.VarChar(255)
+  passwordHash  String      @db.VarChar(255)
+  fullName      String      @db.VarChar(100)
+  nisn          String?     @unique @db.VarChar(20)
+  nip           String?     @unique @db.VarChar(20)
+  role          Role        @default(SISWA)
+  schoolId      String?     @db.Char(36)
+  classId       String?     @db.Char(36)
+  avatarUrl     String?     @db.Text
+  xp            Int         @default(0)
+  level         Int         @default(1)
+  isActive      Boolean     @default(true)
+  emailVerified Boolean     @default(false)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  school        MasterSchool?   @relation(fields: [schoolId], references: [id], onDelete: SetNull)
+  class         MasterClass?    @relation(fields: [classId], references: [id], onDelete: SetNull)
+  materialProgress UserMaterialProgress[]
+  quizAttempts  QuizAttempt[]
+  userBadges    UserBadge[]
+  certificates  UserCertificate[]
+  createdMaterials LearningMaterial[] @relation("MaterialCreator")
+  createdQuizzes   Quiz[]           @relation("QuizCreator")
+
+  @@index([role])
+  @@index([schoolId])
+  @@index([classId])
+  @@index([email])
+  @@map("master_users")
+}
+
+model LearningMaterial {
+  id          String     @id @db.Char(36)
+  title       String     @db.VarChar(200)
+  slug        String     @unique @db.VarChar(200)
+  category    Category
+  description String     @db.Text
+  content     String     @db.Text
+  thumbnail   String?    @db.Text
+  readingTime Int        @default(5)
+  orderIndex  Int        @default(0)
+  isPublished Boolean    @default(true)
+  createdBy   String     @db.Char(36)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  creator     MasterUser @relation("MaterialCreator", fields: [createdBy], references: [id], onDelete: Cascade)
+  progress    UserMaterialProgress[]
+  quizzes     Quiz[]
+  certificates UserCertificate[]
+
+  @@index([category])
+  @@index([slug])
+  @@index([isPublished])
+  @@map("learning_materials")
+}
+
+model UserMaterialProgress {
+  id             String   @id @db.Char(36)
+  userId         String   @db.Char(36)
+  materialId     String   @db.Char(36)
+  status         String   @default("IN_PROGRESS")
+  completedAt    DateTime?
+  xpEarned       Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user           MasterUser    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  material       LearningMaterial @relation(fields: [materialId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, materialId])
+  @@index([userId])
+  @@index([materialId])
+  @@map("user_material_progress")
+}
+
+model Quiz {
+  id          String     @id @db.Char(36)
+  title       String     @db.VarChar(200)
+  description String?    @db.Text
+  category    Category
+  materialId  String?    @db.Char(36)
+  timeLimit   Int        @default(30)
+  passingScore Int       @default(75)
+  xpReward    Int        @default(50)
+  isPublished Boolean    @default(true)
+  createdBy   String     @db.Char(36)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  material    LearningMaterial? @relation(fields: [materialId], references: [id], onDelete: SetNull)
+  creator     MasterUser @relation("QuizCreator", fields: [createdBy], references: [id], onDelete: Cascade)
+  questions   QuizQuestion[]
+  attempts    QuizAttempt[]
+
+  @@index([category])
+  @@index([materialId])
+  @@index([isPublished])
+  @@map("quizzes")
+}
+
+model QuizQuestion {
+  id          String   @id @db.Char(36)
+  quizId      String   @db.Char(36)
+  question    String   @db.Text
+  options     String   @db.Text // JSON array string (["a","b","c","d"])
+  correctIndex Int
+  explanation String?  @db.Text
+  points      Int      @default(10)
+  orderIndex  Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  quiz        Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  answers     QuizAttemptAnswer[]
+
+  @@index([quizId])
+  @@map("quiz_questions")
+}
+
+model QuizAttempt {
+  id          String   @id @db.Char(36)
+  userId      String   @db.Char(36)
+  quizId      String   @db.Char(36)
+  score       Int      @default(0)
+  maxScore    Int      @default(0)
+  passed      Boolean  @default(false)
+  xpEarned    Int      @default(0)
+  startedAt   DateTime @default(now())
+  completedAt DateTime?
+  timeSpent   Int      @default(0)
+
+  user        MasterUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quiz        Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  answers     QuizAttemptAnswer[]
+  certificates UserCertificate[]
+
+  @@index([userId])
+  @@index([quizId])
+  @@index([userId, quizId])
+  @@index([quizId, score]) // composite index untuk papan peringkat per kuis
+  @@index([score])
+  @@map("quiz_attempts")
+}
+
+model QuizAttemptAnswer {
+  id             String   @id @db.Char(36)
+  attemptId      String   @db.Char(36)
+  questionId     String   @db.Char(36)
+  selectedIndex  Int?
+  isCorrect      Boolean  @default(false)
+  pointsEarned   Int      @default(0)
+  answeredAt     DateTime @default(now())
+
+  attempt        QuizAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question       QuizQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([attemptId])
+  @@index([questionId])
+  @@unique([attemptId, questionId])
+  @@map("quiz_attempt_answers")
+}
+
+model MasterBadge {
+  id          String   @id @db.Char(36)
+  name        String   @db.VarChar(100)
+  description String   @db.Text
+  imageUrl    String   @db.Text
+  category    String   @db.VarChar(50)
+  xpThreshold Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  userBadges  UserBadge[]
+
+  @@index([category])
+  @@index([xpThreshold])
+  @@map("master_badges")
+}
+
+model UserBadge {
+  id        String   @id @db.Char(36)
+  userId    String   @db.Char(36)
+  badgeId   String   @db.Char(36)
+  earnedAt  DateTime @default(now())
+
+  user      MasterUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badge     MasterBadge @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, badgeId])
+  @@index([userId])
+  @@index([badgeId])
+  @@map("user_badges")
+}
+
+model UserCertificate {
+  id           String   @id @db.Char(36)
+  userId       String   @db.Char(36)
+  materialId   String   @db.Char(36)
+  quizAttemptId String  @db.Char(36)
+  certificateNo String @unique @db.VarChar(50)
+  issuedAt     DateTime @default(now())
+  pdfUrl       String?  @db.Text
+
+  user         MasterUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  material     LearningMaterial @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  quizAttempt  QuizAttempt @relation(fields: [quizAttemptId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([materialId])
+  @@index([certificateNo])
+  @@map("user_certificates")
+}
