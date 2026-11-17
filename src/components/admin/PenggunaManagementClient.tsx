@@ -16,7 +16,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Plus, Trash2, Edit3, Sparkles } from "lucide-react"
-import { Role } from "@prisma/client"
+import type { Role } from "@/types"
 
 interface UserAdminItem {
   id: string
@@ -63,11 +63,11 @@ export function PenggunaManagementClient({
   const [search, setSearch] = useState("")
 
   const [formSchoolId, setFormSchoolId] = useState<string>("")
-  const [formRole, setFormRole] = useState<Role>(Role.SISWA)
+  const [formRole, setFormRole] = useState<Role>("SISWA")
 
   function openCreate() {
     setSelectedUser(null)
-    setFormRole(Role.SISWA)
+    setFormRole("SISWA")
     setFormSchoolId("")
     setError(null)
     setOpen(true)
@@ -209,7 +209,7 @@ export function PenggunaManagementClient({
                 />
               </div>
 
-              {formRole !== Role.ADMIN && (
+              {formRole !== "ADMIN" && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-zinc-200 pt-3">
                   <div className="space-y-1.5">
                     <Label htmlFor="schoolId">Sekolah Asal</Label>
@@ -229,7 +229,7 @@ export function PenggunaManagementClient({
                     </select>
                   </div>
 
-                  {formRole === Role.SISWA ? (
+                  {formRole === "SISWA" ? (
                     <div className="space-y-1.5">
                       <Label htmlFor="classId">Kelas / Rombel</Label>
                       <select
@@ -251,7 +251,7 @@ export function PenggunaManagementClient({
               )}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {formRole === Role.SISWA && (
+                {formRole === "SISWA" && (
                   <div className="space-y-1.5">
                     <Label htmlFor="nisn">NISN (Opsional)</Label>
                     <Input
@@ -263,7 +263,7 @@ export function PenggunaManagementClient({
                   </div>
                 )}
 
-                {formRole === Role.GURU && (
+                {formRole === "GURU" && (
                   <div className="space-y-1.5">
                     <Label htmlFor="nip">NIP (Opsional)</Label>
                     <Input

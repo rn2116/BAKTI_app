@@ -17,7 +17,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Plus, Trash2, Edit3, BookOpen, Clock } from "lucide-react"
-import { Category } from "@prisma/client"
+import type { Category } from "@/types"
 
 interface MaterialItem {
   id: string
