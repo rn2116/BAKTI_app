@@ -13,7 +13,7 @@ import { Card } from "@/components/ui/card"
 import { CategoryBadge } from "@/components/shared/CategoryBadge"
 import { ResponsiveTable } from "@/components/shared/ResponsiveTable"
 import { Trash2, CheckCircle2, XCircle, BookOpen, ClipboardList } from "lucide-react"
-import { Category, Role } from "@prisma/client"
+import type { Category, Role } from "@/types"
 
 interface MaterialItem {
   id: string

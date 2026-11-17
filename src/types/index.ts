@@ -1,4 +1,7 @@
-import { Prisma, Role, Category } from "@prisma/client"
+import type { Prisma } from "@prisma/client"
+
+export type Category = "BAHASA_INDONESIA" | "KARAKTER" | "BUDAYA_SULTENG"
+export type Role = "SISWA" | "GURU" | "ADMIN"
 
 export type MasterUser = Prisma.MasterUserGetPayload<{}>
 export type MasterUserWithRelations = Prisma.MasterUserGetPayload<{
