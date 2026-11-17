@@ -1,10 +1,11 @@
 import { getCurrentUser } from "@/lib/auth"
 import { getMaterialBySlug, getMaterialProgress } from "@/services/material"
-import { PageHeader } from "@/components/shared/PageHeader"
 import { CategoryBadge } from "@/components/shared/CategoryBadge"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { SultengIllustration, getThemeByIndexAndCategory } from "@/components/shared/SultengIllustration"
+import { ReadingViewClient } from "@/components/siswa/ReadingViewClient"
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import Link from "next/link"
-import MaterialCompleteForm from "@/components/siswa/MaterialCompleteForm"
+import { ArrowLeft, Clock, BookOpen, ChevronRight, Sparkles } from "lucide-react"
 
 export default async function MateriDetailPage({
   params,
@@ -15,86 +16,88 @@ export default async function MateriDetailPage({
   const user = await getCurrentUser()
   if (!user) return null
 
-  const [material] = [await getMaterialBySlug(slug)]
+  const material = await getMaterialBySlug(slug)
   if (!material) return null
 
   const progress = await getMaterialProgress(user.id, material.id)
-  let isDone = false
-  if (progress) {
-    isDone = progress.status === "SELESAI"
-  }
+  const isDone = progress?.status === "SELESAI"
 
-  const content = (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold">{material.title}</h1>
-      <p className="text-muted-foreground">{material.description}</p>
+  return (
+    <div className="space-y-6 max-w-4xl mx-auto">
+      {/* Tombol Kembali & Breadcrumb */}
+      <div className="flex items-center gap-2 text-xs font-bold text-zinc-500">
+        <Link
+          href="/siswa/materi"
+          className="inline-flex items-center gap-1 text-[#3C22BB] hover:underline"
+        >
+          <ArrowLeft className="w-4 h-4" /> Katalog Materi
+        </Link>
+        <span>/</span>
+        <span className="text-zinc-400 truncate max-w-[200px]">{material.title}</span>
+      </div>
 
-      <div className="flex flex-col lg:flex-row gap-6">
-        <div className="lg:w-1/3 space-y-4">
-          <Card className="h-full">
-            <CardHeader className="pb-0">
-              <CardTitle className="text-lg">Progres Anda</CardTitle>
-            </CardHeader>
-            <CardContent className="pb-0 pt-0">
-              <div className="text-sm font-semibold">{user.xp} XP</div>
-              <div className="text-sm text-muted-foreground">
-                Level {user.level}
-              </div>
-              <div className="mt-3 h-2 rounded-full overflow-hidden border border-input bg-secondary/10">
-                <div
-                  className="h-full bg-secondary rounded-full transition-all duration-700 ease-out"
-                  style={{ width: `${isDone ? 100 : 0}%` }}
-                />
-              </div>
-              {isDone && (
-                <div className="mt-3 flex items-center gap-2 text-xs text-secondary">
-                  Selesai
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+      {/* Header Visual Materi dengan Ilustrasi Sulteng */}
+      <div className="rounded-3xl border border-zinc-200/90 bg-white overflow-hidden shadow-xs">
+        <SultengIllustration
+          theme={getThemeByIndexAndCategory(material.category, material.orderIndex)}
+          className="h-44 sm:h-52"
+        />
+        <div className="p-6 sm:p-8 space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <CategoryBadge category={material.category} />
+            <div className="flex items-center gap-3 text-xs text-zinc-500 font-medium">
+              <span className="flex items-center gap-1">
+                <Clock className="w-4 h-4 text-zinc-400" /> {material.readingTime} Menit Baca
+              </span>
+              <span className="inline-flex items-center gap-1 text-[11px] font-extrabold text-amber-900 bg-amber-100 px-2 py-0.5 rounded-full">
+                <Sparkles className="w-3.5 h-3.5 text-amber-600" /> +100 XP
+              </span>
+            </div>
+          </div>
 
-        <div className="lg:w-2/3 flex-1 space-y-4">
-          <Card className="h-full flex flex-col">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg">Isi Materi</CardTitle>
-            </CardHeader>
-            <CardContent
-              className="pb-0 pt-0 flex-1 overflow-y-auto max-h-[60vh] leading-relaxed font-serif text-lg text-foreground"
-            >
-              <div
-                className="prose prose-invert max-w-none"
-                dangerouslySetInnerHTML={{ __html: material.content }}
-              />
-            </CardContent>
-          </Card>
-          <MaterialCompleteForm materialId={material.id} isDone={isDone} />
+          <h1 className="text-2xl sm:text-3xl font-black text-zinc-900 tracking-tight leading-snug">
+            {material.title}
+          </h1>
+
+          <p className="text-sm text-zinc-600 leading-relaxed max-w-2xl">
+            {material.description}
+          </p>
         </div>
       </div>
 
+      {/* Komponen Bacaan Utama dengan Top Scroll Progress & Klaim Poin */}
+      <ReadingViewClient
+        materialId={material.id}
+        initialIsDone={isDone}
+        title={material.title}
+        contentHtml={material.content}
+      />
+
+      {/* Kuis Terkait Materi Ini (Jika Ada) */}
       {material.quizzes.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Kuis Terkait</CardTitle>
+        <Card className="rounded-3xl border-zinc-200/90 bg-white p-6 shadow-xs space-y-4">
+          <CardHeader className="p-0">
+            <CardTitle className="text-base font-bold text-zinc-900 flex items-center gap-2">
+              <BookOpen className="w-4 h-4 text-[#3C22BB]" /> Uji Pemahaman: Kuis Terkait
+            </CardTitle>
           </CardHeader>
-          <CardContent className="pb-0 pt-0 space-y-3">
+          <CardContent className="p-0 space-y-2.5">
             {material.quizzes.map((q) => (
               <div
                 key={q.id}
-                className="flex items-center justify-between p-3 rounded-lg border border-input bg-background hover:bg-accent/50 transition-colors"
+                className="flex items-center justify-between p-4 rounded-2xl border border-zinc-200 bg-zinc-50/60 hover:bg-zinc-100/70 transition-colors"
               >
                 <div>
-                  <div className="text-sm font-medium">{q.title}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {q.questions.length} soal • {q.timeLimit} menit
+                  <div className="text-sm font-bold text-zinc-900">{q.title}</div>
+                  <div className="text-xs text-zinc-500 mt-0.5">
+                    {q.questions.length} butir soal • Waktu {q.timeLimit} menit • KKM {q.passingScore}%
                   </div>
                 </div>
                 <Link
                   href={`/siswa/kuis/${q.id}/mulai`}
-                  className="rounded-md border border-input bg-background px-3 py-1.5 text-xs font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
+                  className="inline-flex items-center gap-1 px-4 py-2 rounded-xl text-xs font-bold bg-[#3C22BB] hover:bg-[#2E1994] text-white shadow-xs transition-colors shrink-0"
                 >
-                  Mulai Kuis
+                  Mulai Kuis <ChevronRight className="w-3.5 h-3.5" />
                 </Link>
               </div>
             ))}
@@ -103,6 +106,4 @@ export default async function MateriDetailPage({
       )}
     </div>
   )
-
-  return content
 }
