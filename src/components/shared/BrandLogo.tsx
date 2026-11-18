@@ -15,9 +15,9 @@ export function BrandLogo({
   light = true,
 }: BrandLogoProps) {
   return (
-    <div className={cn("flex items-center gap-3 select-none", className)}>
+    <div className={cn("flex items-center gap-3.5 select-none", className)}>
       {/* Vektor SVG Buku Terbuka dengan Motif Sulur / Tenun Sulawesi Tengah */}
-      <div className="relative w-10 h-10 shrink-0 flex items-center justify-center rounded-xl bg-gradient-to-br from-[#4F35D6] to-[#3C22BB] p-2 shadow-sm border border-white/20">
+      <div className="relative w-11 h-11 shrink-0 flex items-center justify-center rounded-2xl bg-gradient-to-br from-[#4F35D6] to-[#3C22BB] p-2.5 shadow-sm border border-white/20">
         <svg
           viewBox="0 0 32 32"
           fill="none"
@@ -61,10 +61,10 @@ export function BrandLogo({
       </div>
 
       {!collapsed && (
-        <div className="overflow-hidden min-w-0">
+        <div className="overflow-hidden min-w-0 flex-1">
           <div
             className={cn(
-              "font-extrabold text-sm tracking-tight uppercase truncate leading-none",
+              "font-black text-sm tracking-tight uppercase leading-snug truncate",
               light ? "text-white" : "text-[#18181B]"
             )}
           >
@@ -73,8 +73,8 @@ export function BrandLogo({
           {showSubtitle && (
             <div
               className={cn(
-                "text-[11px] font-medium truncate mt-1 leading-none",
-                light ? "text-indigo-200" : "text-zinc-500"
+                "text-[11px] font-medium leading-snug mt-0.5 truncate",
+                light ? "text-indigo-200/90" : "text-zinc-500"
               )}
             >
               Belajar Bahasa, Berkarakter, Berbudaya

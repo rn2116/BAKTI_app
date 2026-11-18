@@ -10,13 +10,23 @@ const DASHBOARD_PREFIX: Record<string, string> = {
 }
 
 export const config = {
-  matcher: ["/masuk", "/daftar", "/siswa/:path*", "/guru/:path*", "/admin/:path*"],
+  matcher: ["/", "/masuk", "/daftar", "/siswa/:path*", "/guru/:path*", "/admin/:path*"],
 }
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
   const token = request.cookies.get("bk_token")?.value
   const payload = token ? await verifyToken(token) : null
+
+  // Alur Halaman Root (/)
+  if (pathname === "/") {
+    if (!payload) {
+      return NextResponse.redirect(new URL("/masuk", request.url))
+    }
+    return NextResponse.redirect(
+      new URL(DASHBOARD_PREFIX[payload.role] ?? "/siswa", request.url)
+    )
+  }
 
   if (AUTH_ROUTES.includes(pathname)) {
     if (payload) {
