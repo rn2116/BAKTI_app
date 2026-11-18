@@ -45,7 +45,12 @@ export default async function SertifikatSiswaPage() {
                   </div>
                 </div>
                 <div className="mt-auto">
-                  <PrintCertificateButton certificateNo={c.certificateNo} />
+                  <PrintCertificateButton
+                    certificateNo={c.certificateNo}
+                    studentName={user.fullName}
+                    materialTitle={c.material.title}
+                    issuedAt={c.issuedAt}
+                  />
                 </div>
               </CardContent>
             </Card>

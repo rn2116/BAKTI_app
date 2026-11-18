@@ -1,31 +1,43 @@
 import { NextResponse } from "next/server"
-import { verifyToken } from "@/lib/auth"
-import { getLeaderboard } from "@/services/quiz"
+import { verifyToken } from "@/lib/auth-token"
+import { getOverallLeaderboard } from "@/services/quiz"
+import { prisma } from "@/lib/prisma"
+
+export const dynamic = "force-dynamic"
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
-  const scope = searchParams.get("scope") ?? "global"
-  const schoolId = searchParams.get("schoolId") ?? undefined
-  const classId = searchParams.get("classId") ?? undefined
+  const scope = (searchParams.get("scope") ?? "global") as "global" | "school" | "class"
 
-  const token = request.headers.get("cookie")?.split("bk_token=")[1]?.split(";")[0]
+  const cookieHeader = request.headers.get("cookie")
+  const token = cookieHeader
+    ?.split("; ")
+    .find((row) => row.startsWith("bk_token="))
+    ?.split("=")[1]
+
   const payload = token ? await verifyToken(token) : null
   if (!payload) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const rows = await getLeaderboard({
-    schoolId: scope === "school" ? schoolId : undefined,
-    classId: scope === "class" ? classId : undefined,
-    limit: 20,
-  })
+  let schoolId: string | undefined
+  let classId: string | undefined
 
-  const data = rows.map((r, i) => ({
-    rank: i + 1,
-    name: r.user.fullName,
-    score: r.score,
-    maxScore: r.maxScore,
-  }))
+  if (scope === "school" || scope === "class") {
+    const user = await prisma.masterUser.findUnique({
+      where: { id: payload.userId },
+      select: { schoolId: true, classId: true },
+    })
+    schoolId = user?.schoolId ?? undefined
+    classId = user?.classId ?? undefined
+  }
+
+  const data = await getOverallLeaderboard({
+    scope,
+    schoolId,
+    classId,
+    limit: 30,
+  })
 
   return NextResponse.json(data)
 }
