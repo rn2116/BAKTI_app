@@ -5,7 +5,17 @@ export async function getPublishedMaterials() {
   return prisma.learningMaterial.findMany({
     where: { isPublished: true },
     orderBy: { orderIndex: "asc" },
-    include: {
+    select: {
+      id: true,
+      title: true,
+      slug: true,
+      category: true,
+      description: true,
+      thumbnail: true,
+      readingTime: true,
+      orderIndex: true,
+      isPublished: true,
+      createdAt: true,
       _count: { select: { quizzes: true, progress: true } },
     },
   })
@@ -48,14 +58,16 @@ export async function getUserCompletedMaterialIds(userId: string) {
 }
 
 export async function getCategoryStats(userId: string) {
-  const materials = await prisma.learningMaterial.findMany({
-    where: { isPublished: true },
-    select: { id: true, category: true },
-  })
-  const progress = await prisma.userMaterialProgress.findMany({
-    where: { userId, status: "SELESAI" },
-    select: { materialId: true },
-  })
+  const [materials, progress] = await Promise.all([
+    prisma.learningMaterial.findMany({
+      where: { isPublished: true },
+      select: { id: true, category: true },
+    }),
+    prisma.userMaterialProgress.findMany({
+      where: { userId, status: "SELESAI" },
+      select: { materialId: true },
+    }),
+  ])
   const completedIds = new Set(progress.map((p) => p.materialId))
 
   const stats = Object.values(Category).map((category) => {

@@ -1,4 +1,4 @@
-import { getCurrentUser } from "@/lib/auth"
+import { getCurrentUser, AuthUser } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import DesktopSidebar from "@/components/layout/DesktopSidebar"
 import { DesktopTopHeader } from "@/components/layout/DesktopTopHeader"
@@ -7,10 +7,12 @@ import MobileBottomNav from "@/components/layout/MobileBottomNav"
 
 export default async function AppShell({
   children,
+  user: initialUser,
 }: {
   children: React.ReactNode
+  user?: AuthUser
 }) {
-  const user = await getCurrentUser()
+  const user = initialUser ?? (await getCurrentUser())
   if (!user) {
     redirect("/masuk")
   }

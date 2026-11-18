@@ -16,9 +16,9 @@ export const CATEGORY_LABELS: Record<string, string> = {
 }
 
 export const CATEGORY_BADGE_CLASSES: Record<string, string> = {
-  BAHASA_INDONESIA: "bg-sky-100 text-sky-800 border-sky-200",
-  KARAKTER: "bg-red-100 text-red-800 border-red-200",
-  BUDAYA_SULTENG: "bg-emerald-100 text-emerald-800 border-emerald-200",
+  BAHASA_INDONESIA: "bg-sky-50 text-[#0369A1] border-sky-200",
+  KARAKTER: "bg-emerald-50 text-[#047857] border-emerald-200",
+  BUDAYA_SULTENG: "bg-teal-50 text-[#0F766E] border-teal-200",
 }
 
 export const XP_COMPLETE_MATERIAL = 100

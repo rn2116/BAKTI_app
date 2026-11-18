@@ -1,6 +1,6 @@
 "use server"
 
-import { revalidatePath } from "next/cache"
+import { revalidatePath, revalidateTag } from "next/cache"
 import { randomUUID } from "crypto"
 import { z } from "zod"
 import { prisma } from "@/lib/prisma"
@@ -358,6 +358,7 @@ export async function saveSchool(prevState: ActionState | null, formData: FormDa
       })
     }
 
+    revalidateTag("master_schools")
     revalidatePath("/admin/sekolah")
     return { success: true, message: "Data sekolah berhasil disimpan" }
   } catch (error) {
@@ -374,6 +375,7 @@ export async function deleteSchool(schoolId: string): Promise<ActionState> {
 
   try {
     await prisma.masterSchool.delete({ where: { id: schoolId } })
+    revalidateTag("master_schools")
     revalidatePath("/admin/sekolah")
     return { success: true, message: "Sekolah berhasil dihapus" }
   } catch (error) {

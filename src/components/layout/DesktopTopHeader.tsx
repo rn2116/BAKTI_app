@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { AuthUser } from "@/types"
 import { NotificationBell } from "@/components/layout/NotificationBell"
+import { TopHeaderProgressBar } from "@/components/layout/TopHeaderProgressBar"
 import { Sparkles, Calendar } from "lucide-react"
 
 interface DesktopTopHeaderProps {
@@ -43,7 +44,10 @@ export function DesktopTopHeader({ user }: DesktopTopHeaderProps) {
         : "bg-purple-50 text-purple-700 border-purple-100"
 
   return (
-    <header className="hidden md:flex h-16 sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-zinc-200/90 px-8 items-center justify-between shadow-2xs">
+    <header className="hidden md:flex h-16 sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-zinc-200/90 px-8 items-center justify-between shadow-2xs relative">
+      {/* Reading Progress Bar di Tepi Paling Bawah Header */}
+      <TopHeaderProgressBar />
+
       {/* Sisi Kiri Top Bar: Badge Portal & Tanggal Format Indonesia */}
       <div className="flex items-center gap-3">
         <span
