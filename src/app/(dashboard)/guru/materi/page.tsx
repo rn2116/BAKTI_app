@@ -10,13 +10,13 @@ export default async function GuruMateriPage() {
     redirect("/masuk")
   }
 
-  const materials = await getMaterialsForManagement(user.id, false)
+  const materials = await getMaterialsForManagement(undefined, true)
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Bank Materi Pembelajaran"
-        description="Kelola materi ajar, modul karakter, dan literasi kebudayaan lokal."
+        title="Katalog Materi Pembelajaran"
+        description="Jelajahi dan telaah materi literasi bahasa, pembentukan karakter, dan budaya lokal resmi Balai Bahasa Sulawesi Tengah untuk referensi bimbingan siswa."
       />
       <MateriManagementClient materials={materials} isTeacher={true} />
     </div>

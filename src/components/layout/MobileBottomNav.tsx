@@ -14,6 +14,7 @@ import {
   Building,
   Users,
   ShieldAlert,
+  Compass,
 } from "lucide-react"
 
 const ICON_MAP = {
@@ -27,12 +28,14 @@ const ICON_MAP = {
   Building,
   Users,
   ShieldAlert,
+  Compass,
 }
 
 const ITEMS_SISWA = [
   { href: "/siswa", label: "Beranda", icon: "LayoutDashboard" },
   { href: "/siswa/materi", label: "Materi", icon: "BookOpen" },
   { href: "/siswa/kuis", label: "Kuis", icon: "ClipboardList" },
+  { href: "/siswa/budaya-bahasa", label: "Kamus 9B", icon: "Compass" },
   { href: "/siswa/peringkat", label: "Peringkat", icon: "Trophy" },
 ]
 
@@ -40,16 +43,15 @@ const ITEMS_GURU = [
   { href: "/guru", label: "Beranda", icon: "LayoutDashboard" },
   { href: "/guru/kelas", label: "Kelas", icon: "Building2" },
   { href: "/guru/materi", label: "Materi", icon: "BookOpen" },
-  { href: "/guru/kuis", label: "Kuis", icon: "ClipboardList" },
   { href: "/guru/rekap", label: "Rekap", icon: "FileText" },
 ]
 
 const ITEMS_ADMIN = [
   { href: "/admin", label: "Beranda", icon: "LayoutDashboard" },
-  { href: "/admin/sekolah", label: "Sekolah", icon: "Building" },
-  { href: "/admin/kelas", label: "Kelas", icon: "Building2" },
+  { href: "/admin/kuis", label: "Bank Soal", icon: "ClipboardList" },
+  { href: "/admin/matriks-karakter", label: "Matriks 9B", icon: "Compass" },
+  { href: "/admin/materi", label: "Materi", icon: "BookOpen" },
   { href: "/admin/pengguna", label: "Pengguna", icon: "Users" },
-  { href: "/admin/konten", label: "Moderasi", icon: "ShieldAlert" },
 ]
 
 export default function MobileBottomNav({ userRole = "SISWA" }: { userRole?: string }) {

@@ -1,7 +1,47 @@
 import type { Prisma } from "@prisma/client"
 
-export type Category = "BAHASA_INDONESIA" | "KARAKTER" | "BUDAYA_SULTENG"
-export type Role = "SISWA" | "GURU" | "ADMIN"
+export const Category = {
+  BAHASA_INDONESIA: "BAHASA_INDONESIA",
+  KARAKTER: "KARAKTER",
+  BUDAYA_SULTENG: "BUDAYA_SULTENG",
+} as const
+export type Category = (typeof Category)[keyof typeof Category]
+
+export const Role = {
+  SISWA: "SISWA",
+  GURU: "GURU",
+  ADMIN: "ADMIN",
+} as const
+export type Role = (typeof Role)[keyof typeof Role]
+
+export const RegionalLanguage = {
+  KAILI: "KAILI",
+  PAMONA: "PAMONA",
+  BANGGAI: "BANGGAI",
+  BUNGKU: "BUNGKU",
+  TOLITOLI: "TOLITOLI",
+  BUOL: "BUOL",
+  SALUAN: "SALUAN",
+  MORI: "MORI",
+  TAA: "TAA",
+} as const
+export type RegionalLanguage = (typeof RegionalLanguage)[keyof typeof RegionalLanguage]
+
+export type CharacterMatrix = {
+  id: number
+  indonesianCharacter: string
+  regionalLanguage: RegionalLanguage
+  regionalTerm: string
+  characterSource: string
+  implementation: string
+  createdBy: string | null
+  createdAt: Date
+  updatedAt: Date
+}
+
+export type CharacterMatrixWithCreator = CharacterMatrix & {
+  creator?: { fullName: string } | null
+}
 
 export type MasterUser = Prisma.MasterUserGetPayload<{}>
 export type MasterUserWithRelations = Prisma.MasterUserGetPayload<{

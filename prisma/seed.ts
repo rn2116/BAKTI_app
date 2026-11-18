@@ -72,12 +72,77 @@ const BADGES = [
     category: "LEADERBOARD",
     xpThreshold: 0,
   },
+  // 9 Lencana Budaya Daerah Sulawesi Tengah
+  {
+    name: "Sahabat Bahasa Kaili",
+    description: "Mendalami kearifan lokal nilai Sintuvu bahasa Kaili.",
+    imageUrl: "/badges/kaili.svg",
+    category: "REGIONAL_CULTURE",
+    xpThreshold: 50,
+  },
+  {
+    name: "Sahabat Bahasa Pamona",
+    description: "Mendalami nilai Sintuwu Maroso bahasa Pamona.",
+    imageUrl: "/badges/pamona.svg",
+    category: "REGIONAL_CULTURE",
+    xpThreshold: 50,
+  },
+  {
+    name: "Sahabat Bahasa Banggai",
+    description: "Mendalami nilai Montolutusan bahasa Banggai.",
+    imageUrl: "/badges/banggai.svg",
+    category: "REGIONAL_CULTURE",
+    xpThreshold: 50,
+  },
+  {
+    name: "Sahabat Bahasa Bungku",
+    description: "Mendalami nilai Mosimpotowake bahasa Bungku.",
+    imageUrl: "/badges/bungku.svg",
+    category: "REGIONAL_CULTURE",
+    xpThreshold: 50,
+  },
+  {
+    name: "Sahabat Bahasa Tolitoli",
+    description: "Mendalami nilai Mototompiaan bahasa Tolitoli.",
+    imageUrl: "/badges/tolitoli.svg",
+    category: "REGIONAL_CULTURE",
+    xpThreshold: 50,
+  },
+  {
+    name: "Sahabat Bahasa Buol",
+    description: "Mendalami nilai Pogogut bahasa Buol.",
+    imageUrl: "/badges/buol.svg",
+    category: "REGIONAL_CULTURE",
+    xpThreshold: 50,
+  },
+  {
+    name: "Sahabat Bahasa Saluan",
+    description: "Mendalami nilai Molabot bahasa Saluan.",
+    imageUrl: "/badges/saluan.svg",
+    category: "REGIONAL_CULTURE",
+    xpThreshold: 50,
+  },
+  {
+    name: "Sahabat Bahasa Mori",
+    description: "Mendalami nilai Metulungi bahasa Mori.",
+    imageUrl: "/badges/mori.svg",
+    category: "REGIONAL_CULTURE",
+    xpThreshold: 50,
+  },
+  {
+    name: "Sahabat Bahasa Taa",
+    description: "Mendalami nilai Morambanga bahasa Taa.",
+    imageUrl: "/badges/taa.svg",
+    category: "REGIONAL_CULTURE",
+    xpThreshold: 50,
+  },
 ]
 
 async function main() {
   // ========================================================================
   // 1. BERSIHKAN DATA LAMA (urutan terbalik dependensi foreign key)
   // ========================================================================
+  await (prisma as any).characterMatrix.deleteMany()
   await prisma.quizAttemptAnswer.deleteMany()
   await prisma.quizAttempt.deleteMany()
   await prisma.quizQuestion.deleteMany()
@@ -237,6 +302,106 @@ async function main() {
   for (const badge of BADGES) {
     await prisma.masterBadge.create({
       data: { id: id(), ...badge, isActive: true },
+    })
+  }
+
+  // ========================================================================
+  // 5B. MATRIKS KARAKTER 9 BAHASA DAERAH SULAWESI TENGAH
+  // ========================================================================
+  const REGIONAL_MATRICES = [
+    {
+      indonesianCharacter: "Gotong Royong & Persatuan",
+      regionalLanguage: "KAILI" as const,
+      regionalTerm: "Masintuvu Kita Maroso, Morambanga Kita Marisi",
+      characterSource:
+        "Falsafah adat suku Kaili Lembah Palu dan pesisir Teluk Palu yang diwariskan turun-temurun dalam musyawarah Banua Oge.",
+      implementation:
+        "Bekerja sama membersihkan lingkungan sekolah, saling membantu teman yang tertinggal pelajaran, dan menyelesaikan perselisihan dengan musyawarah mufakat.",
+    },
+    {
+      indonesianCharacter: "Kebersamaan & Solidaritas Kuat",
+      regionalLanguage: "PAMONA" as const,
+      regionalTerm: "Sintuwu Maroso",
+      characterSource:
+        "Pepatah adat masyarakat Pamona (Poso) yang melambangkan keutuhan ikatan persaudaraan sejati yang tak tergoyahkan oleh rintangan.",
+      implementation:
+        "Menjaga kerukunan antarumat beragama di sekolah, tidak membeda-bedakan latar belakang suku teman, dan saling menjenguk saat ada warga sekolah yang sakit.",
+    },
+    {
+      indonesianCharacter: "Persaudaraan Tiga Serangkai",
+      regionalLanguage: "BANGGAI" as const,
+      regionalTerm: "Montolutusan",
+      characterSource:
+        "Nilai luhur kemasyarakatan Banggai (Batui, Balantak, Banggai Laut) tentang persaudaraan sejati yang saling menopang harkat martabat.",
+      implementation:
+        "Membela teman yang menjadi korban perundungan (bullying), berbagi bekal makanan sehat, dan setia kawan dalam kebaikan.",
+    },
+    {
+      indonesianCharacter: "Tolong-Menolong Tanpa Pamrih",
+      regionalLanguage: "BUNGKU" as const,
+      regionalTerm: "Mosimpotowake",
+      characterSource:
+        "Tradisi adat tolong-menolong suku Bungku di Morowali dalam kegiatan berladang, mendirikan rumah warga, dan hajatan kampung.",
+      implementation:
+        "Sigap membantu guru menyiapkan ruang kelas, aktif dalam penggalangan dana sosial kemanusiaan, dan membimbing adik kelas dengan sabar.",
+    },
+    {
+      indonesianCharacter: "Kebaikan Budi & Saling Memperbaiki",
+      regionalLanguage: "TOLITOLI" as const,
+      regionalTerm: "Mototompiaan",
+      characterSource:
+        "Ajaran leluhur Tolitoli yang menekankan pentingnya saling memaafkan, menjaga tutur kata halus, dan memperbaiki hubungan kekeluargaan.",
+      implementation:
+        "Menolak berkata kasar atau memaki, berani meminta maaf secara tulus saat bersalah, dan memberi nasihat perbaikan secara santun empat mata.",
+    },
+    {
+      indonesianCharacter: "Musyawarah & Keakraban Rukun",
+      regionalLanguage: "BUOL" as const,
+      regionalTerm: "Pogogut",
+      characterSource:
+        "Adat kebiasaan masyarakat Buol dalam bermusyawarah mufakat di bawah naungan tetua adat guna mencapai ketenteraman bersama.",
+      implementation:
+        "Menghargai perbedaan pendapat saat diskusi kelompok kelas, mematuhi hasil keputusan bersama dengan ikhlas, dan tidak memaksakan kehendak pribadi.",
+    },
+    {
+      indonesianCharacter: "Saling Menjaga Kehormatan & Tanggung Jawab",
+      regionalLanguage: "SALUAN" as const,
+      regionalTerm: "Molabot",
+      characterSource:
+        "Norma kehormatan suku Saluan (Banggai daratan) tentang kesetiaan memegang janji dan tanggung jawab menjaga marwah keluarga serta komunitas.",
+      implementation:
+        "Mengerjakan tugas piket kelas sesuai jadwal, menepati janji belajar bersama tepat waktu, dan jujur mengakui hasil kerja sendiri tanpa plagiasi.",
+    },
+    {
+      indonesianCharacter: "Empati & Rasa Kasih Sayang Sesama",
+      regionalLanguage: "MORI" as const,
+      regionalTerm: "Metulungi",
+      characterSource:
+        "Falsafah hidup suku Mori (Morowali Utara) yang mengajarkan bahwa kemuliaan seseorang diukur dari keikhlasannya menolong sesama yang lemah.",
+      implementation:
+        "Memberikan bantuan kepada teman yang mengalami kesulitan perlengkapan sekolah, menemani teman yang merasa terasing di kelas, dan menghibur yang berduka.",
+    },
+    {
+      indonesianCharacter: "Keteguhan Bersama dalam Membangun Negeri",
+      regionalLanguage: "TAA" as const,
+      regionalTerm: "Morambanga",
+      characterSource:
+        "Ungkapan kearifan lokal suku Taa (Tojo Una-Una) tentang kekompakan melangkah bersama dan bahu-membahu menjaga kelestarian alam kepulauan.",
+      implementation:
+        "Menjaga kebersihan dan kelestarian taman sekolah, menghemat penggunaan air dan listrik di sekolah, serta aktif merawat fasilitas umum kelas.",
+    },
+  ]
+
+  for (const matrix of REGIONAL_MATRICES) {
+    await (prisma as any).characterMatrix.create({
+      data: {
+        indonesianCharacter: matrix.indonesianCharacter,
+        regionalLanguage: matrix.regionalLanguage,
+        regionalTerm: matrix.regionalTerm,
+        characterSource: matrix.characterSource,
+        implementation: matrix.implementation,
+        createdBy: adminUser.id,
+      },
     })
   }
 

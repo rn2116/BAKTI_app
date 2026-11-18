@@ -52,6 +52,7 @@ const SISWA_MENU_ITEMS = [
   { label: "Beranda", href: "/siswa", icon: "LayoutDashboard" },
   { label: "Materi Belajar", href: "/siswa/materi", icon: "BookOpen" },
   { label: "Kuis Interaktif", href: "/siswa/kuis", icon: "ClipboardList" },
+  { label: "Kamus Karakter 9 Bahasa", href: "/siswa/budaya-bahasa", icon: "Compass" },
   { label: "Papan Peringkat", href: "/siswa/peringkat", icon: "Trophy" },
   { label: "Prestasi & Sertifikat", href: "/siswa/sertifikat", icon: "Award" },
 ]
