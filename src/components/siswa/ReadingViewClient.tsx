@@ -1,12 +1,18 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { markMaterialComplete } from "@/actions/material"
 import { Button } from "@/components/ui/button"
 import { toast } from "@/components/ui/use-toast"
 import { CheckCircle2, Sparkles, Award } from "lucide-react"
 import { MaterialContentRenderer } from "@/components/shared/MaterialContentRenderer"
+import {
+  ReaderToolbar,
+  type ReaderFontSize,
+  type ReaderTheme,
+} from "@/components/shared/ReaderToolbar"
+import { TextToSpeechPlayer } from "@/components/shared/TextToSpeechPlayer"
 import confetti from "canvas-confetti"
 
 interface ReadingViewClientProps {
@@ -24,6 +30,24 @@ export function ReadingViewClient({
 }: ReadingViewClientProps) {
   const [isDone, setIsDone] = useState(initialIsDone)
   const [loading, setLoading] = useState(false)
+  const [fontSize, setFontSize] = useState<ReaderFontSize>("base")
+  const [theme, setTheme] = useState<ReaderTheme>("clean")
+
+  // Muat preferensi kenyamanan membaca dari localStorage
+  useEffect(() => {
+    try {
+      const savedSize = localStorage.getItem("bk_reader_font_size") as ReaderFontSize
+      if (savedSize && ["sm", "base", "lg"].includes(savedSize)) {
+        setFontSize(savedSize)
+      }
+      const savedTheme = localStorage.getItem("bk_reader_theme") as ReaderTheme
+      if (savedTheme && ["clean", "sepia"].includes(savedTheme)) {
+        setTheme(savedTheme)
+      }
+    } catch {
+      // Abaikan jika localStorage tidak diizinkan
+    }
+  }, [])
 
   async function handleClaimPoints() {
     setLoading(true)
@@ -49,13 +73,38 @@ export function ReadingViewClient({
     }
   }
 
-  return (
-    <div className="space-y-6">
-      {/* Konten Bacaan Utama Berstruktur dengan Tipografi Lora & Hirarki Rapi */}
-      <div className="p-6 sm:p-10 rounded-3xl bg-white border border-zinc-200/90 shadow-xs">
-        <MaterialContentRenderer content={contentHtml} />
+  const containerThemeClass =
+    theme === "sepia"
+      ? "bg-[#FBF7EE] text-[#2C241B] border-amber-200/80 shadow-sm"
+      : "bg-white text-zinc-800 border-zinc-200/90 shadow-xs"
 
-        {/* Bagian Bawah: Aksi Klaim Poin Selesai */}
+  return (
+    <div className="space-y-4 sm:space-y-6">
+      {/* 1. Bilah Kontrol Kenyamanan Membaca & Pemutar Suara Otomatis */}
+      <div className="space-y-3">
+        {/* Reader Comfort Toolbar (Font Size & Tema Kertas) */}
+        <ReaderToolbar
+          fontSize={fontSize}
+          setFontSize={setFontSize}
+          theme={theme}
+          setTheme={setTheme}
+        />
+
+        {/* Pemutar Suara Pelafalan Cerdas (Web Speech API id-ID) */}
+        <TextToSpeechPlayer textToRead={contentHtml} title={title} />
+      </div>
+
+      {/* 2. Konten Bacaan Utama Berstruktur dengan Tipografi Lora & Tema Kertas Pilihan */}
+      <div
+        className={`p-6 sm:p-10 rounded-3xl border transition-colors duration-200 ${containerThemeClass}`}
+      >
+        <MaterialContentRenderer
+          content={contentHtml}
+          fontSize={fontSize}
+          className={theme === "sepia" ? "text-[#2C241B]" : "text-zinc-850"}
+        />
+
+        {/* 3. Bagian Bawah: Aksi Klaim Poin Selesai */}
         <div className="mt-10 pt-6 border-t border-zinc-200/80 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-2xl bg-amber-500/15 border border-amber-300 flex items-center justify-center text-[#D97706] shrink-0">

@@ -6,6 +6,7 @@ import { Bookmark, Info, CheckCircle2, BookOpen } from "lucide-react"
 interface MaterialContentRendererProps {
   content: string
   className?: string
+  fontSize?: "sm" | "base" | "lg"
 }
 
 interface ContentBlock {
@@ -196,12 +197,20 @@ function renderInlineFormatted(text: string) {
 export function MaterialContentRenderer({
   content,
   className = "",
+  fontSize = "base",
 }: MaterialContentRendererProps) {
   const blocks = React.useMemo(() => normalizeContentToBlocks(content), [content])
 
+  const textSizeClass =
+    fontSize === "sm"
+      ? "text-[15px] sm:text-[16px]"
+      : fontSize === "lg"
+        ? "text-[18px] sm:text-[19px]"
+        : "text-[16px] sm:text-[17px]"
+
   return (
     <div
-      className={`font-serif space-y-5 leading-relaxed text-[16px] sm:text-[17px] text-zinc-800 select-text ${className}`}
+      className={`font-serif space-y-5 leading-relaxed ${textSizeClass} select-text ${className}`}
       style={{ fontFamily: "var(--font-lora), Georgia, serif" }}
     >
       {blocks.map((block, index) => {

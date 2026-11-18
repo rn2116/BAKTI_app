@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma"
+import { unstable_cache } from "next/cache"
 import { XP_QUIZ_BASE } from "@/lib/constants"
 
 export async function getPublishedQuizzes() {
@@ -49,42 +50,88 @@ export async function getUserQuizAttempts(userId: string, quizId?: string) {
   })
 }
 
-export async function getLeaderboard({
-  quizId,
-  schoolId,
-  classId,
-  limit = 10,
-}: {
-  quizId?: string
-  schoolId?: string
-  classId?: string
-  limit?: number
-}) {
-  const attempts = await prisma.quizAttempt.findMany({
-    where: {
-      passed: true,
-      ...(quizId ? { quizId } : {}),
-      ...(schoolId ? { user: { schoolId } } : {}),
-      ...(classId ? { user: { classId } } : {}),
-    },
-    include: {
-      user: {
-        select: {
-          id: true,
-          fullName: true,
-          schoolId: true,
-          classId: true,
-          xp: true,
-          level: true,
+export const getLeaderboard = unstable_cache(
+  async ({
+    quizId,
+    schoolId,
+    classId,
+    limit = 20,
+  }: {
+    quizId?: string
+    schoolId?: string
+    classId?: string
+    limit?: number
+  }) => {
+    return prisma.quizAttempt.findMany({
+      where: {
+        passed: true,
+        ...(quizId ? { quizId } : {}),
+        ...(schoolId ? { user: { schoolId } } : {}),
+        ...(classId ? { user: { classId } } : {}),
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            fullName: true,
+            schoolId: true,
+            classId: true,
+            xp: true,
+            level: true,
+            school: { select: { name: true } },
+          },
         },
       },
-    },
-    orderBy: { score: "desc" },
-    take: limit,
-  })
+      orderBy: { score: "desc" },
+      take: limit,
+    })
+  },
+  ["leaderboard_quiz_ranks"],
+  { tags: ["leaderboard"], revalidate: 30 }
+)
 
-  return attempts
-}
+export const getOverallLeaderboard = unstable_cache(
+  async ({
+    scope = "global",
+    schoolId,
+    classId,
+    limit = 25,
+  }: {
+    scope?: "global" | "school" | "class"
+    schoolId?: string
+    classId?: string
+    limit?: number
+  }) => {
+    const users = await prisma.masterUser.findMany({
+      where: {
+        role: "SISWA",
+        isActive: true,
+        ...(scope === "school" && schoolId ? { schoolId } : {}),
+        ...(scope === "class" && classId ? { classId } : {}),
+      },
+      select: {
+        id: true,
+        fullName: true,
+        xp: true,
+        level: true,
+        school: { select: { name: true } },
+      },
+      orderBy: [{ xp: "desc" }, { createdAt: "asc" }],
+      take: limit,
+    })
+
+    return users.map((u, i) => ({
+      rank: i + 1,
+      userId: u.id,
+      name: u.fullName,
+      schoolName: u.school?.name ?? "Sulawesi Tengah",
+      level: u.level,
+      xp: u.xp,
+    }))
+  },
+  ["overall_leaderboard_ranks"],
+  { tags: ["leaderboard"], revalidate: 30 }
+)
 
 export async function calculateXPForAttempt(quizId: string, score: number, maxScore: number) {
   const quiz = await prisma.quiz.findUnique({ where: { id: quizId } })
