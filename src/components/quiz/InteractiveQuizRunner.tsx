@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog"
 import { notify } from "@/lib/notify"
+import { QuizSecurityGuard } from "@/components/quiz/QuizSecurityGuard"
 import {
   Clock,
   Volume2,
@@ -19,6 +20,9 @@ import {
   Sparkles,
   ArrowRight,
   RotateCcw,
+  ShieldCheck,
+  ShieldAlert,
+  AlertTriangle,
 } from "lucide-react"
 import confetti from "canvas-confetti"
 import {
@@ -57,6 +61,8 @@ interface QuizResultData {
   maxScore: number
   passed: boolean
   xpEarned: number
+  violationCount: number
+  isAutoSubmitted: boolean
   answers: Array<{
     questionId: string
     selectedIndex: number | null
@@ -74,6 +80,8 @@ export function InteractiveQuizRunner({ quiz }: InteractiveQuizRunnerProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false)
   const [result, setResult] = useState<QuizResultData | null>(null)
+  const [violationCount, setViolationCount] = useState(0)
+  const [isAutoSubmitted, setIsAutoSubmitted] = useState(false)
 
   // Initialize sound preferences
   useEffect(() => {
@@ -135,8 +143,12 @@ export function InteractiveQuizRunner({ quiz }: InteractiveQuizRunnerProps) {
   }
 
   // Submit Kuis
-  async function handleSubmit() {
+  async function handleSubmit(autoSubmitted = false, overrideViolations?: number) {
     setIsSubmitting(true)
+
+    const finalViolationCount =
+      overrideViolations !== undefined ? overrideViolations : violationCount
+    const finalIsAutoSubmitted = autoSubmitted || isAutoSubmitted
 
     const answersPayload = quiz.questions.map((q) => ({
       questionId: q.id,
@@ -146,6 +158,8 @@ export function InteractiveQuizRunner({ quiz }: InteractiveQuizRunnerProps) {
     const formData = new FormData()
     formData.append("quizId", quiz.id)
     formData.append("answers", JSON.stringify(answersPayload))
+    formData.append("violationCount", String(finalViolationCount))
+    formData.append("isAutoSubmitted", String(finalIsAutoSubmitted))
 
     const res = await submitQuizAttempt(null, formData)
     setIsSubmitting(false)
@@ -178,6 +192,8 @@ export function InteractiveQuizRunner({ quiz }: InteractiveQuizRunnerProps) {
         maxScore,
         passed,
         xpEarned,
+        violationCount: finalViolationCount,
+        isAutoSubmitted: finalIsAutoSubmitted,
         answers: detailedAnswers,
       })
 
@@ -204,7 +220,8 @@ export function InteractiveQuizRunner({ quiz }: InteractiveQuizRunnerProps) {
 
   function handleAutoSubmit() {
     notify.warning("Waktu pengerjaan telah habis! Jawaban Anda dikumpulkan secara otomatis.")
-    handleSubmit()
+    setIsAutoSubmitted(true)
+    handleSubmit(true)
   }
 
   // Format menit & detik
@@ -267,6 +284,22 @@ export function InteractiveQuizRunner({ quiz }: InteractiveQuizRunnerProps) {
             </div>
           </div>
 
+          {/* Indikator Kejujuran Hasil Kuis */}
+          {result.violationCount === 0 ? (
+            <div className="flex items-center justify-center gap-2 text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl py-2 px-3 max-w-sm mx-auto">
+              <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+              <span>Integritas Terjaga: Pengerjaan 100% jujur tanpa berpindah tab.</span>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center gap-2 text-xs font-semibold text-rose-700 bg-rose-50 border border-rose-200 rounded-xl py-2 px-3 max-w-sm mx-auto">
+              <ShieldAlert className="w-4 h-4 text-rose-600 shrink-0" />
+              <span>
+                Catatan Integritas: Terdeteksi {result.violationCount}x berpindah tab
+                {result.isAutoSubmitted ? " (Kuis dikumpulkan otomatis)" : ""}.
+              </span>
+            </div>
+          )}
+
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-3">
             <Button
               onClick={() => {
@@ -274,6 +307,8 @@ export function InteractiveQuizRunner({ quiz }: InteractiveQuizRunnerProps) {
                 setCurrentIndex(0)
                 setUserAnswers({})
                 setTimeLeft(quiz.timeLimit * 60)
+                setViolationCount(0)
+                setIsAutoSubmitted(false)
               }}
               variant="outline"
               className="w-full sm:w-auto rounded-xl gap-2 text-xs font-bold"
@@ -382,40 +417,75 @@ export function InteractiveQuizRunner({ quiz }: InteractiveQuizRunnerProps) {
   // MODE MENGERJAKAN SOAL FOKUS BERWAKTU
   // ==========================================
   return (
-    <div className="max-w-2xl mx-auto space-y-4">
-      {/* 1. Header Kuis: Waktu Mundur & Toggle Suara */}
-      <Card className="p-4 rounded-2xl border-zinc-200/90 bg-white shadow-xs flex items-center justify-between">
-        <div>
-          <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#3C22BB] bg-[#3C22BB]/10 px-2 py-0.5 rounded-full">
-            Soal {currentIndex + 1} dari {totalQuestions}
-          </span>
-          <h2 className="text-sm font-bold text-zinc-900 truncate max-w-[200px] sm:max-w-sm mt-1">
-            {quiz.title}
-          </h2>
-        </div>
+    <div className="max-w-2xl mx-auto space-y-4 select-none">
+      {/* Pengawas Kejujuran Akademik (Anti Pindah Tab & Anti Salin-Tempel) */}
+      <QuizSecurityGuard
+        onViolation={(count) => setViolationCount(count)}
+        onAutoSubmit={() => {
+          setIsAutoSubmitted(true)
+          setViolationCount(3)
+          handleSubmit(true, 3)
+        }}
+        isCompleted={Boolean(result)}
+        currentViolations={violationCount}
+      />
 
-        <div className="flex items-center gap-2">
-          {/* Audio Toggle */}
-          <button
-            onClick={toggleSound}
-            className="w-9 h-9 rounded-xl border border-zinc-200 hover:bg-zinc-100 flex items-center justify-center text-zinc-600 transition-colors"
-            title={isMuted ? "Aktifkan Efek Suara" : "Matikan Suara"}
-          >
-            {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4 text-[#3C22BB]" />}
-          </button>
+      {/* 1. Header Kuis: Waktu Mundur, Toggle Suara, dan Indikator Integritas */}
+      <Card className="p-4 rounded-2xl border-zinc-200/90 bg-white shadow-xs space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="min-w-0 flex-1 space-y-1.5">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#3C22BB] bg-[#3C22BB]/10 px-2 py-0.5 rounded-full">
+                Soal {currentIndex + 1} dari {totalQuestions}
+              </span>
 
-          {/* Timer Mundur */}
-          <div
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border font-mono font-bold text-xs sm:text-sm ${
-              isTimeUrgent
-                ? "bg-red-50 border-red-300 text-red-600 animate-pulse"
-                : "bg-zinc-50 border-zinc-200 text-zinc-800"
-            }`}
-          >
-            <Clock className="w-4 h-4 text-zinc-500" />
-            <span>
-              {String(minutes).padStart(2, "0")}:{String(seconds).padStart(2, "0")}
-            </span>
+              {/* Status Integritas Ujian Bertingkat */}
+              {violationCount === 0 ? (
+                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                  Mode Ujian Jujur • Fokus Terjaga (0/3)
+                </span>
+              ) : violationCount < 3 ? (
+                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-full animate-pulse">
+                  <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+                  Mode Ujian Jujur • Peringatan Pindah Tab ({violationCount}/3)
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-700 bg-rose-50 border border-rose-200 px-2.5 py-0.5 rounded-full">
+                  <ShieldAlert className="w-3.5 h-3.5 text-rose-600" />
+                  Mode Ujian Jujur • Batas Pelanggaran (3/3)
+                </span>
+              )}
+            </div>
+
+            <h2 className="text-sm font-bold text-zinc-900 truncate">
+              {quiz.title}
+            </h2>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+            {/* Audio Toggle */}
+            <button
+              onClick={toggleSound}
+              className="w-9 h-9 rounded-xl border border-zinc-200 hover:bg-zinc-100 flex items-center justify-center text-zinc-600 transition-colors"
+              title={isMuted ? "Aktifkan Efek Suara" : "Matikan Suara"}
+            >
+              {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4 text-[#3C22BB]" />}
+            </button>
+
+            {/* Timer Mundur */}
+            <div
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border font-mono font-bold text-xs sm:text-sm ${
+                isTimeUrgent
+                  ? "bg-red-50 border-red-300 text-red-600 animate-pulse"
+                  : "bg-zinc-50 border-zinc-200 text-zinc-800"
+              }`}
+            >
+              <Clock className="w-4 h-4 text-zinc-500" />
+              <span>
+                {String(minutes).padStart(2, "0")}:{String(seconds).padStart(2, "0")}
+              </span>
+            </div>
           </div>
         </div>
       </Card>

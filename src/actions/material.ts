@@ -9,6 +9,7 @@ import { getCategoryStats } from "@/services/material"
 
 const markCompleteSchema = z.object({
   materialId: z.string().min(1, "ID materi diperlukan"),
+  startedAt: z.coerce.number().optional(),
 })
 
 export async function markMaterialComplete(
@@ -23,12 +24,25 @@ export async function markMaterialComplete(
 
   const parsed = markCompleteSchema.safeParse({
     materialId: formData.get("materialId"),
+    startedAt: formData.get("startedAt"),
   })
   if (!parsed.success) {
     return { success: false, error: "ID materi tidak valid" }
   }
 
-  const { materialId } = parsed.data
+  const { materialId, startedAt } = parsed.data
+
+  // Validasi waktu membaca minimal di sisi server (minimal 20 detik untuk mencegah bypass skrip/bot)
+  if (startedAt) {
+    const elapsedSeconds = (Date.now() - startedAt) / 1000
+    if (elapsedSeconds < 20) {
+      return {
+        success: false,
+        error:
+          "Waktu membaca terlalu singkat. Harap baca materi dengan saksama sebelum mengklaim poin.",
+      }
+    }
+  }
 
   try {
     const material = await prisma.learningMaterial.findUnique({

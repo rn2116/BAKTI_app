@@ -17,6 +17,7 @@ import {
   GraduationCap,
   ShieldCheck,
   CheckCircle2,
+  AlertTriangle,
 } from "lucide-react"
 
 export interface StudentRecapReportItem {
@@ -34,6 +35,8 @@ export interface StudentRecapReportItem {
   level: number
   predikat: string
   totalAttempts: number
+  totalViolations?: number
+  autoSubmittedCount?: number
 }
 
 interface AdminLaporanClientProps {
@@ -269,6 +272,7 @@ export function AdminLaporanClient({
                 <th className="px-4 py-3.5 text-center">Rata-rata</th>
                 <th className="px-4 py-3.5 text-center">XP / Level</th>
                 <th className="px-4 py-3.5">Predikat Karakter</th>
+                <th className="px-4 py-3.5 text-center">Integritas</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-100">
@@ -310,12 +314,25 @@ export function AdminLaporanClient({
                   <td className="px-4 py-3.5">
                     {getPredicateBadge(item.predikat)}
                   </td>
+                  <td className="px-4 py-3.5 text-center">
+                    {(item.totalViolations ?? 0) === 0 ? (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                        Jujur ✓
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                        <AlertTriangle className="w-3 h-3 text-rose-600" />
+                        {item.totalViolations}x Pindah Tab
+                      </span>
+                    )}
+                  </td>
                 </tr>
               ))}
 
               {filteredReports.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="py-12 text-center text-zinc-400 text-xs">
+                  <td colSpan={10} className="py-12 text-center text-zinc-400 text-xs">
                     Tidak ada data capaian literasi siswa yang sesuai dengan filter.
                   </td>
                 </tr>

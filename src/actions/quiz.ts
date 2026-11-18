@@ -9,6 +9,8 @@ import { calculateXPForAttempt } from "@/services/quiz"
 const submitQuizSchema = z.object({
   quizId: z.string().min(1, "ID kuis diperlukan"),
   answers: z.string(), // JSON: [{ questionId, selectedIndex }]
+  violationCount: z.coerce.number().min(0).default(0),
+  isAutoSubmitted: z.boolean().default(false),
 })
 
 export async function submitQuizAttempt(
@@ -24,6 +26,8 @@ export async function submitQuizAttempt(
   const parsed = submitQuizSchema.safeParse({
     quizId: formData.get("quizId"),
     answers: formData.get("answers"),
+    violationCount: formData.get("violationCount") || 0,
+    isAutoSubmitted: formData.get("isAutoSubmitted") === "true",
   })
   if (!parsed.success) {
     return { success: false, error: "Data kuis tidak valid" }
@@ -89,7 +93,9 @@ export async function submitQuizAttempt(
           passed,
           xpEarned,
           completedAt: new Date(),
-        },
+          violationCount: parsed.data.violationCount,
+          isAutoSubmitted: parsed.data.isAutoSubmitted,
+        } as any,
       })
 
       for (const rec of answerRecords) {

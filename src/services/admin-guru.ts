@@ -53,7 +53,7 @@ export async function getClassWithStudents(classId: string) {
 
 // Rekap Nilai untuk Guru
 export async function getQuizRecapBySchoolOrTeacher(schoolId?: string, teacherId?: string) {
-  return prisma.quizAttempt.findMany({
+  return (prisma.quizAttempt.findMany as any)({
     where: {
       ...(schoolId ? { user: { schoolId } } : {}),
       ...(teacherId ? { quiz: { createdBy: teacherId } } : {}),
@@ -375,7 +375,7 @@ export async function getCharacterMatrices() {
 // ========================
 
 export async function getAllStudentRecapReport(regencyId?: string, schoolId?: string) {
-  const students = await prisma.masterUser.findMany({
+  const students = await (prisma.masterUser.findMany as any)({
     where: {
       role: Role.SISWA,
       isActive: true,
@@ -397,6 +397,8 @@ export async function getAllStudentRecapReport(regencyId?: string, schoolId?: st
           maxScore: true,
           passed: true,
           startedAt: true,
+          violationCount: true,
+          isAutoSubmitted: true,
           quiz: {
             select: {
               id: true,
@@ -410,12 +412,19 @@ export async function getAllStudentRecapReport(regencyId?: string, schoolId?: st
     orderBy: [{ school: { name: "asc" } }, { fullName: "asc" }],
   })
 
-  return students.map((student) => {
+  return (students as any[]).map((student: any) => {
     let scoreBahasa = 0, maxBahasa = 0
     let scoreKarakter = 0, maxKarakter = 0
     let scoreBudaya = 0, maxBudaya = 0
+    let totalViolations = 0
+    let autoSubmittedCount = 0
 
-    for (const att of student.quizAttempts) {
+    for (const att of (student.quizAttempts || [])) {
+      totalViolations += att.violationCount ?? 0
+      if (att.isAutoSubmitted) {
+        autoSubmittedCount++
+      }
+
       if (att.quiz.category === Category.BAHASA_INDONESIA) {
         scoreBahasa += att.score
         maxBahasa += att.maxScore
@@ -456,7 +465,9 @@ export async function getAllStudentRecapReport(regencyId?: string, schoolId?: st
       xp: student.xp,
       level: student.level,
       predikat,
-      totalAttempts: student.quizAttempts.length,
+      totalAttempts: (student.quizAttempts || []).length,
+      totalViolations,
+      autoSubmittedCount,
     }
   })
 }
