@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { CategoryBadge } from "@/components/shared/CategoryBadge"
 import { ResponsiveTable } from "@/components/shared/ResponsiveTable"
-import { Search, Filter, Award } from "lucide-react"
+import { Search, Filter, Award, CheckCircle2, AlertTriangle, ShieldCheck } from "lucide-react"
 
 interface RecapAttemptItem {
   id: string
@@ -14,6 +14,8 @@ interface RecapAttemptItem {
   maxScore: number
   passed: boolean
   startedAt: Date
+  violationCount?: number
+  isAutoSubmitted?: boolean
   user: {
     fullName: string
     nisn: string | null
@@ -66,6 +68,10 @@ export function GuruRekapClient({ recapAttempts, classList }: GuruRekapClientPro
   const exportData = filtered.map((item) => {
     const pct = item.maxScore > 0 ? Math.round((item.score / item.maxScore) * 100) : 0
     const predikat = getPredikat(pct)
+    const hasViolations = (item.violationCount ?? 0) > 0
+    const integrityLabel = hasViolations
+      ? `Pindah Tab (${item.violationCount}x)${item.isAutoSubmitted ? " [Otomatis]" : ""}`
+      : `Jujur ✓${item.isAutoSubmitted ? " [Otomatis]" : ""}`
 
     return {
       nama: item.user.fullName,
@@ -77,6 +83,7 @@ export function GuruRekapClient({ recapAttempts, classList }: GuruRekapClientPro
       skor: item.score,
       skorMaksimal: item.maxScore,
       status: item.passed ? `LULUS (${predikat.label})` : "REMIDI",
+      integritas: integrityLabel,
       tanggal: new Date(item.startedAt).toLocaleString("id-ID"),
     }
   })
@@ -162,6 +169,25 @@ export function GuruRekapClient({ recapAttempts, classList }: GuruRekapClientPro
                       {predikat.label}
                     </span>
                   )}
+                  {/* Status Integritas Siswa */}
+                  <div className="flex items-center gap-1 mt-0.5">
+                    {(row.violationCount ?? 0) === 0 ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        <CheckCircle2 className="w-2.5 h-2.5 text-emerald-600" />
+                        Jujur ✓
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                        <AlertTriangle className="w-2.5 h-2.5 text-rose-600" />
+                        Pindah Tab ({row.violationCount}x)
+                      </span>
+                    )}
+                    {row.isAutoSubmitted && (
+                      <span className="text-[8px] font-semibold px-1 py-0.2 rounded bg-zinc-100 text-zinc-600 border border-zinc-200">
+                        Otomatis
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -206,6 +232,7 @@ export function GuruRekapClient({ recapAttempts, classList }: GuruRekapClientPro
               <th className="py-3 px-4">Kategori</th>
               <th className="py-3 px-4 text-center">Nilai Akhir</th>
               <th className="py-3 px-4 text-center">Predikat Kelulusan</th>
+              <th className="py-3 px-4 text-center">Integritas</th>
               <th className="py-3 px-4 text-right">Waktu</th>
             </tr>
           </thead>
@@ -250,6 +277,26 @@ export function GuruRekapClient({ recapAttempts, classList }: GuruRekapClientPro
                       )}
                     </div>
                   </td>
+                  <td className="py-3 px-4 text-center">
+                    <div className="inline-flex flex-col items-center gap-1">
+                      {(row.violationCount ?? 0) === 0 ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                          <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                          Jujur ✓
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                          <AlertTriangle className="w-3 h-3 text-rose-600" />
+                          Pindah Tab ({row.violationCount}x)
+                        </span>
+                      )}
+                      {row.isAutoSubmitted && (
+                        <span className="text-[9px] font-semibold px-1.5 py-0.2 rounded bg-zinc-100 text-zinc-600 border border-zinc-200">
+                          Otomatis
+                        </span>
+                      )}
+                    </div>
+                  </td>
                   <td className="py-3 px-4 text-zinc-500 text-[11px] text-right">
                     {new Date(row.startedAt).toLocaleDateString("id-ID")}
                   </td>
@@ -259,7 +306,7 @@ export function GuruRekapClient({ recapAttempts, classList }: GuruRekapClientPro
 
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={7} className="py-12 text-center text-zinc-400">
+                <td colSpan={8} className="py-12 text-center text-zinc-400">
                   Tidak ada data rekapitulasi nilai yang cocok dengan filter.
                 </td>
               </tr>

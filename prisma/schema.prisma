@@ -209,18 +209,20 @@ model QuizQuestion {
 }
 
 model QuizAttempt {
-  id          String   @id @db.Char(36)
-  userId      String   @db.Char(36)
-  quizId      String   @db.Char(36)
-  score       Int      @default(0)
-  maxScore    Int      @default(0)
-  passed      Boolean  @default(false)
-  xpEarned    Int      @default(0)
-  startedAt   DateTime @default(now())
-  completedAt DateTime?
-  timeSpent   Int      @default(0)
+  id              String    @id @db.Char(36)
+  userId          String    @db.Char(36)
+  quizId          String    @db.Char(36)
+  score           Int       @default(0)
+  maxScore        Int       @default(0)
+  passed          Boolean   @default(false)
+  xpEarned        Int       @default(0)
+  startedAt       DateTime  @default(now())
+  completedAt     DateTime?
+  timeSpent       Int       @default(0)
+  violationCount  Int       @default(0) @map("violation_count")
+  isAutoSubmitted Boolean   @default(false) @map("is_auto_submitted")
 
-  user        MasterUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user            MasterUser @relation(fields: [userId], references: [id], onDelete: Cascade)
   quiz        Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
   answers     QuizAttemptAnswer[]
   certificates UserCertificate[]

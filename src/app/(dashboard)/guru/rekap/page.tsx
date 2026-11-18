@@ -22,7 +22,7 @@ export default async function GuruRekapPage() {
   }
   if (classList.length === 0) {
     classList = Array.from(
-      new Set(recapAttempts.map((a) => a.user.class?.name).filter(Boolean) as string[])
+      new Set(recapAttempts.map((a: any) => a.user.class?.name).filter(Boolean) as string[])
     )
   }
 
@@ -33,7 +33,7 @@ export default async function GuruRekapPage() {
         description="Pantau hasil pengerjaan kuis siswa per kelas & kategori, serta unduh laporan resmi dalam format Excel."
       />
 
-      <GuruRekapClient recapAttempts={recapAttempts} classList={classList} />
+      <GuruRekapClient recapAttempts={recapAttempts as any} classList={classList} />
     </div>
   )
 }
