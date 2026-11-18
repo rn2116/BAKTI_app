@@ -1,3 +1,5 @@
+import { getCurrentUser } from "@/lib/auth"
+import { redirect } from "next/navigation"
 import AppShell from "@/components/layout/AppShell"
 
 export default async function DashboardLayout({
@@ -5,5 +7,10 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode
 }) {
-  return <AppShell>{children}</AppShell>
+  const user = await getCurrentUser()
+  if (!user) {
+    redirect("/masuk")
+  }
+
+  return <AppShell user={user}>{children}</AppShell>
 }

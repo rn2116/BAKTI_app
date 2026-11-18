@@ -6,6 +6,7 @@ import { AuthUser } from "@/types"
 import { LogOut } from "lucide-react"
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog"
 import { NotificationBell } from "@/components/layout/NotificationBell"
+import { TopHeaderProgressBar } from "@/components/layout/TopHeaderProgressBar"
 
 interface MobileTopHeaderProps {
   user: AuthUser
@@ -22,7 +23,10 @@ export function MobileTopHeader({ user }: MobileTopHeaderProps) {
 
   return (
     <>
-      <header className="sticky top-0 inset-x-0 h-14 bg-white/95 backdrop-blur-md border-b border-zinc-200 px-4 flex items-center justify-between z-40 md:hidden shadow-xs">
+      <header className="sticky top-0 inset-x-0 h-14 bg-white/95 backdrop-blur-md border-b border-zinc-200 px-4 flex items-center justify-between z-40 md:hidden shadow-xs relative">
+        {/* Reading Progress Bar di Tepi Paling Bawah Header Mobile */}
+        <TopHeaderProgressBar />
+
         {/* Sisi Kiri: Logo + Judul */}
         <div className="flex items-center gap-2.5 min-w-0">
           <div className="w-8 h-8 rounded-lg bg-[#3C22BB] text-white flex items-center justify-center font-extrabold text-xs shrink-0 shadow-xs">

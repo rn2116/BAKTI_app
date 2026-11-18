@@ -1,18 +1,11 @@
-import { SignJWT, jwtVerify } from "jose"
+import { cache } from "react"
 import { compare, hash } from "bcryptjs"
 import { cookies } from "next/headers"
 import { prisma } from "./prisma"
+import { signToken, verifyToken, type JWTPayload } from "./auth-token"
 
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET ?? "development-secret-change-me"
-)
+export { signToken, verifyToken, type JWTPayload }
 const COOKIE_NAME = "bk_token"
-
-export type JWTPayload = {
-  userId: string
-  email: string
-  role: string
-}
 
 export async function hashPassword(password: string): Promise<string> {
   return hash(password, 10)
@@ -23,23 +16,6 @@ export async function verifyPassword(
   hashed: string
 ): Promise<boolean> {
   return compare(password, hashed)
-}
-
-export async function signToken(payload: JWTPayload): Promise<string> {
-  return new SignJWT(payload)
-    .setProtectedHeader({ alg: "HS256" })
-    .setIssuedAt()
-    .setExpirationTime(process.env.JWT_EXPIRES_IN ?? "7d")
-    .sign(JWT_SECRET)
-}
-
-export async function verifyToken(token: string): Promise<JWTPayload | null> {
-  try {
-    const { payload } = await jwtVerify(token, JWT_SECRET)
-    return payload as unknown as JWTPayload
-  } catch {
-    return null
-  }
 }
 
 export async function setAuthCookie(token: string): Promise<void> {
@@ -71,7 +47,7 @@ export async function getSession(): Promise<JWTPayload | null> {
   return verifyToken(token)
 }
 
-export async function getCurrentUser() {
+export const getCurrentUser = cache(async () => {
   const session = await getSession()
   if (!session) return null
   return prisma.masterUser.findUnique({
@@ -88,6 +64,6 @@ export async function getCurrentUser() {
       isActive: true,
     },
   })
-}
+})
 
 export type AuthUser = Awaited<ReturnType<typeof getCurrentUser>>

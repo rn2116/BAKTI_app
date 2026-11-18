@@ -76,13 +76,22 @@ export default async function SiswaDashboardPage() {
                 >
                   <div>
                     {/* Header Ilustrasi Vektor Khas Sulawesi Tengah */}
-                    <SultengIllustration
-                      theme={getThemeByIndexAndCategory(mat.category, idx)}
-                      className="h-28"
-                    />
+                    <div className="relative">
+                      <SultengIllustration
+                        theme={getThemeByIndexAndCategory(mat.category, idx)}
+                        className="h-28"
+                      />
+                      <div className="absolute top-2.5 left-2.5">
+                        <CategoryBadge category={mat.category} variant="overlay" />
+                      </div>
+                    </div>
+
                     <div className="p-3.5 space-y-2">
                       <div className="flex items-center justify-between">
-                        <CategoryBadge category={mat.category} />
+                        <span className="text-[11px] text-zinc-500 font-medium flex items-center gap-1">
+                          <Clock className="w-3 h-3 text-zinc-400" />
+                          <span>{mat.readingTime} Menit Baca</span>
+                        </span>
                         {mat.isCompleted && (
                           <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full">
                             Selesai ✓
@@ -92,10 +101,6 @@ export default async function SiswaDashboardPage() {
                       <h3 className="font-bold text-xs sm:text-sm text-zinc-900 line-clamp-2 leading-snug">
                         {mat.title}
                       </h3>
-                      <div className="flex items-center gap-1 text-[11px] text-zinc-500 font-medium">
-                        <Clock className="w-3 h-3 text-zinc-400" />
-                        <span>{mat.readingTime} Menit Baca</span>
-                      </div>
                     </div>
                   </div>
 

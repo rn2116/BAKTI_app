@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma"
+import { unstable_cache } from "next/cache"
 import { Category, Role } from "@prisma/client"
 
 // ========================
@@ -233,21 +234,29 @@ export async function getAdminRegencyStats() {
 // ADMIN - SEKOLAH & REGENCY
 // ========================
 
-export async function getAllSchoolsAdmin() {
-  return prisma.masterSchool.findMany({
-    include: {
-      regency: true,
-      _count: { select: { classes: true, users: true } },
-    },
-    orderBy: { name: "asc" },
-  })
-}
+export const getAllSchoolsAdmin = unstable_cache(
+  async () => {
+    return prisma.masterSchool.findMany({
+      include: {
+        regency: true,
+        _count: { select: { classes: true, users: true } },
+      },
+      orderBy: { name: "asc" },
+    })
+  },
+  ["all_schools_admin"],
+  { tags: ["master_schools"], revalidate: 3600 }
+)
 
-export async function getAllRegencies() {
-  return prisma.masterRegency.findMany({
-    orderBy: { name: "asc" },
-  })
-}
+export const getAllRegencies = unstable_cache(
+  async () => {
+    return prisma.masterRegency.findMany({
+      orderBy: { name: "asc" },
+    })
+  },
+  ["all_regencies_list"],
+  { tags: ["master_regencies"], revalidate: 3600 }
+)
 
 // ========================
 // ADMIN - KELAS
@@ -294,7 +303,14 @@ export async function getAllUsersAdmin() {
 export async function getAllContentForModeration() {
   const [materials, quizzes] = await Promise.all([
     prisma.learningMaterial.findMany({
-      include: {
+      select: {
+        id: true,
+        title: true,
+        category: true,
+        description: true,
+        readingTime: true,
+        isPublished: true,
+        createdAt: true,
         creator: { select: { fullName: true, role: true } },
         _count: { select: { quizzes: true } },
       },

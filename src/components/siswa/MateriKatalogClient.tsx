@@ -97,7 +97,7 @@ export function MateriKatalogClient({
                 <div className="relative">
                   <SultengIllustration theme={illustrationTheme} className="h-32" />
                   <div className="absolute top-3 left-3">
-                    <CategoryBadge category={m.category} />
+                    <CategoryBadge category={m.category} variant="overlay" />
                   </div>
                   <div className="absolute top-3 right-3">
                     <span className="inline-flex items-center gap-1 text-[11px] font-extrabold text-amber-900 bg-amber-200/90 backdrop-blur-md px-2 py-0.5 rounded-full border border-amber-300 shadow-xs">

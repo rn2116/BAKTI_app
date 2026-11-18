@@ -251,8 +251,27 @@ async function main() {
       category: Category.BAHASA_INDONESIA,
       description:
         "Mempelajari Ejaan yang Disempurnakan (EYD) V, tata bahasa, dan pengunaannya dalam kalimat Bahasa Indonesia yang baik dan benar sesuai KBBI.",
-      content:
-        "<h2>Ejaan yang Disempurnakan V (EYD V)</h2><p>EYD V adalah ejaan resmi Bahasa Indonesia yang berlaku saat ini. Beberapa aturan penting meliputi penulisan huruf besar, kata ganda, imbuhan, dan gabungan kata.</p><h3>Contoh Aturan</h3><ul><li>Kata benda diawali huruf besar jika nama khusus, misalnya: Palu, Donggala, Lore Lindu.</li><li>Imbuhan di- dan ke-...-an ditulis langsung dengan kata dasar, misalnya: <i>dibaca</i>, <i>kemewahan</i>.</li><li>Kata ganda ditulis penuh dengan hubung kali, misalnya: <i>buku-buku</i>, <i>mata-mata</i>.</li></ul>",
+      content: `## Ejaan Bahasa Indonesia yang Disempurnakan (EYD V)
+
+Bahasa Indonesia adalah identitas pemersatu bangsa yang dinamis dan terus berkembang seiring peradaban literasi modern. Pedoman Umum Ejaan Bahasa Indonesia yang Disempurnakan Edisi V (EYD V) diterbitkan oleh Badan Pengembangan dan Pembinaan Bahasa sebagai acuan resmi tata tulis yang baku dan berwibawa bagi seluruh penutur bahasa Indonesia.
+
+Penerapan kaidah ejaan yang cermat bukan sekadar formalitas akademik, melainkan wujud penghormatan kita terhadap ketertiban nalar berbahasa dan kejelasan dalam menyampaikan gagasan.
+
+### Prinsip Penulisan Huruf Kapital dan Kata Turunan
+
+Dalam kaidah EYD V, terdapat beberapa pembaruan dan penegasan penting yang kerap menjadi tantangan bagi para pembelajar di bangku sekolah:
+
+- Nama Geografi dan Unsur Wilayah: Huruf kapital digunakan pada awal nama tempat yang merupakan nama diri geografi spesifik, seperti Kota Palu, Danau Poso, Teluk Tomini, dan Lembah Bada.
+- Kata Berimbuhan Gabung: Kata yang mendapat imbuhan awalan dan akhiran sekaligus wajib ditulis serangkai tanpa spasi, misalnya mempertanggungjawabkan dan menindaklanjuti.
+- Bentuk Terikat dan Unsur Asing: Unsur terikat seperti pasca-, antar-, multi-, dan sub- ditulis serangkai dengan kata dasar yang mengikutinya, misalnya pascabencana dan antarsiswa.
+
+Contoh Aturan:
+- Penulisan Preposisi vs Awalan: Kata depan 'di' yang menunjukkan tempat atau arah ditulis terpisah (di sekolah, di Palu), sedangkan awalan 'di-' pembentuk kata kerja pasif wajib ditulis serangkai (dibaca, dipelajari, ditulis).
+- Penulisan Partikel: Partikel 'pun' yang bermakna 'juga' ditulis terpisah (siswa pun antusias), sedangkan yang telah menjadi kata penghubung tetap ditulis serangkai (walaupun, meskipun, bagaimanapun).
+- Penulisan Kata Ulang: Kata ulang ditulis penuh dengan tanda hubung tanpa spasi (buku-buku, kata-kata, bersama-sama).
+
+### Catatan Penting
+Kamus Besar Bahasa Indonesia (KBBI) Daring dan Pedoman EYD V dari Balai Bahasa Provinsi Sulawesi Tengah merupakan rujukan valid untuk memastikan kebakuan istilah daerah yang diserap ke dalam kosakata nasional.`,
       readingTime: 12,
       orderIndex: 1,
       isPublished: true,
@@ -268,8 +287,29 @@ async function main() {
       category: Category.KARAKTER,
       description:
         "Mengenal enam pilar pendidikan karakter: religiositas, integritas, nasionalisme, gotong royong, kemandirian, dan integritas sosial.",
-      content:
-        "<h2>Pendidikan Karakter</h2><p>Pendidikan karakter adalah upaya untuk menanamkan nilai-nilai luhur kepada peserta didik agar menjadi insan yang berakhlak mulia.</p><h3>Enam Pilar Karakter</h3><ol><li>Religius: taat dalam beragama dan menghormati agama lain.</li><li>Jujur: berkomunikasi dan bertindak dengan jujur.</li><li>Disiplin: taat pada aturan dan waktu.</li><li>Keras keras (martabat): berusaha keras dalam hal positif.</li><li>Gotong royong: saling membantu dan gotong royong.</li><li>Kepedulian sosial: peduli dengan sesama.</li></ol>",
+      content: `## Membangun Karakter Luhur Generasi Bangsa
+
+Pendidikan karakter merupakan fondasi utama dalam mencetak generasi penerus yang tidak hanya cerdas secara intelektual, tetapi juga berakhlak mulia, berintegritas tinggi, dan memiliki empati mendalam terhadap lingkungan sekitarnya. Karakter luhur adalah kompas moral yang membimbing tindakan setiap individu dalam kehidupan bermasyarakat.
+
+Di tengah era globalisasi dan transformasi digital, generasi muda ditantang untuk tetap teguh memegang nilai-nilai luhur Pancasila dan kearifan budaya bangsa Indonesia.
+
+### Enam Pilar Utama Penguatan Karakter Siswa
+
+Kementerian Pendidikan dan Balai Bahasa merumuskan enam pilar karakter pokok yang wajib tercermin dalam sikap keseharian setiap pelajar:
+
+- Religiositas dan Keimanan: Menjalankan ajaran agama dengan penuh keikhlasan serta senantiasa menghormati keberagaman keyakinan di lingkungan sekolah.
+- Integritas dan Kejujuran: Bersikap tulus, tidak menyontek saat ujian, dan berani berkata benar meskipun menghadapi tantangan.
+- Kemandirian Belajar: Memiliki inisiatif tinggi untuk mengasah keterampilan, tidak mudah bergantung pada orang lain, dan tekun memecahkan masalah.
+- Gotong Royong: Menjunjung tinggi semangat kerja sama, tolong-menolong tanpa pamrih, dan aktif dalam kegiatan sosial kebaikan.
+- Nasionalisme: Cinta tanah air, bangga menggunakan bahasa Indonesia, serta menghargai perjuangan para pahlawan bangsa.
+- Tanggung Jawab Sosial: Memiliki kepedulian terhadap kelestarian alam dan menjaga kerukunan antarsesama warga.
+
+Contoh Aturan:
+- Penerapan Kejujuran Akademik: Selalu mencantumkan sumber rujukan saat menyusun tugas dan pantang meniru karya teman demi menjaga kehormatan diri.
+- Disiplin Menghargai Waktu: Hadir tepat waktu di kelas, mengumpulkan tugas sebelum tenggat, dan membagi jadwal belajar serta istirahat secara seimbang.
+
+### Catatan Penting
+Karakter tidak dibentuk melalui kata-kata semata, melainkan dari pembiasaan tindakan nyata kecil yang dilakukan secara konsisten setiap hari di rumah, sekolah, dan lingkungan pergaulan.`,
       readingTime: 10,
       orderIndex: 2,
       isPublished: true,
@@ -285,8 +325,26 @@ async function main() {
       category: Category.BUDAYA_SULTENG,
       description:
         "Mengenal budaya khas Sulawesi Tengah: tenun Donggala, tari, bahasa, makanan tradisional, dan Taman Nasional Lore Lindu.",
-      content:
-        "<h2>Budaya Sulawesi Tengah</h2><p>Sulawesi Tengah memiliki keragaman budaya yang kaya, mulai dari tenun khas Donggala hingga megulith di Lore Lindu.</p><h3>Sarana Budaya</h3><ul><li><b>Tenun Donggala:</b> tenun khas dengan motif tenun marun dan emas, identitas warisan pesona Sulawesi Tengah.</li><li><b>Taman Nasional Lore Lindu:</b> merupakan situs warisan dunia dengan prasasti dan arca megulith.</li><li><b>Makanan tradisional:</b> sinonggi, gulo, dan kapurung.</li></ul>",
+      content: `## Menjelajahi Kekayaan Adat & Kearifan Lokal Sulawesi Tengah
+
+Provinsi Sulawesi Tengah merupakan surga peradaban di jantung Nusantara yang dianugerahi keindahan bentang alam luar biasa serta warisan kebudayaan yang kaya. Dari pesisir Teluk Palu, hamparan perbukitan Lembah Palu, perairan Danau Poso, hingga kemegahan megalitikum Lembah Napu dan Bada di kawasan Lore Lindu, bumi Tadulako menyimpan kearifan hidup yang tak ternilai harganya.
+
+Mengenal dan melestarikan budaya lokal adalah kewajiban generasi muda agar jati diri kedaerahan tidak lekang tergerus arus modernisasi.
+
+### Tiga Pusaka Budaya Kebanggaan Sulawesi Tengah
+
+Kearifan lokal masyarakat Sulawesi Tengah tercermin dalam berbagai karya seni, peninggalan purbakala, dan tradisi lisan yang hidup berdampingan secara harmonis:
+
+- Kain Tenun Donggala (Bomba): Tenunan tradisional khas Donggala yang dibuat dengan ketelitian jemari para penenun terampil. Motif bunga bomba, marun, dan emas melambangkan kemuliaan derajat budi pekerti dan keanggunan pemakainya.
+- Situs Megalitikum Lore Lindu: Terletak di kawasan Cagar Biosfer Lore Lindu, patung-patung batu purba seperti Arca Palindo di Lembah Bada adalah bukti peradaban agung prasejarah ribuan tahun silam yang diakui dunia internasional UNESCO.
+- Tradisi Kuliner Berkhasiat: Makanan khas seperti Kaledo (kaki lembu Donggala) berkuah asam jawa segar kaya rempah, Uve Mpoi, dan olahan Sagu Sinonggi yang sarat filosofi kebersamaan saat bersantap.
+
+Contoh Aturan:
+- Falsafah Sintuvu: Falsafah suku Kaili "Masintuvu Kita Maroso, Morambanga Kita Marisi" (Bersatu kita kuat, bersama kita teguh) mengajarkan prinsip musyawarah untuk mufakat dan solidaritas komunal dalam menghadapi setiap tantangan hidup.
+- Bahasa Daerah sebagai Identitas: Menguasai Bahasa Kaili, Pamona, Banggai, Saluan, dan Buol di samping mahir berbahasa Indonesia adalah kekayaan bilingualisme yang patut dibanggakan.
+
+### Catatan Penting
+Pelestarian bahasa daerah dan sastra lisan Sulawesi Tengah kini menjadi prioritas Balai Bahasa Provinsi Sulawesi Tengah melalui program Revitalisasi Bahasa Daerah (RBD) agar tetap dituturkan oleh anak cucu kita.`,
       readingTime: 10,
       orderIndex: 3,
       isPublished: true,

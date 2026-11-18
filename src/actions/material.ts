@@ -1,4 +1,5 @@
 "use server"
+import { revalidatePath } from "next/cache"
 import { randomUUID } from "crypto"
 import { z } from "zod"
 import { prisma } from "@/lib/prisma"
@@ -32,7 +33,7 @@ export async function markMaterialComplete(
   try {
     const material = await prisma.learningMaterial.findUnique({
       where: { id: materialId },
-      select: { id: true, title: true, category: true },
+      select: { id: true, title: true, category: true, slug: true },
     })
     if (!material) {
       return { success: false, error: "Materi tidak ditemukan" }
@@ -70,17 +71,31 @@ export async function markMaterialComplete(
         })
       }
 
-      await tx.masterUser.update({
+      const updatedUser = await tx.masterUser.update({
         where: { id: session.userId },
         data: { xp: { increment: XP_COMPLETE_MATERIAL } },
+        select: { xp: true },
+      })
+
+      const newLevel = Math.max(1, Math.floor(updatedUser.xp / 100) + 1)
+      await tx.masterUser.update({
+        where: { id: session.userId },
+        data: { level: newLevel },
       })
     })
 
     const stats = await getCategoryStats(session.userId)
     const category = stats.find((s) => s.category === material.category)
     if (category && category.total > 0 && category.done === category.total) {
-      // Semua materi dalam kategori selesai — bisa diberikan badge di sini
-      // (badge award logic dipanggil dari action kuis / terpisah)
+      // Semua materi dalam kategori selesai
+    }
+
+    // Sinkronisasi XP & Level ke seluruh layout, header, sidebar, dan dasbor secara instan
+    revalidatePath("/", "layout")
+    revalidatePath("/siswa")
+    revalidatePath("/siswa/materi")
+    if (material.slug) {
+      revalidatePath(`/siswa/materi/${material.slug}`)
     }
 
     return { success: true }
@@ -89,3 +104,6 @@ export async function markMaterialComplete(
     return { success: false, error: "Gagal menyimpan progres belajar" }
   }
 }
+
+// Alias fungsi untuk kompatibilitas
+export const completeMaterialAction = markMaterialComplete

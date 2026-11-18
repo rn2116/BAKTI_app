@@ -67,10 +67,81 @@ function getLevelTitle(level: number): string {
 }
 
 export async function getStudentDashboardData(userId: string): Promise<StudentDashboardData> {
-  const user = await prisma.masterUser.findUnique({
-    where: { id: userId },
-    select: { id: true, fullName: true, xp: true, level: true },
-  })
+  // Parallel Queries (Promise.all) & Selective Field Fetching untuk Kecepatan Maksimal
+  const [
+    user,
+    allMaterials,
+    userMaterialProgress,
+    userQuizAttempts,
+    totalQuizzesCount,
+    masterBadges,
+    userBadges,
+  ] = await Promise.all([
+    prisma.masterUser.findUnique({
+      where: { id: userId },
+      select: { id: true, fullName: true, xp: true, level: true },
+    }),
+    prisma.learningMaterial.findMany({
+      where: { isPublished: true },
+      orderBy: { orderIndex: "asc" },
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        category: true,
+        readingTime: true,
+        orderIndex: true,
+      },
+    }),
+    prisma.userMaterialProgress.findMany({
+      where: { userId },
+      select: {
+        id: true,
+        materialId: true,
+        status: true,
+        completedAt: true,
+        xpEarned: true,
+        updatedAt: true,
+        material: {
+          select: {
+            id: true,
+            title: true,
+            slug: true,
+            category: true,
+          },
+        },
+      },
+      orderBy: { updatedAt: "desc" },
+    }),
+    prisma.quizAttempt.findMany({
+      where: { userId },
+      select: {
+        id: true,
+        score: true,
+        maxScore: true,
+        passed: true,
+        xpEarned: true,
+        startedAt: true,
+        quiz: {
+          select: {
+            id: true,
+            title: true,
+          },
+        },
+      },
+      orderBy: { startedAt: "desc" },
+    }),
+    prisma.quiz.count({ where: { isPublished: true } }),
+    prisma.masterBadge.findMany({
+      where: { isActive: true },
+      select: { id: true, name: true },
+      take: 4,
+    }),
+    prisma.userBadge.findMany({
+      where: { userId },
+      select: { badgeId: true, earnedAt: true },
+    }),
+  ])
 
   if (!user) {
     throw new Error("Pengguna tidak ditemukan")
@@ -81,42 +152,12 @@ export async function getStudentDashboardData(userId: string): Promise<StudentDa
   const xpInCurrentLevel = user.xp % xpPerLevel
   const xpNeeded = xpPerLevel
 
-  // Ambil semua materi publik
-  const allMaterials = await prisma.learningMaterial.findMany({
-    where: { isPublished: true },
-    orderBy: { orderIndex: "asc" },
-    select: {
-      id: true,
-      title: true,
-      slug: true,
-      category: true,
-      readingTime: true,
-      orderIndex: true,
-    },
-  })
-
-  // Progres materi siswa
-  const userMaterialProgress = await prisma.userMaterialProgress.findMany({
-    where: { userId },
-    include: { material: true },
-    orderBy: { updatedAt: "desc" },
-  })
-
   const completedMaterialIds = new Set(
     userMaterialProgress
       .filter((p) => p.status === "SELESAI")
       .map((p) => p.materialId)
   )
 
-  // Riwayat kuis siswa
-  const userQuizAttempts = await prisma.quizAttempt.findMany({
-    where: { userId },
-    include: { quiz: true },
-    orderBy: { startedAt: "desc" },
-  })
-
-  // Kuis publik
-  const totalQuizzesCount = await prisma.quiz.count({ where: { isPublished: true } })
   const passedQuizzesCount = userQuizAttempts.filter((a) => a.passed).length
 
   // Progres per pilar materi
@@ -200,13 +241,6 @@ export async function getStudentDashboardData(userId: string): Promise<StudentDa
   }
 
   // Lencana (Badge)
-  const masterBadges = await prisma.masterBadge.findMany({
-    where: { isActive: true },
-    take: 4,
-  })
-  const userBadges = await prisma.userBadge.findMany({
-    where: { userId },
-  })
   const userBadgeIds = new Map(userBadges.map((b) => [b.badgeId, b.earnedAt]))
 
   const badgesSummary = masterBadges.map((b) => ({

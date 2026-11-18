@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
-import { verifyToken } from "@/lib/auth"
+import { verifyToken } from "@/lib/auth-token"
 
 const AUTH_ROUTES = ["/masuk", "/daftar"]
 const DASHBOARD_PREFIX: Record<string, string> = {

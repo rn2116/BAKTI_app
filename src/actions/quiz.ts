@@ -1,4 +1,5 @@
 "use server"
+import { revalidatePath } from "next/cache"
 import { randomUUID } from "crypto"
 import { z } from "zod"
 import { prisma } from "@/lib/prisma"
@@ -106,15 +107,28 @@ export async function submitQuizAttempt(
         })
       }
 
-      if (passed) {
-        await tx.masterUser.update({
+      if (passed && xpEarned > 0) {
+        const updatedUser = await tx.masterUser.update({
           where: { id: session.userId },
           data: { xp: { increment: xpEarned } },
+          select: { xp: true },
+        })
+
+        const newLevel = Math.max(1, Math.floor(updatedUser.xp / 100) + 1)
+        await tx.masterUser.update({
+          where: { id: session.userId },
+          data: { level: newLevel },
         })
       }
 
       return createdAttempt
     })
+
+    // Sinkronisasi XP & Level ke seluruh layout, header, sidebar, dan dasbor secara instan
+    revalidatePath("/", "layout")
+    revalidatePath("/siswa")
+    revalidatePath("/siswa/kuis")
+    revalidatePath("/siswa/peringkat")
 
     return { success: true, attemptId: attempt.id }
   } catch (error) {
@@ -122,3 +136,6 @@ export async function submitQuizAttempt(
     return { success: false, error: "Gagal menyimpan hasil kuis" }
   }
 }
+
+// Alias fungsi untuk kompatibilitas
+export const submitQuizAction = submitQuizAttempt
