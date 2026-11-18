@@ -34,13 +34,13 @@ interface GuruRekapClientProps {
 }
 
 function getPredikat(scorePercent: number): { label: string; badgeClass: string } {
-  if (scorePercent >= 88) {
-    return { label: "Sangat Baik", badgeClass: "bg-emerald-100 text-emerald-800 border-emerald-200" }
+  if (scorePercent >= 85) {
+    return { label: "Sangat Berkembang (SB)", badgeClass: "bg-emerald-100 text-emerald-800 border-emerald-200" }
   }
-  if (scorePercent >= 75) {
-    return { label: "Baik", badgeClass: "bg-blue-100 text-blue-800 border-blue-200" }
+  if (scorePercent >= 70) {
+    return { label: "Berkembang Sesuai Harapan (BSH)", badgeClass: "bg-blue-100 text-blue-800 border-blue-200" }
   }
-  return { label: "Perlu Bimbingan", badgeClass: "bg-amber-100 text-amber-800 border-amber-200" }
+  return { label: "Mulai Berkembang (MB)", badgeClass: "bg-amber-100 text-amber-800 border-amber-200" }
 }
 
 export function GuruRekapClient({ recapAttempts, classList }: GuruRekapClientProps) {

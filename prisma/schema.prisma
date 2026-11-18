@@ -19,6 +19,18 @@ enum Category {
   BUDAYA_SULTENG
 }
 
+enum RegionalLanguage {
+  KAILI
+  PAMONA
+  BANGGAI
+  BUNGKU
+  TOLITOLI
+  BUOL
+  SALUAN
+  MORI
+  TAA
+}
+
 model MasterRegency {
   id        String   @id @db.Char(36)
   name      String   @db.VarChar(100)
@@ -95,6 +107,7 @@ model MasterUser {
   certificates  UserCertificate[]
   createdMaterials LearningMaterial[] @relation("MaterialCreator")
   createdQuizzes   Quiz[]           @relation("QuizCreator")
+  characterMatrices CharacterMatrix[]
 
   @@index([role])
   @@index([schoolId])
@@ -149,18 +162,19 @@ model UserMaterialProgress {
 }
 
 model Quiz {
-  id          String     @id @db.Char(36)
-  title       String     @db.VarChar(200)
-  description String?    @db.Text
-  category    Category
-  materialId  String?    @db.Char(36)
-  timeLimit   Int        @default(30)
-  passingScore Int       @default(75)
-  xpReward    Int        @default(50)
-  isPublished Boolean    @default(true)
-  createdBy   String     @db.Char(36)
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  id               String            @id @db.Char(36)
+  title            String            @db.VarChar(200)
+  description      String?           @db.Text
+  category         Category
+  regionalLanguage RegionalLanguage? @map("regional_language")
+  materialId       String?           @db.Char(36)
+  timeLimit        Int               @default(30)
+  passingScore     Int               @default(75)
+  xpReward         Int               @default(50)
+  isPublished      Boolean           @default(true)
+  createdBy        String            @db.Char(36)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
 
   material    LearningMaterial? @relation(fields: [materialId], references: [id], onDelete: SetNull)
   creator     MasterUser @relation("QuizCreator", fields: [createdBy], references: [id], onDelete: Cascade)
@@ -168,26 +182,29 @@ model Quiz {
   attempts    QuizAttempt[]
 
   @@index([category])
+  @@index([regionalLanguage])
   @@index([materialId])
   @@index([isPublished])
   @@map("quizzes")
 }
 
 model QuizQuestion {
-  id          String   @id @db.Char(36)
-  quizId      String   @db.Char(36)
-  question    String   @db.Text
-  options     String   @db.Text // JSON array string (["a","b","c","d"])
-  correctIndex Int
-  explanation String?  @db.Text
-  points      Int      @default(10)
-  orderIndex  Int      @default(0)
-  createdAt   DateTime @default(now())
+  id               String            @id @db.Char(36)
+  quizId           String            @db.Char(36)
+  question         String            @db.Text
+  options          String            @db.Text // JSON array string (["a","b","c","d"])
+  correctIndex     Int
+  explanation      String?           @db.Text
+  points           Int               @default(10)
+  orderIndex       Int               @default(0)
+  regionalLanguage RegionalLanguage? @map("regional_language")
+  createdAt        DateTime          @default(now())
 
   quiz        Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
   answers     QuizAttemptAnswer[]
 
   @@index([quizId])
+  @@index([regionalLanguage])
   @@map("quiz_questions")
 }
 
@@ -283,4 +300,22 @@ model UserCertificate {
   @@index([materialId])
   @@index([certificateNo])
   @@map("user_certificates")
+}
+
+model CharacterMatrix {
+  id                  Int               @id @default(autoincrement()) @map("id_matrix")
+  indonesianCharacter String            @db.VarChar(150) @map("indonesian_character")
+  regionalLanguage    RegionalLanguage  @map("regional_language")
+  regionalTerm        String            @db.VarChar(200) @map("regional_term")
+  characterSource     String            @db.Text @map("character_source")
+  implementation      String            @db.Text @map("implementation")
+  createdBy           String?           @db.Char(36) @map("created_by")
+  createdAt           DateTime          @default(now()) @map("created_at")
+  updatedAt           DateTime          @updatedAt @map("updated_at")
+
+  creator             MasterUser?       @relation(fields: [createdBy], references: [id], onDelete: SetNull)
+
+  @@index([regionalLanguage])
+  @@index([indonesianCharacter])
+  @@map("character_matrices")
 }

@@ -6,7 +6,7 @@ import { z } from "zod"
 import { prisma } from "@/lib/prisma"
 import { getSession } from "@/lib/auth"
 import { hashPassword } from "@/lib/auth"
-import { Category, Role } from "@prisma/client"
+import { Category, Role, RegionalLanguage } from "@/types"
 
 type ActionState = { success: boolean; error?: string; message?: string }
 
@@ -85,8 +85,8 @@ const materialSchema = z.object({
 
 export async function saveMaterial(prevState: ActionState | null, formData: FormData): Promise<ActionState> {
   const session = await getSession()
-  if (!session || (session.role !== Role.GURU && session.role !== Role.ADMIN)) {
-    return { success: false, error: "Akses tidak diizinkan" }
+  if (!session || session.role !== Role.ADMIN) {
+    return { success: false, error: "Hanya Administrator Balai Bahasa yang berwenang mengelola materi literasi" }
   }
 
   const id = formData.get("id") as string | undefined
@@ -142,6 +142,7 @@ export async function saveMaterial(prevState: ActionState | null, formData: Form
       })
     }
 
+    revalidatePath("/admin/materi")
     revalidatePath("/guru/materi")
     revalidatePath("/siswa/materi")
     revalidatePath("/admin/konten")
@@ -154,12 +155,13 @@ export async function saveMaterial(prevState: ActionState | null, formData: Form
 
 export async function deleteMaterial(materialId: string): Promise<ActionState> {
   const session = await getSession()
-  if (!session || (session.role !== Role.GURU && session.role !== Role.ADMIN)) {
-    return { success: false, error: "Akses tidak diizinkan" }
+  if (!session || session.role !== Role.ADMIN) {
+    return { success: false, error: "Hanya Administrator Balai Bahasa yang berwenang menghapus materi" }
   }
 
   try {
     await prisma.learningMaterial.delete({ where: { id: materialId } })
+    revalidatePath("/admin/materi")
     revalidatePath("/guru/materi")
     revalidatePath("/siswa/materi")
     revalidatePath("/admin/konten")
@@ -170,21 +172,124 @@ export async function deleteMaterial(materialId: string): Promise<ActionState> {
 }
 
 // ---------------------------
-// GURU/ADMIN: KUIS & BANK SOAL CRUD
+// ADMIN: KUIS & BANK SOAL CRUD
 // ---------------------------
+const quizHeaderSchema = z.object({
+  id: z.string().optional(),
+  title: z.string().min(3, "Judul kuis minimal 3 karakter"),
+  description: z.string().optional().default(""),
+  category: z.nativeEnum(Category),
+  regionalLanguage: z.nativeEnum(RegionalLanguage).optional().nullable(),
+  materialId: z.string().optional().nullable(),
+  timeLimit: z.coerce.number().min(1, "Waktu minimal 1 menit").default(30),
+  passingScore: z.coerce.number().min(0).max(100, "KKM antara 0-100").default(75),
+  xpReward: z.coerce.number().min(0).default(50),
+  isPublished: z.boolean().default(true),
+})
+
+type QuizHeaderData = {
+  id?: string
+  title: string
+  description: string
+  category: Category
+  regionalLanguage?: RegionalLanguage | null
+  materialId?: string | null
+  timeLimit: number
+  passingScore: number
+  xpReward: number
+  isPublished: boolean
+}
+
+export async function saveQuizHeader(
+  prevState: ActionState | null,
+  formData: FormData
+): Promise<ActionState & { quizId?: string }> {
+  const session = await getSession()
+  if (!session || session.role !== Role.ADMIN) {
+    return { success: false, error: "Hanya Admin yang berwenang mengelola kuis" }
+  }
+
+  const id = (formData.get("id") as string) || undefined
+  const raw = {
+    id,
+    title: formData.get("title"),
+    description: (formData.get("description") as string) || "",
+    category: formData.get("category"),
+    regionalLanguage: (formData.get("regionalLanguage") as RegionalLanguage) || null,
+    materialId: (formData.get("materialId") as string) || null,
+    timeLimit: formData.get("timeLimit") || 30,
+    passingScore: formData.get("passingScore") || 75,
+    xpReward: formData.get("xpReward") || 50,
+    isPublished: formData.get("isPublished") === "true",
+  }
+
+  const parsed = quizHeaderSchema.safeParse(raw)
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.errors[0]?.message ?? "Input tidak valid" }
+  }
+
+  const quizData = parsed.data as QuizHeaderData
+
+  try {
+    let quizId = quizData.id
+    if (quizId) {
+      await (prisma.quiz.update as any)({
+        where: { id: quizId },
+        data: {
+          title: quizData.title,
+          description: quizData.description,
+          category: quizData.category,
+          regionalLanguage: quizData.regionalLanguage || null,
+          materialId: quizData.materialId || null,
+          timeLimit: quizData.timeLimit,
+          passingScore: quizData.passingScore,
+          xpReward: quizData.xpReward,
+          isPublished: quizData.isPublished,
+        },
+      })
+    } else {
+      quizId = randomUUID()
+      await (prisma.quiz.create as any)({
+        data: {
+          id: quizId,
+          title: quizData.title,
+          description: quizData.description,
+          category: quizData.category,
+          regionalLanguage: quizData.regionalLanguage || null,
+          materialId: quizData.materialId || null,
+          timeLimit: quizData.timeLimit,
+          passingScore: quizData.passingScore,
+          xpReward: quizData.xpReward,
+          isPublished: quizData.isPublished,
+          createdBy: session.userId,
+        },
+      })
+    }
+
+    revalidatePath("/admin/kuis")
+    revalidatePath(`/admin/kuis/${quizId}/soal`)
+    revalidatePath("/siswa/kuis")
+    return { success: true, message: "Kuis berhasil disimpan", quizId }
+  } catch (error) {
+    console.error("Gagal simpan kuis:", error)
+    return { success: false, error: "Gagal menyimpan kuis" }
+  }
+}
+
 export async function saveQuizWithQuestions(
   prevState: ActionState | null,
   formData: FormData
 ): Promise<ActionState> {
   const session = await getSession()
-  if (!session || (session.role !== Role.GURU && session.role !== Role.ADMIN)) {
-    return { success: false, error: "Akses tidak diizinkan" }
+  if (!session || session.role !== Role.ADMIN) {
+    return { success: false, error: "Hanya Administrator Balai Bahasa yang berwenang mengelola kuis" }
   }
 
   const id = formData.get("id") as string | undefined
   const title = formData.get("title") as string
   const description = (formData.get("description") as string) || ""
   const category = formData.get("category") as Category
+  const regionalLanguage = (formData.get("regionalLanguage") as RegionalLanguage) || null
   const materialId = (formData.get("materialId") as string) || null
   const timeLimit = parseInt((formData.get("timeLimit") as string) || "30", 10)
   const passingScore = parseInt((formData.get("passingScore") as string) || "75", 10)
@@ -203,6 +308,7 @@ export async function saveQuizWithQuestions(
     correctIndex: number
     explanation?: string
     points?: number
+    regionalLanguage?: RegionalLanguage
   }> = []
 
   try {
@@ -219,12 +325,13 @@ export async function saveQuizWithQuestions(
     await prisma.$transaction(async (tx) => {
       let quizId = id
       if (quizId) {
-        await tx.quiz.update({
+        await (tx.quiz.update as any)({
           where: { id: quizId },
           data: {
             title,
             description,
             category,
+            regionalLanguage,
             materialId: materialId || null,
             timeLimit,
             passingScore,
@@ -236,12 +343,13 @@ export async function saveQuizWithQuestions(
         await tx.quizQuestion.deleteMany({ where: { quizId } })
       } else {
         quizId = randomUUID()
-        await tx.quiz.create({
+        await (tx.quiz.create as any)({
           data: {
             id: quizId,
             title,
             description,
             category,
+            regionalLanguage,
             materialId: materialId || null,
             timeLimit,
             passingScore,
@@ -254,7 +362,7 @@ export async function saveQuizWithQuestions(
 
       for (let i = 0; i < questions.length; i++) {
         const q = questions[i]
-        await tx.quizQuestion.create({
+        await (tx.quizQuestion.create as any)({
           data: {
             id: randomUUID(),
             quizId,
@@ -263,13 +371,14 @@ export async function saveQuizWithQuestions(
             correctIndex: q.correctIndex,
             explanation: q.explanation || null,
             points: q.points || 10,
+            regionalLanguage: q.regionalLanguage || null,
             orderIndex: i + 1,
           },
         })
       }
     })
 
-    revalidatePath("/guru/kuis")
+    revalidatePath("/admin/kuis")
     revalidatePath("/siswa/kuis")
     revalidatePath("/admin/konten")
     return { success: true, message: "Kuis dan bank soal berhasil disimpan" }
@@ -281,18 +390,361 @@ export async function saveQuizWithQuestions(
 
 export async function deleteQuiz(quizId: string): Promise<ActionState> {
   const session = await getSession()
-  if (!session || (session.role !== Role.GURU && session.role !== Role.ADMIN)) {
-    return { success: false, error: "Akses tidak diizinkan" }
+  if (!session || session.role !== Role.ADMIN) {
+    return { success: false, error: "Hanya Administrator Balai Bahasa yang berwenang menghapus kuis" }
   }
 
   try {
     await prisma.quiz.delete({ where: { id: quizId } })
-    revalidatePath("/guru/kuis")
+    revalidatePath("/admin/kuis")
     revalidatePath("/siswa/kuis")
     revalidatePath("/admin/konten")
     return { success: true, message: "Kuis berhasil dihapus" }
   } catch (error) {
     return { success: false, error: "Gagal menghapus kuis" }
+  }
+}
+
+export async function saveQuizQuestion(
+  prevState: ActionState | null,
+  formData: FormData
+): Promise<ActionState> {
+  const session = await getSession()
+  if (!session || session.role !== Role.ADMIN) {
+    return { success: false, error: "Hanya Admin yang berwenang menambah/mengubah butir soal" }
+  }
+
+  const id = (formData.get("id") as string) || undefined
+  const quizId = formData.get("quizId") as string
+  const question = (formData.get("question") as string) || ""
+  const explanation = (formData.get("explanation") as string) || null
+  const points = parseInt((formData.get("points") as string) || "10", 10)
+  const correctIndex = parseInt((formData.get("correctIndex") as string) || "0", 10)
+  const regionalLanguage = (formData.get("regionalLanguage") as RegionalLanguage) || null
+
+  const optA = (formData.get("optionA") as string) || ""
+  const optB = (formData.get("optionB") as string) || ""
+  const optC = (formData.get("optionC") as string) || ""
+  const optD = (formData.get("optionD") as string) || ""
+
+  if (!quizId || !question.trim()) {
+    return { success: false, error: "Pertanyaan dan ID Kuis wajib diisi" }
+  }
+  if (!optA.trim() || !optB.trim() || !optC.trim() || !optD.trim()) {
+    return { success: false, error: "Semua 4 opsi pilihan jawaban (A, B, C, D) wajib diisi" }
+  }
+
+  const options = [optA.trim(), optB.trim(), optC.trim(), optD.trim()]
+
+  try {
+    if (id) {
+      await (prisma.quizQuestion.update as any)({
+        where: { id },
+        data: {
+          question: question.trim(),
+          options: JSON.stringify(options),
+          correctIndex,
+          explanation: explanation ? explanation.trim() : null,
+          points,
+          regionalLanguage,
+        },
+      })
+    } else {
+      const highestOrder = await prisma.quizQuestion.findFirst({
+        where: { quizId },
+        orderBy: { orderIndex: "desc" },
+        select: { orderIndex: true },
+      })
+      const nextOrder = (highestOrder?.orderIndex ?? 0) + 1
+
+      await (prisma.quizQuestion.create as any)({
+        data: {
+          id: randomUUID(),
+          quizId,
+          question: question.trim(),
+          options: JSON.stringify(options),
+          correctIndex,
+          explanation: explanation ? explanation.trim() : null,
+          points,
+          regionalLanguage,
+          orderIndex: nextOrder,
+        },
+      })
+    }
+
+    revalidatePath(`/admin/kuis/${quizId}/soal`)
+    revalidatePath("/admin/kuis")
+    revalidatePath("/siswa/kuis")
+    return { success: true, message: "Butir soal berhasil disimpan" }
+  } catch (error) {
+    console.error("Gagal simpan butir soal:", error)
+    return { success: false, error: "Gagal menyimpan butir soal" }
+  }
+}
+
+export async function deleteQuizQuestion(questionId: string, quizId: string): Promise<ActionState> {
+  const session = await getSession()
+  if (!session || session.role !== Role.ADMIN) {
+    return { success: false, error: "Hanya Admin yang berwenang menghapus butir soal" }
+  }
+
+  try {
+    await prisma.quizQuestion.delete({ where: { id: questionId } })
+    revalidatePath(`/admin/kuis/${quizId}/soal`)
+    revalidatePath("/admin/kuis")
+    revalidatePath("/siswa/kuis")
+    return { success: true, message: "Butir soal berhasil dihapus" }
+  } catch (error) {
+    return { success: false, error: "Gagal menghapus butir soal" }
+  }
+}
+
+export async function importQuizQuestionsAction(
+  quizId: string,
+  questionsJson: string
+): Promise<ActionState & { count?: number }> {
+  const session = await getSession()
+  if (!session || session.role !== Role.ADMIN) {
+    return { success: false, error: "Hanya Admin yang berwenang mengimpor soal" }
+  }
+
+  if (!quizId) {
+    return { success: false, error: "ID Kuis tidak ditemukan" }
+  }
+
+  let items: Array<{
+    question: string
+    options: string[]
+    correctIndex: number
+    explanation?: string
+    points?: number
+    regionalLanguage?: RegionalLanguage
+  }> = []
+
+  try {
+    items = JSON.parse(questionsJson)
+  } catch {
+    return { success: false, error: "Format data butir soal tidak valid (JSON error)" }
+  }
+
+  if (!Array.isArray(items) || items.length === 0) {
+    return { success: false, error: "Daftar butir soal kosong" }
+  }
+
+  try {
+    const highestOrder = await prisma.quizQuestion.findFirst({
+      where: { quizId },
+      orderBy: { orderIndex: "desc" },
+      select: { orderIndex: true },
+    })
+    let currentOrder = highestOrder?.orderIndex ?? 0
+
+    const createData = items.map((item) => {
+      currentOrder += 1
+      return {
+        id: randomUUID(),
+        quizId,
+        question: item.question.trim(),
+        options: JSON.stringify(item.options),
+        correctIndex: Number.isInteger(item.correctIndex) ? item.correctIndex : 0,
+        explanation: item.explanation?.trim() || null,
+        points: item.points && item.points > 0 ? item.points : 10,
+        regionalLanguage: item.regionalLanguage || null,
+        orderIndex: currentOrder,
+      }
+    })
+
+    await prisma.quizQuestion.createMany({
+      data: createData,
+    })
+
+    revalidatePath(`/admin/kuis/${quizId}/soal`)
+    revalidatePath("/admin/kuis")
+    revalidatePath("/siswa/kuis")
+    return {
+      success: true,
+      message: `Berhasil mengimpor ${createData.length} butir soal ke kuis!`,
+      count: createData.length,
+    }
+  } catch (error) {
+    console.error("Gagal impor soal:", error)
+    return { success: false, error: "Gagal menyimpan daftar soal ke database" }
+  }
+}
+
+// ---------------------------
+// ADMIN: MATRIKS KARAKTER 9 BAHASA DAERAH
+// ---------------------------
+const characterMatrixSchema = z.object({
+  id: z.coerce.number().optional(),
+  indonesianCharacter: z.string().min(2, "Nilai karakter Indonesia minimal 2 karakter"),
+  regionalLanguage: z.nativeEnum(RegionalLanguage, { errorMap: () => ({ message: "Bahasa daerah tidak valid" }) }),
+  regionalTerm: z.string().min(2, "Istilah/ungkapan daerah minimal 2 karakter"),
+  characterSource: z.string().min(3, "Sumber karakter minimal 3 karakter"),
+  implementation: z.string().min(5, "Implementasi perilaku minimal 5 karakter"),
+})
+
+type CharacterMatrixData = {
+  id?: number
+  indonesianCharacter: string
+  regionalLanguage: RegionalLanguage
+  regionalTerm: string
+  characterSource: string
+  implementation: string
+}
+
+export async function saveCharacterMatrixAction(
+  prevState: ActionState | null,
+  formData: FormData
+): Promise<ActionState> {
+  const session = await getSession()
+  if (!session || session.role !== Role.ADMIN) {
+    return { success: false, error: "Hanya Admin yang berwenang mengelola Matriks Karakter" }
+  }
+
+  const idVal = formData.get("id") as string | undefined
+  const raw = {
+    id: idVal ? parseInt(idVal, 10) : undefined,
+    indonesianCharacter: formData.get("indonesianCharacter"),
+    regionalLanguage: formData.get("regionalLanguage"),
+    regionalTerm: formData.get("regionalTerm"),
+    characterSource: formData.get("characterSource"),
+    implementation: formData.get("implementation"),
+  }
+
+  const parsed = characterMatrixSchema.safeParse(raw)
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.errors[0]?.message ?? "Input tidak valid" }
+  }
+
+  const matrixData = parsed.data as CharacterMatrixData
+
+  try {
+    if (matrixData.id) {
+      await (prisma as any).characterMatrix.update({
+        where: { id: matrixData.id },
+        data: {
+          indonesianCharacter: matrixData.indonesianCharacter.trim(),
+          regionalLanguage: matrixData.regionalLanguage,
+          regionalTerm: matrixData.regionalTerm.trim(),
+          characterSource: matrixData.characterSource.trim(),
+          implementation: matrixData.implementation.trim(),
+        },
+      })
+    } else {
+      await (prisma as any).characterMatrix.create({
+        data: {
+          indonesianCharacter: matrixData.indonesianCharacter.trim(),
+          regionalLanguage: matrixData.regionalLanguage,
+          regionalTerm: matrixData.regionalTerm.trim(),
+          characterSource: matrixData.characterSource.trim(),
+          implementation: matrixData.implementation.trim(),
+          createdBy: session.userId,
+        },
+      })
+    }
+
+    revalidatePath("/admin/matriks-karakter")
+    revalidatePath("/siswa/budaya-bahasa")
+    return { success: true, message: "Nilai karakter 9 bahasa berhasil disimpan" }
+  } catch (error) {
+    console.error("Gagal simpan matriks karakter:", error)
+    return { success: false, error: "Gagal menyimpan data matriks karakter" }
+  }
+}
+
+export async function deleteCharacterMatrixAction(matrixId: number): Promise<ActionState> {
+  const session = await getSession()
+  if (!session || session.role !== Role.ADMIN) {
+    return { success: false, error: "Hanya Admin yang berwenang menghapus data Matriks Karakter" }
+  }
+
+  try {
+    await (prisma as any).characterMatrix.delete({
+      where: { id: matrixId },
+    })
+    revalidatePath("/admin/matriks-karakter")
+    revalidatePath("/siswa/budaya-bahasa")
+    return { success: true, message: "Data matriks karakter berhasil dihapus" }
+  } catch (error) {
+    return { success: false, error: "Gagal menghapus data matriks karakter" }
+  }
+}
+
+export async function importCharacterMatrixAction(
+  matricesJson: string
+): Promise<ActionState & { count?: number }> {
+  const session = await getSession()
+  if (!session || session.role !== Role.ADMIN) {
+    return { success: false, error: "Hanya Admin yang berwenang mengimpor Matriks Karakter" }
+  }
+
+  let items: Array<{
+    indonesianCharacter: string
+    regionalLanguage: string
+    regionalTerm: string
+    characterSource: string
+    implementation: string
+  }> = []
+
+  try {
+    items = JSON.parse(matricesJson)
+  } catch {
+    return { success: false, error: "Format data tidak valid (JSON error)" }
+  }
+
+  if (!Array.isArray(items) || items.length === 0) {
+    return { success: false, error: "Data impor matriks karakter kosong" }
+  }
+
+  try {
+    const validLanguages = Object.values(RegionalLanguage) as string[]
+    const validData: Array<{
+      indonesianCharacter: string
+      regionalLanguage: RegionalLanguage
+      regionalTerm: string
+      characterSource: string
+      implementation: string
+      createdBy: string
+    }> = []
+
+    for (const item of items) {
+      const langUpper = (item.regionalLanguage || "").trim().toUpperCase()
+      if (!validLanguages.includes(langUpper)) {
+        continue
+      }
+      if (!item.indonesianCharacter?.trim() || !item.regionalTerm?.trim()) {
+        continue
+      }
+
+      validData.push({
+        indonesianCharacter: item.indonesianCharacter.trim(),
+        regionalLanguage: langUpper as RegionalLanguage,
+        regionalTerm: item.regionalTerm.trim(),
+        characterSource: (item.characterSource || "-").trim(),
+        implementation: (item.implementation || "-").trim(),
+        createdBy: session.userId,
+      })
+    }
+
+    if (validData.length === 0) {
+      return { success: false, error: "Tidak ada baris data yang valid untuk diimpor" }
+    }
+
+    await (prisma as any).characterMatrix.createMany({
+      data: validData,
+    })
+
+    revalidatePath("/admin/matriks-karakter")
+    revalidatePath("/siswa/budaya-bahasa")
+    return {
+      success: true,
+      message: `Berhasil mengimpor ${validData.length} entri matriks karakter 9 bahasa daerah!`,
+      count: validData.length,
+    }
+  } catch (error) {
+    console.error("Gagal impor matriks karakter:", error)
+    return { success: false, error: "Gagal menyimpan data matriks karakter ke database" }
   }
 }
 

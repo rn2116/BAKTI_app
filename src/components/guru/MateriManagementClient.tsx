@@ -16,7 +16,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { Plus, Trash2, Edit3, BookOpen, Clock } from "lucide-react"
+import { Plus, Trash2, Edit3, BookOpen, Clock, Eye, Info } from "lucide-react"
 import type { Category } from "@/types"
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog"
 import { notify } from "@/lib/notify"
@@ -50,6 +50,7 @@ export function MateriManagementClient({
   const [selectedMaterial, setSelectedMaterial] = useState<MaterialItem | null>(null)
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [previewMaterial, setPreviewMaterial] = useState<MaterialItem | null>(null)
 
   function openCreate() {
     setSelectedMaterial(null)
@@ -107,31 +108,41 @@ export function MateriManagementClient({
 
   return (
     <div className="space-y-6">
+      {isTeacher && (
+        <div className="flex items-center gap-3 p-4 bg-indigo-50/70 border border-indigo-200/80 rounded-2xl text-xs text-indigo-900 shadow-xs">
+          <Info className="w-5 h-5 text-[#3C22BB] shrink-0" />
+          <p>
+            <strong>Mode Katalog Referensi Guru:</strong> Seluruh modul materi literasi disusun dan dikelola secara terpusat oleh Admin Balai Bahasa Provinsi Sulawesi Tengah. Anda dapat membaca modul lengkap untuk kebutuhan bimbingan siswa di kelas.
+          </p>
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-semibold text-foreground">
-            {isTeacher ? "Daftar Materi Dibuat" : "Katalog Materi Sistem"}
+            {isTeacher ? "Katalog Materi Pembelajaran" : "Kelola Materi Literasi Sistem"}
           </h2>
           <p className="text-xs text-muted-foreground">
-            Kelola konten literasi bahasa, pembentukan karakter, dan budaya Sulteng
+            Konten literasi bahasa, pembentukan karakter, dan budaya lokal Sulawesi Tengah
           </p>
         </div>
 
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button
-              onClick={openCreate}
-              size="sm"
-              className="gap-2 text-xs bg-[#3C22BB] hover:bg-[#2E1994] text-white rounded-xl shadow-xs"
-            >
-              <Plus className="w-4 h-4" /> Buat Materi Baru
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>
-                {selectedMaterial ? "Edit Materi" : "Buat Materi Pembelajaran Baru"}
-              </DialogTitle>
+        {!isTeacher && (
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button
+                onClick={openCreate}
+                size="sm"
+                className="gap-2 text-xs bg-[#3C22BB] hover:bg-[#2E1994] text-white rounded-xl shadow-xs"
+              >
+                <Plus className="w-4 h-4" /> Buat Materi Baru
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>
+                  {selectedMaterial ? "Edit Materi" : "Buat Materi Pembelajaran Baru"}
+                </DialogTitle>
             </DialogHeader>
 
             <form onSubmit={handleSubmit} className="space-y-4 mt-2">
@@ -250,6 +261,7 @@ export function MateriManagementClient({
             </form>
           </DialogContent>
         </Dialog>
+        )}
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -287,25 +299,38 @@ export function MateriManagementClient({
 
               <div className="flex items-center justify-between pt-1">
                 <div className="text-[11px] text-muted-foreground truncate max-w-[120px]">
-                  Oleh: {m.creator?.fullName ?? "Guru"}
+                  Oleh: {m.creator?.fullName ?? "Balai Bahasa"}
                 </div>
                 <div className="flex items-center gap-1">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => openEdit(m)}
-                    className="h-8 px-2 text-xs"
-                  >
-                    <Edit3 className="w-3.5 h-3.5 mr-1" /> Edit
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setDeleteTargetId(m.id)}
-                    className="h-8 px-2 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </Button>
+                  {isTeacher ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPreviewMaterial(m)}
+                      className="h-8 px-2.5 text-xs text-[#3C22BB] border-[#3C22BB]/30 hover:bg-[#3C22BB]/10 rounded-xl"
+                    >
+                      <Eye className="w-3.5 h-3.5 mr-1" /> Baca Modul
+                    </Button>
+                  ) : (
+                    <>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => openEdit(m)}
+                        className="h-8 px-2 text-xs"
+                      >
+                        <Edit3 className="w-3.5 h-3.5 mr-1" /> Edit
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setDeleteTargetId(m.id)}
+                        className="h-8 px-2 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    </>
+                  )}
                 </div>
               </div>
             </CardContent>
@@ -314,10 +339,46 @@ export function MateriManagementClient({
 
         {materials.length === 0 && (
           <div className="col-span-full p-10 border border-dashed rounded-xl text-center text-sm text-muted-foreground">
-            Belum ada materi pembelajaran. Klik tombol Buat Materi Baru untuk menambahkan.
+            Belum ada materi pembelajaran.
           </div>
         )}
       </div>
+
+      {/* Dialog Preview Baca Materi Guru */}
+      <Dialog open={!!previewMaterial} onOpenChange={(open) => !open && setPreviewMaterial(null)}>
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <div className="flex items-center gap-2 mb-1">
+              {previewMaterial && <CategoryBadge category={previewMaterial.category} />}
+              <span className="text-xs text-muted-foreground flex items-center gap-1">
+                <Clock className="w-3.5 h-3.5" /> {previewMaterial?.readingTime} Menit Baca
+              </span>
+            </div>
+            <DialogTitle className="text-xl font-bold text-foreground">
+              {previewMaterial?.title}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 text-sm text-foreground/90 mt-2">
+            <div className="p-3 bg-zinc-50 border border-zinc-200/80 rounded-xl text-xs text-zinc-600">
+              <span className="font-semibold text-zinc-800">Ringkasan: </span>
+              {previewMaterial?.description}
+            </div>
+            <div className="prose prose-zinc max-w-none text-xs leading-relaxed whitespace-pre-line bg-white p-4 border border-zinc-200/60 rounded-xl">
+              {previewMaterial?.content}
+            </div>
+          </div>
+          <div className="flex justify-end pt-3 border-t">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPreviewMaterial(null)}
+              className="text-xs rounded-xl"
+            >
+              Tutup Pratinjau
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Dialog Konfirmasi Hapus Materi */}
       <ConfirmDialog

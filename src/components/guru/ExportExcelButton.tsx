@@ -21,11 +21,13 @@ interface ExportData {
 interface ExportExcelButtonProps {
   data: ExportData[]
   filename?: string
+  className?: string
 }
 
 export function ExportExcelButton({
   data,
-  filename = "rekap-nilai-siswa.xlsx",
+  filename = "Laporan_Rekap_Nilai_Siswa_BBPST.xlsx",
+  className,
 }: ExportExcelButtonProps) {
   const handleExport = () => {
     if (!data || data.length === 0) {
@@ -33,40 +35,73 @@ export function ExportExcelButton({
       return
     }
 
-    const worksheet = XLSX.utils.json_to_sheet(
-      data.map((item, idx) => ({
-        No: idx + 1,
-        "Nama Siswa": item.nama,
-        NISN: item.nisn || "-",
-        Sekolah: item.sekolah,
-        Kelas: item.kelas,
-        "Judul Kuis": item.kuis,
-        Kategori: item.kategori,
-        Skor: item.skor,
-        "Skor Maksimal": item.skorMaksimal,
-        Status: item.status,
-        "Waktu Pengerjaan": item.tanggal,
-      }))
-    )
+    const headerAoa = [
+      ["KEMENTERIAN PENDIDIKAN TINGGI, SAINS, DAN TEKNOLOGI"],
+      ["BALAI BAHASA PROVINSI SULAWESI TENGAH"],
+      ["REKAPITULASI PENILAIAN LITERASI & PENDIDIKAN KARAKTER SISWA"],
+      [`Tanggal Ekspor: ${new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })} | Sekolah: ${data[0]?.sekolah || "Sekolah Mitra BBPST"}`],
+      [], // Baris kosong pemisah
+      [
+        "No",
+        "Nama Lengkap Siswa",
+        "NISN",
+        "Asal Sekolah",
+        "Kelas",
+        "Judul Kuis",
+        "Kategori Literasi",
+        "Skor Perolehan",
+        "Skor Maksimal",
+        "Status Kelulusan",
+        "Waktu Pengerjaan",
+      ],
+    ]
+
+    const dataAoa = data.map((item, idx) => [
+      idx + 1,
+      item.nama,
+      item.nisn || "-",
+      item.sekolah,
+      item.kelas,
+      item.kuis,
+      item.kategori,
+      item.skor,
+      item.skorMaksimal,
+      item.status,
+      item.tanggal,
+    ])
+
+    const fullAoa = [...headerAoa, ...dataAoa]
+    const worksheet = XLSX.utils.aoa_to_sheet(fullAoa)
 
     // Autosize columns
-    const max_width = [5, 25, 15, 25, 15, 30, 20, 10, 15, 15, 20]
-    worksheet["!cols"] = max_width.map((w) => ({ wch: w }))
+    worksheet["!cols"] = [
+      { wch: 5 },
+      { wch: 28 },
+      { wch: 15 },
+      { wch: 28 },
+      { wch: 15 },
+      { wch: 35 },
+      { wch: 22 },
+      { wch: 15 },
+      { wch: 15 },
+      { wch: 22 },
+      { wch: 22 },
+    ]
 
     const workbook = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Rekap Nilai")
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Rekap Nilai BBPST")
     XLSX.writeFile(workbook, filename)
-    notify.success("Laporan rekap nilai berhasil diekspor ke Excel (.xlsx)")
+    notify.success("Laporan resmi rekap nilai berhasil diekspor ke Excel (.xlsx)")
   }
 
   return (
     <Button
       onClick={handleExport}
       variant="outline"
-      className="w-full sm:w-auto inline-flex items-center justify-center gap-2 text-xs font-semibold"
+      className={className || "w-full sm:w-auto inline-flex items-center justify-center gap-2 text-xs font-semibold rounded-xl border-emerald-300 text-emerald-800 hover:bg-emerald-50 h-10"}
     >
       <Download className="w-4 h-4 text-emerald-600" />
-      Ekspor ke Excel (.xlsx)
+      Ekspor ke Excel Resmi (.xlsx)
     </Button>
   )
 }

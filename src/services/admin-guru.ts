@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma"
 import { unstable_cache } from "next/cache"
-import { Category, Role } from "@prisma/client"
+import { Category, Role } from "@/types"
 
 // ========================
 // GURU - KELAS & REKAP
@@ -327,4 +327,136 @@ export async function getAllContentForModeration() {
   ])
 
   return { materials, quizzes }
+}
+
+// ========================
+// ADMIN - BANK SOAL & KUIS
+// ========================
+
+export async function getAdminQuizzes() {
+  return prisma.quiz.findMany({
+    include: {
+      creator: { select: { fullName: true } },
+      material: { select: { id: true, title: true } },
+      _count: { select: { questions: true, attempts: true } },
+    },
+    orderBy: { createdAt: "desc" },
+  })
+}
+
+export async function getAdminQuizDetail(id: string) {
+  return prisma.quiz.findUnique({
+    where: { id },
+    include: {
+      creator: { select: { fullName: true } },
+      material: { select: { id: true, title: true } },
+      questions: {
+        orderBy: { orderIndex: "asc" },
+      },
+    },
+  })
+}
+
+// ========================
+// MATRIKS KARAKTER 9 BAHASA
+// ========================
+
+export async function getCharacterMatrices() {
+  return (prisma as any).characterMatrix.findMany({
+    include: {
+      creator: { select: { fullName: true } },
+    },
+    orderBy: [{ regionalLanguage: "asc" }, { indonesianCharacter: "asc" }],
+  })
+}
+
+// ========================
+// ADMIN - LAPORAN NILAI RESMI BBPST
+// ========================
+
+export async function getAllStudentRecapReport(regencyId?: string, schoolId?: string) {
+  const students = await prisma.masterUser.findMany({
+    where: {
+      role: Role.SISWA,
+      isActive: true,
+      ...(schoolId ? { schoolId } : {}),
+      ...(regencyId ? { school: { regencyId } } : {}),
+    },
+    select: {
+      id: true,
+      fullName: true,
+      nisn: true,
+      xp: true,
+      level: true,
+      school: { select: { id: true, name: true, regency: { select: { name: true } } } },
+      class: { select: { id: true, name: true, grade: true } },
+      quizAttempts: {
+        select: {
+          id: true,
+          score: true,
+          maxScore: true,
+          passed: true,
+          startedAt: true,
+          quiz: {
+            select: {
+              id: true,
+              title: true,
+              category: true,
+            },
+          },
+        },
+      },
+    },
+    orderBy: [{ school: { name: "asc" } }, { fullName: "asc" }],
+  })
+
+  return students.map((student) => {
+    let scoreBahasa = 0, maxBahasa = 0
+    let scoreKarakter = 0, maxKarakter = 0
+    let scoreBudaya = 0, maxBudaya = 0
+
+    for (const att of student.quizAttempts) {
+      if (att.quiz.category === Category.BAHASA_INDONESIA) {
+        scoreBahasa += att.score
+        maxBahasa += att.maxScore
+      } else if (att.quiz.category === Category.KARAKTER) {
+        scoreKarakter += att.score
+        maxKarakter += att.maxScore
+      } else if (att.quiz.category === Category.BUDAYA_SULTENG) {
+        scoreBudaya += att.score
+        maxBudaya += att.maxScore
+      }
+    }
+
+    const pctBahasa = maxBahasa > 0 ? Math.round((scoreBahasa / maxBahasa) * 100) : null
+    const pctKarakter = maxKarakter > 0 ? Math.round((scoreKarakter / maxKarakter) * 100) : null
+    const pctBudaya = maxBudaya > 0 ? Math.round((scoreBudaya / maxBudaya) * 100) : null
+
+    const validPcts = [pctBahasa, pctKarakter, pctBudaya].filter((p): p is number => p !== null)
+    const avgScore = validPcts.length > 0 ? Math.round(validPcts.reduce((a, b) => a + b, 0) / validPcts.length) : 0
+
+    let predikat = "Mulai Berkembang (MB)"
+    if (avgScore >= 85) {
+      predikat = "Sangat Berkembang (SB)"
+    } else if (avgScore >= 70) {
+      predikat = "Berkembang Sesuai Harapan (BSH)"
+    }
+
+    return {
+      id: student.id,
+      fullName: student.fullName,
+      nisn: student.nisn || "-",
+      schoolName: student.school?.name || "-",
+      regencyName: student.school?.regency?.name || "-",
+      className: student.class ? `Kelas ${student.class.grade} - ${student.class.name}` : "-",
+      scoreBahasa: pctBahasa !== null ? pctBahasa : 0,
+      scoreKarakter: pctKarakter !== null ? pctKarakter : 0,
+      scoreBudaya: pctBudaya !== null ? pctBudaya : 0,
+      avgScore,
+      xp: student.xp,
+      level: student.level,
+      predikat,
+      totalAttempts: student.quizAttempts.length,
+    }
+  })
 }
