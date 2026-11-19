@@ -1,14 +1,10 @@
-import { getCurrentUser } from "@/lib/auth"
+import { requireDashboardUser } from "@/lib/auth"
 import { getCharacterMatrices } from "@/services/admin-guru"
 import { PageHeader } from "@/components/shared/PageHeader"
 import { AdminCharacterMatrixClient } from "@/components/admin/AdminCharacterMatrixClient"
-import { redirect } from "next/navigation"
 
 export default async function AdminCharacterMatrixPage() {
-  const user = await getCurrentUser()
-  if (!user || user.role !== "ADMIN") {
-    redirect("/masuk")
-  }
+  await requireDashboardUser("ADMIN")
 
   const matrices = await getCharacterMatrices()
 

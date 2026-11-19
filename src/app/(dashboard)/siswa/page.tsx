@@ -6,6 +6,8 @@ import { QuickMenuGrid } from "@/components/gamification/QuickMenuGrid"
 import { ProgressRingCard } from "@/components/gamification/ProgressRingCard"
 import { WeeklyPointsChart } from "@/components/gamification/WeeklyPointsChart"
 import { StudentSidebarPanel } from "@/components/gamification/StudentSidebarPanel"
+import { DailyWiseSayingCard } from "@/components/gamification/DailyWiseSayingCard"
+import { SultengLanguageMapExplorer } from "@/components/siswa/SultengLanguageMapExplorer"
 import { SultengIllustration, getThemeByIndexAndCategory } from "@/components/shared/SultengIllustration"
 import { CategoryBadge } from "@/components/shared/CategoryBadge"
 import { Card } from "@/components/ui/card"
@@ -36,6 +38,21 @@ export default async function SiswaDashboardPage() {
 
       {/* 3. TANTANGAN HARI INI & 6 MENU UTAMA BERWARNA */}
       <QuickMenuGrid />
+
+      {/* 3B. PETUAH BIJAK TO KAILI HARI INI (Dr. H. Suaib Djafar, M.Si) */}
+      {data.dailyWiseSaying && (
+        <DailyWiseSayingCard
+          wiseSayingText={data.dailyWiseSaying.wiseSayingText}
+          wiseSayingMeaning={data.dailyWiseSaying.wiseSayingMeaning}
+          characterValue={data.dailyWiseSaying.characterValue}
+          referenceSource={data.dailyWiseSaying.referenceSource}
+          audioUrl={data.dailyWiseSaying.audioUrl}
+          quizId={data.dailyWiseSaying.quizId}
+        />
+      )}
+
+      {/* 3C. PETA EKSPLORASI 9 BAHASA DAERAH SULAWESI TENGAH */}
+      <SultengLanguageMapExplorer languages={data.regionalLanguagesSummary} />
 
       {/* 4. ANALITIK PROGRESS & GRAFIK MINGGUAN DENGAN PANEL SAMPING */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">

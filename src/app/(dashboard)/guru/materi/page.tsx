@@ -1,14 +1,10 @@
-import { getCurrentUser } from "@/lib/auth"
+import { requireDashboardUser } from "@/lib/auth"
 import { getMaterialsForManagement } from "@/services/admin-guru"
 import { PageHeader } from "@/components/shared/PageHeader"
 import { MateriManagementClient } from "@/components/guru/MateriManagementClient"
-import { redirect } from "next/navigation"
 
 export default async function GuruMateriPage() {
-  const user = await getCurrentUser()
-  if (!user || user.role !== "GURU") {
-    redirect("/masuk")
-  }
+  await requireDashboardUser("GURU")
 
   const materials = await getMaterialsForManagement(undefined, true)
 

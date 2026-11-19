@@ -1,6 +1,7 @@
 import { cache } from "react"
 import { compare, hash } from "bcryptjs"
 import { cookies } from "next/headers"
+import { redirect } from "next/navigation"
 import { prisma } from "./prisma"
 import { signToken, verifyToken, type JWTPayload } from "./auth-token"
 
@@ -38,6 +39,7 @@ export async function clearAuthCookie(): Promise<void> {
     path: "/",
     maxAge: 0,
   })
+  cookieStore.delete(COOKIE_NAME)
 }
 
 export async function getSession(): Promise<JWTPayload | null> {
@@ -67,3 +69,19 @@ export const getCurrentUser = cache(async () => {
 })
 
 export type AuthUser = Awaited<ReturnType<typeof getCurrentUser>>
+
+export async function requireDashboardUser(allowedRole?: string) {
+  const user = await getCurrentUser()
+  if (!user || !user.isActive) {
+    redirect("/api/auth/clear-session")
+  }
+  if (allowedRole && user.role !== allowedRole) {
+    const dashMap: Record<string, string> = {
+      SISWA: "/siswa",
+      GURU: "/guru",
+      ADMIN: "/admin",
+    }
+    redirect(dashMap[user.role] ?? "/api/auth/clear-session")
+  }
+  return user
+}

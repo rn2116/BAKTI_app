@@ -34,6 +34,13 @@ export async function getUserCertificates(userId: string) {
   })
 }
 
+export async function getUserRegionalCertificates(userId: string) {
+  return prisma.sertifikat.findMany({
+    where: { userId },
+    orderBy: { tanggalTerbit: "desc" },
+  })
+}
+
 export async function getUserStats(userId: string) {
   const [user, materialsProgress, quizAttempts] = await Promise.all([
     getUserById(userId),

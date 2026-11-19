@@ -1,15 +1,11 @@
-import { getCurrentUser } from "@/lib/auth"
+import { requireDashboardUser } from "@/lib/auth"
 import { getTeacherClasses } from "@/services/admin-guru"
 import { prisma } from "@/lib/prisma"
 import { PageHeader } from "@/components/shared/PageHeader"
 import { KelasManagementClient } from "@/components/guru/KelasManagementClient"
-import { redirect } from "next/navigation"
 
 export default async function GuruKelasPage() {
-  const user = await getCurrentUser()
-  if (!user || user.role !== "GURU") {
-    redirect("/masuk")
-  }
+  const user = await requireDashboardUser("GURU")
 
   if (!user.schoolId) {
     return (

@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma"
 import Link from "next/link"
 import { BrandLogo } from "@/components/shared/BrandLogo"
+import { REGIONAL_LANGUAGE_LABELS } from "@/lib/constants"
 import {
   CheckCircle2,
   XCircle,
@@ -20,49 +21,112 @@ interface VerifikasiPageProps {
   }
 }
 
+interface VerifiedCertificateDisplay {
+  certificateNo: string
+  studentName: string
+  nisn: string | null
+  schoolName: string
+  regencyName: string
+  competenceTitle: string
+  competenceSub: string
+  evaluationText: string
+  issuedAt: Date
+}
+
 export default async function VerifikasiSertifikatPage({
   params,
 }: VerifikasiPageProps) {
   const kodeSertifikat = decodeURIComponent(params.kode || "").trim()
 
-  const certificate = await prisma.userCertificate.findUnique({
-    where: { certificateNo: kodeSertifikat },
-    include: {
-      user: {
-        select: {
-          fullName: true,
-          nisn: true,
-          school: {
-            select: {
-              name: true,
-              regency: { select: { name: true } },
+  const [materialCert, regionalCert] = await Promise.all([
+    prisma.userCertificate.findUnique({
+      where: { certificateNo: kodeSertifikat },
+      include: {
+        user: {
+          select: {
+            fullName: true,
+            nisn: true,
+            school: {
+              select: {
+                name: true,
+                regency: { select: { name: true } },
+              },
+            },
+          },
+        },
+        material: {
+          select: {
+            title: true,
+            category: true,
+          },
+        },
+        quizAttempt: {
+          select: {
+            score: true,
+            maxScore: true,
+          },
+        },
+      },
+    }),
+    prisma.sertifikat.findUnique({
+      where: { nomorSertifikat: kodeSertifikat },
+      include: {
+        user: {
+          select: {
+            fullName: true,
+            nisn: true,
+            school: {
+              select: {
+                name: true,
+                regency: { select: { name: true } },
+              },
             },
           },
         },
       },
-      material: {
-        select: {
-          title: true,
-          category: true,
-        },
-      },
-      quizAttempt: {
-        select: {
-          score: true,
-          maxScore: true,
-        },
-      },
-    },
-  })
+    }),
+  ])
+
+  let certificate: VerifiedCertificateDisplay | null = null
+  if (materialCert) {
+    certificate = {
+      certificateNo: materialCert.certificateNo,
+      studentName: materialCert.user.fullName,
+      nisn: materialCert.user.nisn,
+      schoolName: materialCert.user.school?.name ?? "Sekolah Sulawesi Tengah",
+      regencyName:
+        materialCert.user.school?.regency?.name ?? "Provinsi Sulawesi Tengah",
+      competenceTitle: materialCert.material.title,
+      competenceSub: `Kategori: ${materialCert.material.category.replace(/_/g, " ")}`,
+      evaluationText: `LULUS (${materialCert.quizAttempt.score} / ${materialCert.quizAttempt.maxScore} Poin)`,
+      issuedAt: materialCert.issuedAt,
+    }
+  } else if (regionalCert) {
+    const langName =
+      REGIONAL_LANGUAGE_LABELS[regionalCert.bahasaDaerah] ??
+      regionalCert.bahasaDaerah
+    certificate = {
+      certificateNo: regionalCert.nomorSertifikat,
+      studentName: regionalCert.user.fullName,
+      nisn: regionalCert.user.nisn,
+      schoolName: regionalCert.user.school?.name ?? "Sekolah Sulawesi Tengah",
+      regencyName:
+        regionalCert.user.school?.regency?.name ?? "Provinsi Sulawesi Tengah",
+      competenceTitle: `Penguasaan ${langName} & Nilai Karakter`,
+      competenceSub: "Sertifikasi Modul 3 Tahap Bahasa Daerah (BBPST)",
+      evaluationText: `LULUS (Skor Akhir: ${regionalCert.skorAkhir} / 100)`,
+      issuedAt: regionalCert.tanggalTerbit,
+    }
+  }
 
   return (
     <div className="min-h-screen bg-[#FAFAF8] text-[#18181B] flex flex-col justify-between p-4 sm:p-8">
       {/* Top Header Publik */}
-      <header className="max-w-3xl w-full mx-auto flex items-center justify-between pb-6 border-b border-zinc-200">
-        <BrandLogo />
+      <header className="max-w-3xl w-full mx-auto flex flex-wrap items-center justify-between gap-3 pb-6 border-b border-zinc-200">
+        <BrandLogo light={false} size="sm" />
         <Link
           href="/masuk"
-          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold text-[#3C22BB] bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 transition-colors"
+          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold text-[#3C22BB] bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 transition-colors shrink-0"
         >
           <span>Masuk Portal</span>
           <ArrowRight className="w-3.5 h-3.5" />
@@ -118,11 +182,11 @@ export default async function VerifikasiSertifikatPage({
                     Nama Penerima
                   </span>
                   <div className="text-base font-black text-zinc-900">
-                    {certificate.user.fullName}
+                    {certificate.studentName}
                   </div>
-                  {certificate.user.nisn && (
+                  {certificate.nisn && (
                     <div className="text-xs text-zinc-500 font-mono">
-                      NISN: {certificate.user.nisn}
+                      NISN: {certificate.nisn}
                     </div>
                   )}
                 </div>
@@ -133,10 +197,10 @@ export default async function VerifikasiSertifikatPage({
                     <span>Asal Satuan Pendidikan</span>
                   </span>
                   <div className="text-sm font-bold text-zinc-900">
-                    {certificate.user.school?.name ?? "Sekolah Sulawesi Tengah"}
+                    {certificate.schoolName}
                   </div>
                   <div className="text-xs text-zinc-500">
-                    {certificate.user.school?.regency?.name ?? "Provinsi Sulawesi Tengah"}
+                    {certificate.regencyName}
                   </div>
                 </div>
 
@@ -146,10 +210,10 @@ export default async function VerifikasiSertifikatPage({
                     <span>Kompetensi / Materi Pembelajaran</span>
                   </span>
                   <div className="text-base font-bold text-[#3C22BB]">
-                    {certificate.material.title}
+                    {certificate.competenceTitle}
                   </div>
                   <div className="text-xs text-zinc-600">
-                    Kategori: {certificate.material.category.replace(/_/g, " ")}
+                    {certificate.competenceSub}
                   </div>
                 </div>
 
@@ -158,7 +222,7 @@ export default async function VerifikasiSertifikatPage({
                     Evaluasi Kuis
                   </span>
                   <div className="text-sm font-bold text-emerald-800">
-                    LULUS ({certificate.quizAttempt.score} / {certificate.quizAttempt.maxScore} Poin)
+                    {certificate.evaluationText}
                   </div>
                 </div>
 

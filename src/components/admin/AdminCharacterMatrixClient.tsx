@@ -13,6 +13,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog"
+import { AudioButton } from "@/components/shared/AudioButton"
+import { MiniAudioStudio } from "@/components/shared/MiniAudioStudio"
 import { notify } from "@/lib/notify"
 import { REGIONAL_LANGUAGE_LABELS } from "@/lib/constants"
 import {
@@ -45,6 +47,7 @@ interface MatrixItem {
   regionalTerm: string
   characterSource: string
   implementation: string
+  audioUrl?: string | null
   createdAt: Date
   creator?: { fullName: string } | null
 }
@@ -59,6 +62,7 @@ interface ParsedExcelMatrix {
   regionalTerm: string
   characterSource: string
   implementation: string
+  audioUrl?: string
   isValid: boolean
   errorReason?: string
 }
@@ -73,6 +77,7 @@ export function AdminCharacterMatrixClient({ matrices }: AdminCharacterMatrixCli
   // Modal manual CRUD
   const [modalOpen, setModalOpen] = useState(false)
   const [editingMatrix, setEditingMatrix] = useState<MatrixItem | null>(null)
+  const [matrixAudioUrl, setMatrixAudioUrl] = useState("")
   const [loading, setLoading] = useState(false)
 
   // Delete state
@@ -100,11 +105,13 @@ export function AdminCharacterMatrixClient({ matrices }: AdminCharacterMatrixCli
 
   function openCreate() {
     setEditingMatrix(null)
+    setMatrixAudioUrl("")
     setModalOpen(true)
   }
 
   function openEdit(item: MatrixItem) {
     setEditingMatrix(item)
+    setMatrixAudioUrl(item.audioUrl ?? "")
     setModalOpen(true)
   }
 
@@ -162,6 +169,7 @@ export function AdminCharacterMatrixClient({ matrices }: AdminCharacterMatrixCli
         Istilah_Daerah: "Nosarara Nosabatutu",
         Sumber_Karakter: "Falsafah adat suku Kaili tentang persaudaraan dan kebersamaan hidup.",
         Implementasi_Perilaku: "Siswa aktif bekerja sama dalam piket kelas, kerja kelompok, dan membantu teman tanpa membedakan latar belakang.",
+        Audio_URL: "",
       },
       {
         No: 2,
@@ -170,6 +178,7 @@ export function AdminCharacterMatrixClient({ matrices }: AdminCharacterMatrixCli
         Istilah_Daerah: "Sintuwu Maroso",
         Sumber_Karakter: "Semboyan persatuan luhur masyarakat Pamona Poso dalam menyatukan tekad.",
         Implementasi_Perilaku: "Menghargai perbedaan pendapat saat pemilihan ketua kelas dan menyelesaikan perselisihan dengan dialog damai.",
+        Audio_URL: "",
       },
       {
         No: 3,
@@ -178,6 +187,7 @@ export function AdminCharacterMatrixClient({ matrices }: AdminCharacterMatrixCli
         Istilah_Daerah: "Montolutusan",
         Sumber_Karakter: "Nilai luhur kerukunan dan ketulusan bersaudara suku Banggai.",
         Implementasi_Perilaku: "Berbicara jujur kepada bapak/ibu guru dan tidak mencontek saat ujian kejujuran.",
+        Audio_URL: "",
       },
     ]
 
@@ -189,6 +199,7 @@ export function AdminCharacterMatrixClient({ matrices }: AdminCharacterMatrixCli
       { wch: 25 },
       { wch: 45 },
       { wch: 55 },
+      { wch: 30 },
     ]
 
     const wb = XLSX.utils.book_new()
@@ -210,7 +221,7 @@ export function AdminCharacterMatrixClient({ matrices }: AdminCharacterMatrixCli
         const wb = XLSX.read(bstr, { type: "binary" })
         const wsname = wb.SheetNames[0]
         const ws = wb.Sheets[wsname]
-        const rawJson: any[] = XLSX.utils.sheet_to_json(ws)
+        const rawJson = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws)
 
         if (!rawJson || rawJson.length === 0) {
           notify.error("Berkas Excel kosong atau format tidak sesuai")
@@ -226,6 +237,7 @@ export function AdminCharacterMatrixClient({ matrices }: AdminCharacterMatrixCli
           const regTerm = String(row["Istilah_Daerah"] || row["istilah_daerah"] || "").trim()
           const source = String(row["Sumber_Karakter"] || row["sumber_karakter"] || "").trim()
           const impl = String(row["Implementasi_Perilaku"] || row["implementasi"] || "").trim()
+          const audioRaw = String(row["Audio_URL"] || row["audio_url"] || "").trim()
 
           let isValid = true
           let errorReason = ""
@@ -247,6 +259,7 @@ export function AdminCharacterMatrixClient({ matrices }: AdminCharacterMatrixCli
             regionalTerm: regTerm,
             characterSource: source || "-",
             implementation: impl || "-",
+            audioUrl: audioRaw || undefined,
             isValid,
             errorReason,
           }
@@ -276,6 +289,7 @@ export function AdminCharacterMatrixClient({ matrices }: AdminCharacterMatrixCli
         regionalTerm: r.regionalTerm,
         characterSource: r.characterSource,
         implementation: r.implementation,
+        audioUrl: r.audioUrl,
       }))
 
       const res = await importCharacterMatrixAction(JSON.stringify(payload))
@@ -361,6 +375,12 @@ export function AdminCharacterMatrixClient({ matrices }: AdminCharacterMatrixCli
                 </span>
 
                 <div className="flex items-center gap-1">
+                  <AudioButton
+                    audioUrl={item.audioUrl}
+                    text={item.regionalTerm}
+                    label="Dengar"
+                    size="sm"
+                  />
                   <Button
                     variant="ghost"
                     size="sm"
@@ -538,6 +558,13 @@ export function AdminCharacterMatrixClient({ matrices }: AdminCharacterMatrixCli
                 className="text-xs rounded-xl"
               />
             </div>
+
+            <MiniAudioStudio
+              value={matrixAudioUrl}
+              onChange={setMatrixAudioUrl}
+              inputName="audioUrl"
+              label="Audio Pelafalan Bahasa Daerah (Rekam / Unggah)"
+            />
 
             <div className="flex justify-end gap-2 pt-4 border-t border-zinc-100">
               <Button

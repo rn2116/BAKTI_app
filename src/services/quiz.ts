@@ -7,7 +7,12 @@ export async function getPublishedQuizzes() {
     where: { isPublished: true },
     orderBy: { createdAt: "desc" },
     include: {
-      _count: { select: { questions: true, attempts: true } },
+      _count: {
+        select: {
+          questions: { where: { verificationStatus: "APPROVED" } },
+          attempts: true,
+        },
+      },
     },
   })
 }
@@ -17,6 +22,7 @@ export async function getQuizById(id: string) {
     where: { id },
     include: {
       questions: {
+        where: { verificationStatus: "APPROVED" },
         orderBy: { orderIndex: "asc" },
         select: {
           id: true,
@@ -26,6 +32,11 @@ export async function getQuizById(id: string) {
           orderIndex: true,
           correctIndex: true,
           explanation: true,
+          regionalLanguage: true,
+          wiseSayingText: true,
+          wiseSayingMeaning: true,
+          referenceSource: true,
+          audioUrl: true,
         },
       },
     },

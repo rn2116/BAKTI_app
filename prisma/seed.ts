@@ -390,6 +390,70 @@ async function main() {
       implementation:
         "Menjaga kebersihan dan kelestarian taman sekolah, menghemat penggunaan air dan listrik di sekolah, serta aktif merawat fasilitas umum kelas.",
     },
+    // 7 Ungkapan Bijak To Kaili — Rujukan Dr. H. Suaib Djafar, M.Si
+    {
+      indonesianCharacter: "Persaudaraan, Empati & Toleransi",
+      regionalLanguage: "KAILI" as const,
+      regionalTerm: "Mosipeili, Mosimpotove, Mosimpoasi, Nosarara Nosabatutu",
+      characterSource:
+        "Kumpulan Ungkapan Bijak To Kaili — Dr. H. Suaib Djafar, M.Si (Budayawan Kaili Sulawesi Tengah)",
+      implementation:
+        "Saling menengok teman yang sakit, menyayangi dan mengasihi sesama tanpa membedakan suku atau latar belakang, serta menjaga persatuan kelas.",
+    },
+    {
+      indonesianCharacter: "Kepedulian Sosial & Kemanusiaan",
+      regionalLanguage: "KAILI" as const,
+      regionalTerm: "Ane Murasai Dua Karomu Danatuvu, Ane Komiu Mbarasai Duatonantanina, Komiu Manusia",
+      characterSource:
+        "Kumpulan Ungkapan Bijak To Kaili — Dr. H. Suaib Djafar, M.Si (Budayawan Kaili Sulawesi Tengah)",
+      implementation:
+        "Turut merasakan kesusahan teman atau warga terdampak bencana, aktif berbagi bantuan kemanusiaan, dan menumbuhkan kepekaan hati nurani.",
+    },
+    {
+      indonesianCharacter: "Gotong Royong & Kebersamaan",
+      regionalLanguage: "KAILI" as const,
+      regionalTerm: "Moenju Mosangu, Meangga Mosangu, Mompakavoe Maggali Palu Manyama Todeana",
+      characterSource:
+        "Kumpulan Ungkapan Bijak To Kaili — Dr. H. Suaib Djafar, M.Si (Budayawan Kaili Sulawesi Tengah)",
+      implementation:
+        "Bekerja bakti membersihkan lingkungan sekolah dan daerah bersama-sama agar nyaman, indah, dan membawa kebaikan bagi masyarakat luas.",
+    },
+    {
+      indonesianCharacter: "Nasionalisme & Kerja Sama Membangun Negeri",
+      regionalLanguage: "KAILI" as const,
+      regionalTerm: "Mosangu Morambanga Mombangu Ngata",
+      characterSource:
+        "Kumpulan Ungkapan Bijak To Kaili — Dr. H. Suaib Djafar, M.Si (Budayawan Kaili Sulawesi Tengah)",
+      implementation:
+        "Bersatu padu dalam kegiatan OSIS/Pramuka, mengharumkan nama sekolah dan daerah melalui prestasi, serta berperan aktif membangun lingkungan.",
+    },
+    {
+      indonesianCharacter: "Religius & Taat Norma Adat",
+      regionalLanguage: "KAILI" as const,
+      regionalTerm: "Maroso Agama, Maroso Ada, Naama Ngata",
+      characterSource:
+        "Kumpulan Ungkapan Bijak To Kaili — Dr. H. Suaib Djafar, M.Si (Budayawan Kaili Sulawesi Tengah)",
+      implementation:
+        "Rajin beribadah sesuai keyakinan, menghormati orang tua dan guru, serta menaati tata krama dan aturan adat setempat demi ketenteraman bersama.",
+    },
+    {
+      indonesianCharacter: "Cinta Bahasa Ibu & Jati Diri Budaya",
+      regionalLanguage: "KAILI" as const,
+      regionalTerm: "Nemo Rapakalipo Basa Kaili",
+      characterSource:
+        "Kumpulan Ungkapan Bijak To Kaili — Dr. H. Suaib Djafar, M.Si (Budayawan Kaili Sulawesi Tengah)",
+      implementation:
+        "Bangga mempelajari dan menuturkan bahasa daerah Kaili dengan santun di keluarga maupun kegiatan literasi budaya sekolah.",
+    },
+    {
+      indonesianCharacter: "Integritas & Kejujuran Moral",
+      regionalLanguage: "KAILI" as const,
+      regionalTerm: "Nariatona Nakanano Nasesa Haram Kalebara Nuapa Anurakande Nikitana Ripombunguna Asaladakonuapa Nipoviaka",
+      characterSource:
+        "Kumpulan Ungkapan Bijak To Kaili — Dr. H. Suaib Djafar, M.Si (Budayawan Kaili Sulawesi Tengah)",
+      implementation:
+        "Menjaga kejujuran saat ujian dan tugas, menjauhi perbuatan curang maupun mengambil hak orang lain, serta mencari rezeki dan prestasi secara halal.",
+    },
   ]
 
   for (const matrix of REGIONAL_MATRICES) {
@@ -518,46 +582,60 @@ Pelestarian bahasa daerah dan sastra lisan Sulawesi Tengah kini menjadi priorita
   })
 
   // ========================================================================
-  // 7. PAKET KUIS DAN SOAL (setiap materi satu paket kuis, 5 soal)
+  // 7. PAKET KUIS DAN SOAL (setiap materi satu paket kuis + kuis khusus To Kaili)
   // ========================================================================
   async function createQuizWithQuestions({
     material,
     title,
     description,
     category,
+    regionalLanguage,
+    referenceSource,
+    timeLimit = 30,
     xpReward,
+    creatorId = guruUser.id,
     questions,
   }: {
-    material: any
+    material?: any
     title: string
     description: string
     category: Category
+    regionalLanguage?: "KAILI" | "PAMONA" | "BANGGAI" | "BUNGKU" | "TOLITOLI" | "BUOL" | "SALUAN" | "MORI" | "TAA"
+    referenceSource?: string
+    timeLimit?: number
     xpReward: number
+    creatorId?: string
     questions: Array<{
       question: string
       options: string[]
       correctIndex: number
       explanation?: string
       points?: number
+      regionalLanguage?: "KAILI" | "PAMONA" | "BANGGAI" | "BUNGKU" | "TOLITOLI" | "BUOL" | "SALUAN" | "MORI" | "TAA"
+      wiseSayingText?: string
+      wiseSayingMeaning?: string
+      referenceSource?: string
     }>
   }) {
-    const quiz = await prisma.quiz.create({
+    const quiz = await (prisma.quiz.create as any)({
       data: {
         id: id(),
         title,
         description,
         category,
-        materialId: material.id,
-        timeLimit: 30,
+        regionalLanguage: regionalLanguage ?? null,
+        referenceSource: referenceSource ?? null,
+        materialId: material ? material.id : null,
+        timeLimit,
         passingScore: 75,
         xpReward,
         isPublished: true,
-        createdBy: guruUser.id,
+        createdBy: creatorId,
       },
     })
     for (let i = 0; i < questions.length; i++) {
       const q = questions[i]
-      await prisma.quizQuestion.create({
+      await (prisma.quizQuestion.create as any)({
         data: {
           id: id(),
           quizId: quiz.id,
@@ -567,6 +645,13 @@ Pelestarian bahasa daerah dan sastra lisan Sulawesi Tengah kini menjadi priorita
           explanation: q.explanation ?? "",
           points: q.points ?? 10,
           orderIndex: i + 1,
+          regionalLanguage: q.regionalLanguage ?? regionalLanguage ?? null,
+          wiseSayingText: q.wiseSayingText ?? null,
+          wiseSayingMeaning: q.wiseSayingMeaning ?? null,
+          referenceSource: q.referenceSource ?? referenceSource ?? null,
+          verificationStatus: "APPROVED",
+          createdBy: creatorId,
+          verifiedBy: adminUser.id,
         },
       })
     }
@@ -689,6 +774,154 @@ Pelestarian bahasa daerah dan sastra lisan Sulawesi Tengah kini menjadi priorita
         options: ["Bahasa Indonesia", "Bahasa Inggris", "Jawa", "Sunda"],
         correctIndex: 0,
         explanation: "Bahasa Indonesia adalah bahasa resmi dan terpadu di Indonesia.",
+      },
+    ],
+  })
+
+  // ========================================================================
+  // 8. PAKET KUIS KHUSUS: KUMPULAN UNGKAPAN BIJAK TO KAILI (Dr. H. Suaib Djafar, M.Si)
+  // ========================================================================
+  const kailiRef = "Dr. H. Suaib Djafar, M.Si — Ungkapan Bijak Masyarakat Kaili"
+  await createQuizWithQuestions({
+    material: materiBudaya,
+    title: "Uji Karakter: Kumpulan Ungkapan Bijak To Kaili",
+    description:
+      "Evaluasi pemahaman nilai-nilai karakter luhur masyarakat Kaili berdasarkan kumpulan ungkapan bijak To Kaili karya Dr. H. Suaib Djafar, M.Si.",
+    category: Category.BUDAYA_SULTENG,
+    regionalLanguage: "KAILI",
+    referenceSource: "Dr. H. Suaib Djafar, M.Si (Budayawan Kaili Sulawesi Tengah)",
+    timeLimit: 20,
+    xpReward: 100,
+    creatorId: adminUser.id,
+    questions: [
+      {
+        wiseSayingText: "Mosipeili, Mosimpotove, Mosimpoasi, Nosarara Nosabatutu",
+        wiseSayingMeaning:
+          "Saling menengok, saling menyayangi, saling mengasihi, bersaudara dan bersatu dalam ikatan kekeluargaan.",
+        referenceSource: kailiRef,
+        question:
+          "Nilai karakter utama apakah yang tercermin dalam ungkapan bijak To Kaili tersebut?",
+        options: [
+          "Persaudaraan, Empati & Toleransi",
+          "Persaingan Bebas & Individualisme",
+          "Kemandirian Ekonomi Pribadi",
+          "Ketegasan Hukum & Sanksi Adat",
+        ],
+        correctIndex: 0,
+        explanation:
+          "Ungkapan 'Mosipeili, Mosimpotove, Mosimpoasi, Nosarara Nosabatutu' menekankan ikatan persaudaraan (Nosarara Nosabatutu), kasih sayang, empati, dan toleransi antarsesama.",
+        points: 15,
+      },
+      {
+        wiseSayingText:
+          "Ane Murasai Dua Karomu Danatuvu, Ane Komiu Mbarasai Duatonantanina, Komiu Manusia",
+        wiseSayingMeaning:
+          "Jika engkau hanya merasakan derita dirimu sendiri engkau baru sekadar makhluk hidup, tetapi jika engkau turut merasakan penderitaan orang lain barulah engkau disebut manusia sejati.",
+        referenceSource: kailiRef,
+        question:
+          "Sikap dan nilai karakter luhur apakah yang diajarkan melalui petuah To Kaili di atas?",
+        options: [
+          "Keberanian dalam Menghadapi Musuh",
+          "Kepedulian Sosial & Kemanusiaan",
+          "Disiplin Tata Tertib Administrasi",
+          "Kebanggaan atas Status Keturunan",
+        ],
+        correctIndex: 1,
+        explanation:
+          "Petuah ini mengajarkan hakikat kemanusiaan yang diukur dari kepekaan hati dan kepedulian sosial terhadap penderitaan sesama manusia.",
+        points: 15,
+      },
+      {
+        wiseSayingText:
+          "Moenju Mosangu, Meangga Mosangu, Mompakavoe Maggali Palu Manyama Todeana",
+        wiseSayingMeaning:
+          "Melangkah bersama dan bekerja seirama untuk memperindah serta memakmurkan lembah Palu demi kesejahteraan seluruh masyarakat.",
+        referenceSource: kailiRef,
+        question:
+          "Pilar karakter manakah yang paling tepat menggambarkan pesan utama ungkapan tersebut?",
+        options: [
+          "Kemandirian Belajar Individu",
+          "Kepatuhan pada Aturan Lalu Lintas",
+          "Gotong Royong & Kebersamaan",
+          "Kompetisi Meraih Prestasi Tunggal",
+        ],
+        correctIndex: 2,
+        explanation:
+          "'Moenju Mosangu, Meangga Mosangu' menggambarkan semangat bahu-membahu, gotong royong, dan kebersamaan untuk mewujudkan kemakmuran bersama.",
+        points: 15,
+      },
+      {
+        wiseSayingText: "Mosangu Morambanga Mombangu Ngata",
+        wiseSayingMeaning:
+          "Bersatu padu, seiring sejalan, dan bekerja sama membangun kampung halaman serta negeri tercinta.",
+        referenceSource: kailiRef,
+        question:
+          "Nilai karakter kebangsaan apakah yang terkandung dalam ungkapan 'Mosangu Morambanga Mombangu Ngata'?",
+        options: [
+          "Sikap Hemat dan Gemar Menabung",
+          "Ketelitian dalam Menyusun Karya Tulis",
+          "Kesederhanaan dalam Berpakaian",
+          "Nasionalisme & Kerja Sama Membangun Negeri",
+        ],
+        correctIndex: 3,
+        explanation:
+          "'Mombangu Ngata' berarti membangun negeri/daerah. Ungkapan ini memupuk semangat nasionalisme, persatuan, dan kerja sama demi kemajuan bangsa.",
+        points: 15,
+      },
+      {
+        wiseSayingText: "Maroso Agama, Maroso Ada, Naama Ngata",
+        wiseSayingMeaning:
+          "Kuat dalam menjalankan ajaran agama, teguh menjaga norma adat istiadat, niscaya negeri akan aman dan sejahtera.",
+        referenceSource: kailiRef,
+        question:
+          "Keseimbangan nilai karakter apakah yang menjadi kunci ketenteraman negeri menurut falsafah To Kaili di atas?",
+        options: [
+          "Religius & Taat Norma Adat",
+          "Kecerdasan Digital & Teknologi",
+          "Kecepatan Kerja & Efisiensi Waktu",
+          "Keterbukaan Budaya Asing Secara Bebas",
+        ],
+        correctIndex: 0,
+        explanation:
+          "Ketenteraman dan keamanan negeri (Naama Ngata) berakar pada dua pilar yang kokoh (Maroso), yakni ketakwaan beragama dan kepatuhan terhadap norma adat yang luhur.",
+        points: 15,
+      },
+      {
+        wiseSayingText: "Nemo Rapakalipo Basa Kaili",
+        wiseSayingMeaning:
+          "Jangan pernah melupakan bahasa Kaili sebagai bahasa ibu dan warisan jati diri budaya leluhur.",
+        referenceSource: kailiRef,
+        question:
+          "Sikap mulia apakah yang diamanatkan kepada generasi muda melalui seruan 'Nemo Rapakalipo Basa Kaili'?",
+        options: [
+          "Mengutamakan Bahasa Asing di Rumah",
+          "Cinta Bahasa Ibu & Jati Diri Budaya",
+          "Menolak Perkembangan Ilmu Pengetahuan",
+          "Membatasi Pergaulan dengan Daerah Lain",
+        ],
+        correctIndex: 1,
+        explanation:
+          "Seruan 'Nemo Rapakalipo Basa Kaili' mengajak generasi muda menjaga kelestarian bahasa ibu sebagai wujud cinta budaya dan jati diri tanpa melupakan bahasa persatuan.",
+        points: 15,
+      },
+      {
+        wiseSayingText:
+          "Nariatona Nakanano Nasesa Haram Kalebara Nuapa Anurakande Nikitana Ripombunguna Asaladakonuapa Nipoviaka",
+        wiseSayingMeaning:
+          "Harta dan makanan dari jalan haram atau kecurangan hanya merusak diri sendiri, sedangkan rezeki yang halal dan jujur akan menuntun pada kebaikan di setiap perbuatan.",
+        referenceSource: kailiRef,
+        question:
+          "Nilai karakter utama apakah yang ditegaskan oleh petuah To Kaili tersebut?",
+        options: [
+          "Kepemimpinan Otoriter",
+          "Kreativitas Seni Rupa",
+          "Integritas & Kejujuran Moral",
+          "Ketangkasan Olahraga Tradisional",
+        ],
+        correctIndex: 2,
+        explanation:
+          "Ungkapan bijak ini memperingatkan agar senantiasa menjauhi kecurangan (haram) dan memegang teguh integritas serta kejujuran moral dalam memperoleh rezeki maupun berbuat kebaikan.",
+        points: 15,
       },
     ],
   })

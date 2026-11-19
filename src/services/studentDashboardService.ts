@@ -1,4 +1,8 @@
 import { prisma } from "@/lib/prisma"
+import {
+  getAllRegionalLanguagesSummary,
+  type RegionalLanguageSummaryItem,
+} from "@/services/regionalLearningService"
 
 export interface PillarProgress {
   category: "BAHASA_INDONESIA" | "KARAKTER" | "BUDAYA_SULTENG"
@@ -55,6 +59,15 @@ export interface StudentDashboardData {
     date: Date
     status: string
   }>
+  dailyWiseSaying: {
+    wiseSayingText: string
+    wiseSayingMeaning: string
+    characterValue: string
+    referenceSource: string
+    audioUrl: string | null
+    quizId: string | null
+  } | null
+  regionalLanguagesSummary: RegionalLanguageSummaryItem[]
 }
 
 function getLevelTitle(level: number): string {
@@ -76,6 +89,8 @@ export async function getStudentDashboardData(userId: string): Promise<StudentDa
     totalQuizzesCount,
     masterBadges,
     userBadges,
+    kailiWiseSayings,
+    regionalLanguagesSummary,
   ] = await Promise.all([
     prisma.masterUser.findUnique({
       where: { id: userId },
@@ -141,6 +156,26 @@ export async function getStudentDashboardData(userId: string): Promise<StudentDa
       where: { userId },
       select: { badgeId: true, earnedAt: true },
     }),
+    prisma.quizQuestion.findMany({
+      where: {
+        verificationStatus: "APPROVED",
+        regionalLanguage: "KAILI",
+        wiseSayingText: { not: null },
+        quiz: { isPublished: true },
+      },
+      select: {
+        id: true,
+        quizId: true,
+        wiseSayingText: true,
+        wiseSayingMeaning: true,
+        referenceSource: true,
+        audioUrl: true,
+        options: true,
+        correctIndex: true,
+      },
+      orderBy: { orderIndex: "asc" },
+    }),
+    getAllRegionalLanguagesSummary(userId),
   ])
 
   if (!user) {
@@ -318,6 +353,35 @@ export async function getStudentDashboardData(userId: string): Promise<StudentDa
 
   combinedActivities.sort((a, b) => b.date.getTime() - a.date.getTime())
 
+  // Petuah Bijak To Kaili Hari Ini (rotasi harian dari data MySQL)
+  let dailyWiseSaying: StudentDashboardData["dailyWiseSaying"] = null
+  if (kailiWiseSayings.length > 0) {
+    const startOfYear = new Date(today.getFullYear(), 0, 0)
+    const dayOfYear = Math.floor((today.getTime() - startOfYear.getTime()) / 86400000)
+    const chosen = kailiWiseSayings[Math.abs(dayOfYear) % kailiWiseSayings.length]
+    let characterValue = "Kearifan Karakter To Kaili"
+    try {
+      const parsedOpts: unknown = JSON.parse(chosen.options)
+      if (Array.isArray(parsedOpts) && parsedOpts[chosen.correctIndex]) {
+        characterValue = String(parsedOpts[chosen.correctIndex])
+      }
+    } catch {
+      // Gunakan nilai bawaan jika gagal parse
+    }
+
+    if (chosen.wiseSayingText) {
+      dailyWiseSaying = {
+        wiseSayingText: chosen.wiseSayingText,
+        wiseSayingMeaning: chosen.wiseSayingMeaning || "",
+        characterValue,
+        referenceSource:
+          chosen.referenceSource || "Dr. H. Suaib Djafar, M.Si — Ungkapan Bijak Masyarakat Kaili",
+        audioUrl: chosen.audioUrl ?? null,
+        quizId: chosen.quizId,
+      }
+    }
+  }
+
   return {
     user: {
       id: user.id,
@@ -342,5 +406,7 @@ export async function getStudentDashboardData(userId: string): Promise<StudentDa
     lastQuizAttempt,
     popularMaterials,
     recentActivities: combinedActivities.slice(0, 4),
+    dailyWiseSaying,
+    regionalLanguagesSummary,
   }
 }

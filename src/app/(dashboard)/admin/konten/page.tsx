@@ -1,14 +1,10 @@
-import { getCurrentUser } from "@/lib/auth"
+import { requireDashboardUser } from "@/lib/auth"
 import { getAllContentForModeration } from "@/services/admin-guru"
 import { PageHeader } from "@/components/shared/PageHeader"
 import { ModerasiKontenClient } from "@/components/admin/ModerasiKontenClient"
-import { redirect } from "next/navigation"
 
 export default async function AdminKontenPage() {
-  const user = await getCurrentUser()
-  if (!user || user.role !== "ADMIN") {
-    redirect("/masuk")
-  }
+  await requireDashboardUser("ADMIN")
 
   const { materials, quizzes } = await getAllContentForModeration()
 

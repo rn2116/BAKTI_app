@@ -1,4 +1,5 @@
 import { getCurrentUser, AuthUser } from "@/lib/auth"
+import { getPendingVerificationCount } from "@/services/admin-guru"
 import { redirect } from "next/navigation"
 import DesktopSidebar from "@/components/layout/DesktopSidebar"
 import { DesktopTopHeader } from "@/components/layout/DesktopTopHeader"
@@ -13,14 +14,23 @@ export default async function AppShell({
   user?: AuthUser
 }) {
   const user = initialUser ?? (await getCurrentUser())
-  if (!user) {
-    redirect("/masuk")
+  if (!user || !user.isActive) {
+    redirect("/api/auth/clear-session")
+  }
+
+  let pendingQuestionCount = 0
+  if (user.role === "ADMIN") {
+    try {
+      pendingQuestionCount = await getPendingVerificationCount()
+    } catch {
+      pendingQuestionCount = 0
+    }
   }
 
   return (
     <div className="min-h-screen bg-[#FAFAF8] text-[#18181B] overflow-x-hidden">
       {/* 1. Desktop Sidebar Fixed (Lebar Baru md:w-72 / 288px) */}
-      <DesktopSidebar user={user} />
+      <DesktopSidebar user={user} pendingQuestionCount={pendingQuestionCount} />
 
       {/* 2. Mobile Top Header Sticky (< 768px) dengan Lonceng Notifikasi & Tombol Keluar */}
       <MobileTopHeader user={user} />
@@ -37,7 +47,10 @@ export default async function AppShell({
       </main>
 
       {/* 4. Mobile Bottom Navigation Bar (< 768px) */}
-      <MobileBottomNav userRole={user.role} />
+      <MobileBottomNav
+        userRole={user.role}
+        pendingQuestionCount={pendingQuestionCount}
+      />
     </div>
   )
 }

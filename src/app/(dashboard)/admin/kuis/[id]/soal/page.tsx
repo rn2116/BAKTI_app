@@ -1,4 +1,4 @@
-import { getCurrentUser } from "@/lib/auth"
+import { requireDashboardUser } from "@/lib/auth"
 import { getAdminQuizDetail } from "@/services/admin-guru"
 import { AdminQuizQuestionsClient } from "@/components/admin/AdminQuizQuestionsClient"
 import { redirect } from "next/navigation"
@@ -8,10 +8,7 @@ export default async function AdminQuizDetailPage({
 }: {
   params: Promise<{ id: string }>
 }) {
-  const user = await getCurrentUser()
-  if (!user || user.role !== "ADMIN") {
-    redirect("/masuk")
-  }
+  const user = await requireDashboardUser("ADMIN")
 
   const { id } = await params
   const quiz = await getAdminQuizDetail(id)
@@ -21,7 +18,7 @@ export default async function AdminQuizDetailPage({
 
   return (
     <div className="space-y-6">
-      <AdminQuizQuestionsClient quiz={quiz} />
+      <AdminQuizQuestionsClient quiz={quiz} currentUserId={user.id} />
     </div>
   )
 }

@@ -24,11 +24,13 @@ import {
   Building,
   Users,
   ShieldAlert,
+  ShieldCheck,
   LogOut,
   Sparkles,
   Heart,
   Compass,
   Award,
+  BarChart3,
 } from "lucide-react"
 
 const ICON_MAP: Record<string, React.ElementType> = {
@@ -42,9 +44,11 @@ const ICON_MAP: Record<string, React.ElementType> = {
   Building,
   Users,
   ShieldAlert,
+  ShieldCheck,
   Heart,
   Compass,
   Award,
+  BarChart3,
 }
 
 // Navigasi yang lebih lengkap & menarik khusus Siswa
@@ -59,9 +63,10 @@ const SISWA_MENU_ITEMS = [
 
 interface DesktopSidebarProps {
   user: AuthUser
+  pendingQuestionCount?: number
 }
 
-export default function DesktopSidebar({ user }: DesktopSidebarProps) {
+export default function DesktopSidebar({ user, pendingQuestionCount = 0 }: DesktopSidebarProps) {
   const pathname = usePathname()
   const isSiswa = user.role === "SISWA"
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
@@ -82,9 +87,9 @@ export default function DesktopSidebar({ user }: DesktopSidebarProps) {
   return (
     <>
       <aside className="hidden md:flex md:flex-col md:fixed md:inset-y-0 md:left-0 md:w-72 bg-[#1E135E] text-white z-40 justify-between h-full select-none shadow-xl border-r border-[#2E1994]">
-        {/* 1. BAGIAN ATAS: LOGO & BRANDING DENGAN LEBAR PENUH & TATA LETAK PRESISI */}
-        <div className="px-5 py-6 border-b border-white/10">
-          <BrandLogo light={true} />
+        {/* 1. BAGIAN ATAS: LOGO RESMI BERLATAR PUTIH UNTUK KONTRAS MAKSIMAL */}
+        <div className="bg-white px-4 py-4 border-b border-zinc-200">
+          <BrandLogo light={false} stacked={true} showSubtitle={true} size="md" />
         </div>
 
         {/* 2. BAGIAN TENGAH: DAFTAR NAVIGASI & KARTU FALSAFAH KELOKALAN */}
@@ -95,28 +100,41 @@ export default function DesktopSidebar({ user }: DesktopSidebarProps) {
             </div>
             <nav className="space-y-1.5">
               {items.map((item) => {
-                const active = pathname === item.href
+                const isRootDash =
+                  item.href === "/siswa" || item.href === "/guru" || item.href === "/admin"
+                const active =
+                  pathname === item.href ||
+                  (!isRootDash && pathname.startsWith(`${item.href}/`))
                 const IconComp =
                   ICON_MAP[item.icon as keyof typeof ICON_MAP] ?? LayoutDashboard
+                const showVerificationBadge =
+                  item.href === "/admin/verifikasi-soal" && pendingQuestionCount > 0
 
                 return (
                   <Link
                     key={item.href}
                     href={item.href}
                     className={cn(
-                      "flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150",
+                      "flex items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150",
                       active
                         ? "bg-[#3C22BB] text-white shadow-md border border-white/20"
                         : "text-indigo-100/80 hover:bg-white/10 hover:text-white"
                     )}
                   >
-                    <IconComp
-                      className={cn(
-                        "w-5 h-5 shrink-0",
-                        active ? "text-white" : "text-indigo-300"
-                      )}
-                    />
-                    <span className="truncate">{item.label}</span>
+                    <div className="flex items-center gap-3 min-w-0">
+                      <IconComp
+                        className={cn(
+                          "w-5 h-5 shrink-0",
+                          active ? "text-white" : "text-indigo-300"
+                        )}
+                      />
+                      <span className="truncate">{item.label}</span>
+                    </div>
+                    {showVerificationBadge && (
+                      <span className="shrink-0 inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[10px] font-extrabold bg-amber-400 text-zinc-950 shadow-xs">
+                        {pendingQuestionCount > 99 ? "99+" : pendingQuestionCount}
+                      </span>
+                    )}
                   </Link>
                 )
               })}

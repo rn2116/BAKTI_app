@@ -31,6 +31,12 @@ enum RegionalLanguage {
   TAA
 }
 
+enum QuestionVerificationStatus {
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+}
+
 model MasterRegency {
   id        String   @id @db.Char(36)
   name      String   @db.VarChar(100)
@@ -107,7 +113,11 @@ model MasterUser {
   certificates  UserCertificate[]
   createdMaterials LearningMaterial[] @relation("MaterialCreator")
   createdQuizzes   Quiz[]           @relation("QuizCreator")
+  createdQuestions QuizQuestion[]   @relation("QuestionCreator")
+  verifiedQuestions QuizQuestion[]  @relation("QuestionVerifier")
   characterMatrices CharacterMatrix[]
+  regionalProgress  RegionalModuleProgress[]
+  sertifikatBahasa  Sertifikat[]
 
   @@index([role])
   @@index([schoolId])
@@ -167,6 +177,7 @@ model Quiz {
   description      String?           @db.Text
   category         Category
   regionalLanguage RegionalLanguage? @map("regional_language")
+  referenceSource  String?           @db.VarChar(255) @map("reference_source")
   materialId       String?           @db.Char(36)
   timeLimit        Int               @default(30)
   passingScore     Int               @default(75)
@@ -189,22 +200,34 @@ model Quiz {
 }
 
 model QuizQuestion {
-  id               String            @id @db.Char(36)
-  quizId           String            @db.Char(36)
-  question         String            @db.Text
-  options          String            @db.Text // JSON array string (["a","b","c","d"])
-  correctIndex     Int
-  explanation      String?           @db.Text
-  points           Int               @default(10)
-  orderIndex       Int               @default(0)
-  regionalLanguage RegionalLanguage? @map("regional_language")
-  createdAt        DateTime          @default(now())
+  id                 String                     @id @db.Char(36)
+  quizId             String                     @db.Char(36)
+  question           String                     @db.Text
+  options            String                     @db.Text // JSON array string (["a","b","c","d"])
+  correctIndex       Int
+  explanation        String?                    @db.Text
+  points             Int                        @default(10)
+  orderIndex         Int                        @default(0)
+  regionalLanguage   RegionalLanguage?          @map("regional_language")
+  wiseSayingText     String?                    @db.Text @map("wise_saying_text")
+  wiseSayingMeaning  String?                    @db.Text @map("wise_saying_meaning")
+  referenceSource    String?                    @db.VarChar(255) @map("reference_source")
+  audioUrl           String?                    @db.Text @map("audio_url")
+  verificationStatus QuestionVerificationStatus @default(APPROVED) @map("verification_status")
+  createdBy          String?                    @db.Char(36) @map("created_by")
+  verifiedBy         String?                    @db.Char(36) @map("verified_by")
+  reviewNotes        String?                    @db.Text @map("review_notes")
+  createdAt          DateTime                   @default(now())
 
-  quiz        Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  quiz        Quiz                @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  creator     MasterUser?         @relation("QuestionCreator", fields: [createdBy], references: [id], onDelete: SetNull)
+  verifier    MasterUser?         @relation("QuestionVerifier", fields: [verifiedBy], references: [id], onDelete: SetNull)
   answers     QuizAttemptAnswer[]
 
   @@index([quizId])
   @@index([regionalLanguage])
+  @@index([verificationStatus])
+  @@index([createdBy])
   @@map("quiz_questions")
 }
 
@@ -311,6 +334,7 @@ model CharacterMatrix {
   regionalTerm        String            @db.VarChar(200) @map("regional_term")
   characterSource     String            @db.Text @map("character_source")
   implementation      String            @db.Text @map("implementation")
+  audioUrl            String?           @db.Text @map("audio_url")
   createdBy           String?           @db.Char(36) @map("created_by")
   createdAt           DateTime          @default(now()) @map("created_at")
   updatedAt           DateTime          @updatedAt @map("updated_at")
@@ -320,4 +344,40 @@ model CharacterMatrix {
   @@index([regionalLanguage])
   @@index([indonesianCharacter])
   @@map("character_matrices")
+}
+
+model RegionalModuleProgress {
+  id               String           @id @db.Char(36)
+  userId           String           @db.Char(36)
+  regionalLanguage RegionalLanguage @map("regional_language")
+  learnedCardIds   String           @db.Text @map("learned_card_ids")
+  stage1Completed  Boolean          @default(false) @map("stage1_completed")
+  stage2Completed  Boolean          @default(false) @map("stage2_completed")
+  stage2Score      Int              @default(0) @map("stage2_score")
+  stage3Completed  Boolean          @default(false) @map("stage3_completed")
+  bestQuizScore    Int              @default(0) @map("best_quiz_score")
+  updatedAt        DateTime         @updatedAt @map("updated_at")
+
+  user             MasterUser       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, regionalLanguage])
+  @@index([userId])
+  @@index([regionalLanguage])
+  @@map("regional_module_progress")
+}
+
+model Sertifikat {
+  id              String           @id @db.Char(36)
+  nomorSertifikat String           @unique @db.VarChar(60) @map("nomor_sertifikat")
+  userId          String           @db.Char(36)
+  bahasaDaerah    RegionalLanguage @map("bahasa_daerah")
+  tanggalTerbit   DateTime         @default(now()) @map("tanggal_terbit")
+  skorAkhir       Int              @default(0) @map("skor_akhir")
+
+  user            MasterUser       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, bahasaDaerah])
+  @@index([userId])
+  @@index([bahasaDaerah])
+  @@map("sertifikat")
 }

@@ -23,21 +23,20 @@ export function MobileTopHeader({ user }: MobileTopHeaderProps) {
 
   return (
     <>
-      <header className="sticky top-0 inset-x-0 h-14 bg-white/95 backdrop-blur-md border-b border-zinc-200 px-4 flex items-center justify-between z-40 md:hidden shadow-xs relative">
+      <header className="sticky top-0 inset-x-0 h-14 bg-white/95 backdrop-blur-md border-b border-zinc-200 px-3 sm:px-4 flex items-center justify-between gap-2 z-40 md:hidden shadow-xs relative">
         {/* Reading Progress Bar di Tepi Paling Bawah Header Mobile */}
         <TopHeaderProgressBar />
 
-        {/* Sisi Kiri: Logo + Judul */}
-        <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-8 h-8 rounded-lg bg-[#3C22BB] text-white flex items-center justify-center font-extrabold text-xs shrink-0 shadow-xs">
-            BK
-          </div>
-          <div className="overflow-hidden">
-            <div className="text-xs font-extrabold text-[#3C22BB] truncate uppercase tracking-tight">
-              Bahasa & Karakter
-            </div>
-            <div className="text-[10px] text-zinc-500 truncate -mt-0.5">
-              Prov. Sulawesi Tengah
+        {/* Sisi Kiri: Logo Resmi Kemendikdasmen + Judul Ringkas */}
+        <div className="flex items-center gap-2 min-w-0">
+          <img
+            src="/images/logo-bbpst-kemendikdasmen.png"
+            alt="Logo Kemendikdasmen — Balai Bahasa Provinsi Sulawesi Tengah"
+            className="h-6 sm:h-7 w-auto object-contain shrink-0"
+          />
+          <div className="border-l border-zinc-200 pl-2 min-w-0">
+            <div className="text-[10px] sm:text-xs font-black text-[#1E135E] truncate uppercase tracking-tight leading-tight">
+              Bahasa &amp; Karakter
             </div>
           </div>
         </div>

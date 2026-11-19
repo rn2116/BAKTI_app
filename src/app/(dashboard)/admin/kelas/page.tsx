@@ -1,14 +1,10 @@
-import { getCurrentUser } from "@/lib/auth"
+import { requireDashboardUser } from "@/lib/auth"
 import { getAllClassesAdmin, getAllSchoolsAdmin } from "@/services/admin-guru"
 import { PageHeader } from "@/components/shared/PageHeader"
 import { AdminKelasClient } from "@/components/admin/AdminKelasClient"
-import { redirect } from "next/navigation"
 
 export default async function AdminKelasPage() {
-  const user = await getCurrentUser()
-  if (!user || user.role !== "ADMIN") {
-    redirect("/masuk")
-  }
+  await requireDashboardUser("ADMIN")
 
   const [classes, schools] = await Promise.all([
     getAllClassesAdmin(),

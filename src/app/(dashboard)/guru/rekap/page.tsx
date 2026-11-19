@@ -1,14 +1,10 @@
-import { getCurrentUser } from "@/lib/auth"
+import { requireDashboardUser } from "@/lib/auth"
 import { getQuizRecapBySchoolOrTeacher, getTeacherClasses } from "@/services/admin-guru"
 import { PageHeader } from "@/components/shared/PageHeader"
 import { GuruRekapClient } from "@/components/guru/GuruRekapClient"
-import { redirect } from "next/navigation"
 
 export default async function GuruRekapPage() {
-  const user = await getCurrentUser()
-  if (!user || user.role !== "GURU") {
-    redirect("/masuk")
-  }
+  const user = await requireDashboardUser("GURU")
 
   const recapAttempts = await getQuizRecapBySchoolOrTeacher(
     user.schoolId ?? undefined,

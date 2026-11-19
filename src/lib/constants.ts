@@ -60,12 +60,15 @@ export const NAVIGATION_ITEMS_GURU = [
   { label: "Beranda", href: "/guru", icon: "LayoutDashboard" },
   { label: "Kelas Saya", href: "/guru/kelas", icon: "Building2" },
   { label: "Katalog Materi", href: "/guru/materi", icon: "BookOpen" },
+  { label: "Bank Soal & Kuis", href: "/guru/kuis", icon: "ClipboardList" },
   { label: "Rekap Nilai Siswa", href: "/guru/rekap", icon: "FileText" },
 ] as const
 
 export const NAVIGATION_ITEMS_ADMIN = [
   { label: "Beranda", href: "/admin", icon: "LayoutDashboard" },
+  { label: "Analitik BBPST", href: "/admin/analitik", icon: "BarChart3" },
   { label: "Bank Soal & Kuis", href: "/admin/kuis", icon: "ClipboardList" },
+  { label: "Verifikasi Soal", href: "/admin/verifikasi-soal", icon: "ShieldCheck" },
   { label: "Matriks Karakter", href: "/admin/matriks-karakter", icon: "Compass" },
   { label: "Materi Literasi", href: "/admin/materi", icon: "BookOpen" },
   { label: "Data Sekolah", href: "/admin/sekolah", icon: "Building" },

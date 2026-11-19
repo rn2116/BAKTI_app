@@ -52,8 +52,19 @@ module.exports = {
         sm: "calc(var(--radius) - 4px)",
       },
       fontFamily: {
-        sans: ["var(--font-plus-jakarta)", "system-ui", "sans-serif"],
-        serif: ["var(--font-lora)", "Georgia", "serif"],
+        sans: [
+          "'Plus Jakarta Sans'",
+          "var(--font-plus-jakarta)",
+          "system-ui",
+          "-apple-system",
+          "sans-serif",
+        ],
+        serif: [
+          "'Lora'",
+          "var(--font-lora)",
+          "Georgia",
+          "serif",
+        ],
       },
       animation: {
         "pop-in": "popIn 0.2s ease-out",
