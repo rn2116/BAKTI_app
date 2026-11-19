@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma"
 import { unstable_cache } from "next/cache"
-import { Category, Role } from "@/types"
+import { REGIONAL_LANGUAGES, REGIONAL_LANGUAGE_LABELS } from "@/lib/constants"
+import { Category, RegionalLanguage, Role } from "@/types"
 
 // ========================
 // GURU - KELAS & REKAP
@@ -352,6 +353,110 @@ export async function getAdminQuizDetail(id: string) {
       material: { select: { id: true, title: true } },
       questions: {
         orderBy: { orderIndex: "asc" },
+        include: {
+          creator: { select: { id: true, fullName: true, role: true } },
+          verifier: { select: { fullName: true } },
+        },
+      },
+    },
+  })
+}
+
+export async function getPendingVerificationCount(): Promise<number> {
+  return prisma.quizQuestion.count({
+    where: { verificationStatus: "PENDING_REVIEW" },
+  })
+}
+
+export async function getQuestionsForVerification() {
+  const [questions, pendingCount, approvedCount, rejectedCount] = await Promise.all([
+    prisma.quizQuestion.findMany({
+      include: {
+        quiz: {
+          select: {
+            id: true,
+            title: true,
+            category: true,
+            regionalLanguage: true,
+          },
+        },
+        creator: {
+          select: {
+            id: true,
+            fullName: true,
+            role: true,
+            school: { select: { name: true } },
+          },
+        },
+        verifier: {
+          select: { fullName: true },
+        },
+      },
+      orderBy: [{ createdAt: "desc" }],
+    }),
+    prisma.quizQuestion.count({ where: { verificationStatus: "PENDING_REVIEW" } }),
+    prisma.quizQuestion.count({ where: { verificationStatus: "APPROVED" } }),
+    prisma.quizQuestion.count({ where: { verificationStatus: "REJECTED" } }),
+  ])
+
+  return {
+    questions,
+    counts: {
+      pending: pendingCount,
+      approved: approvedCount,
+      rejected: rejectedCount,
+      total: pendingCount + approvedCount + rejectedCount,
+    },
+  }
+}
+
+export async function getQuizzesForTeacherContribution(teacherId: string) {
+  const quizzes = await prisma.quiz.findMany({
+    include: {
+      creator: { select: { id: true, fullName: true, role: true } },
+      material: { select: { title: true } },
+      _count: {
+        select: {
+          questions: { where: { verificationStatus: "APPROVED" } },
+          attempts: true,
+        },
+      },
+      questions: {
+        where: { createdBy: teacherId },
+        select: { id: true, verificationStatus: true },
+      },
+    },
+    orderBy: { createdAt: "desc" },
+  })
+
+  return quizzes.map((q) => ({
+    ...q,
+    teacherSubmissionStats: {
+      pending: q.questions.filter((item) => item.verificationStatus === "PENDING_REVIEW").length,
+      approved: q.questions.filter((item) => item.verificationStatus === "APPROVED").length,
+      rejected: q.questions.filter((item) => item.verificationStatus === "REJECTED").length,
+    },
+  }))
+}
+
+export async function getTeacherQuizDetail(quizId: string, teacherId: string) {
+  return prisma.quiz.findUnique({
+    where: { id: quizId },
+    include: {
+      creator: { select: { id: true, fullName: true, role: true } },
+      material: { select: { id: true, title: true } },
+      questions: {
+        where: {
+          OR: [
+            { verificationStatus: "APPROVED" },
+            { createdBy: teacherId },
+          ],
+        },
+        orderBy: { orderIndex: "asc" },
+        include: {
+          creator: { select: { id: true, fullName: true, role: true } },
+          verifier: { select: { fullName: true } },
+        },
       },
     },
   })
@@ -470,4 +575,350 @@ export async function getAllStudentRecapReport(regencyId?: string, schoolId?: st
       autoSubmittedCount,
     }
   })
+}
+
+// ========================
+// ADMIN - ANALITIK INSTANSI BBPST (TUGAS 5)
+// ========================
+
+export interface RegencyAnalyticsRow {
+  regencyId: string
+  regencyName: string
+  schoolsCount: number
+  studentsCount: number
+  teachersCount: number
+  certificatesCount: number
+}
+
+export interface RegionalLanguageAnalyticsRow {
+  code: RegionalLanguage
+  name: string
+  attemptsCount: number
+  avgScore: number
+  passRate: number
+  moduleStarters: number
+  certificatesCount: number
+}
+
+export interface ExpressionPerformanceItem {
+  questionId: string
+  label: string
+  meaning: string | null
+  languageName: string
+  totalAnswered: number
+  correctCount: number
+  accuracyPercent: number
+}
+
+export interface AdminAgencyAnalyticsData {
+  summary: {
+    totalActiveUsers: number
+    totalStudents: number
+    totalTeachers: number
+    activeLearnersCount: number
+    totalSchools: number
+    totalRegencies: number
+    totalQuizAttempts: number
+    totalRegionalCertificates: number
+    totalMaterialCertificates: number
+    overallAvgScore: number
+  }
+  regencyDistribution: RegencyAnalyticsRow[]
+  schoolDistribution: Array<{
+    schoolId: string
+    schoolName: string
+    regencyName: string
+    studentsCount: number
+    teachersCount: number
+    attemptsCount: number
+    avgScore: number
+  }>
+  languagePerformance: RegionalLanguageAnalyticsRow[]
+  mostMasteredExpressions: ExpressionPerformanceItem[]
+  hardestExpressions: ExpressionPerformanceItem[]
+}
+
+export async function getAdminAgencyAnalytics(): Promise<AdminAgencyAnalyticsData> {
+  const [
+    users,
+    regencies,
+    schools,
+    attempts,
+    answers,
+    moduleProgressRows,
+    regionalCerts,
+    materialCertCount,
+  ] = await Promise.all([
+    prisma.masterUser.findMany({
+      where: { isActive: true },
+      select: {
+        id: true,
+        role: true,
+        schoolId: true,
+        xp: true,
+      },
+    }),
+    prisma.masterRegency.findMany({
+      orderBy: { name: "asc" },
+      select: { id: true, name: true },
+    }),
+    prisma.masterSchool.findMany({
+      where: { isActive: true },
+      select: {
+        id: true,
+        name: true,
+        regencyId: true,
+        regency: { select: { name: true } },
+      },
+      orderBy: { name: "asc" },
+    }),
+    prisma.quizAttempt.findMany({
+      select: {
+        id: true,
+        userId: true,
+        score: true,
+        maxScore: true,
+        passed: true,
+        user: { select: { schoolId: true } },
+        quiz: { select: { regionalLanguage: true } },
+      },
+    }),
+    prisma.quizAttemptAnswer.findMany({
+      select: {
+        isCorrect: true,
+        questionId: true,
+        question: {
+          select: {
+            id: true,
+            question: true,
+            wiseSayingText: true,
+            wiseSayingMeaning: true,
+            regionalLanguage: true,
+            quiz: { select: { regionalLanguage: true } },
+          },
+        },
+      },
+    }),
+    prisma.regionalModuleProgress.findMany({
+      select: {
+        userId: true,
+        regionalLanguage: true,
+        stage3Completed: true,
+        bestQuizScore: true,
+      },
+    }),
+    prisma.sertifikat.findMany({
+      select: {
+        id: true,
+        bahasaDaerah: true,
+        user: { select: { school: { select: { regencyId: true } } } },
+      },
+    }),
+    prisma.userCertificate.count(),
+  ])
+
+  const students = users.filter((u) => u.role === Role.SISWA)
+  const teachers = users.filter((u) => u.role === Role.GURU)
+
+  const learnerIds = new Set<string>()
+  for (const a of attempts) learnerIds.add(a.userId)
+  for (const m of moduleProgressRows) learnerIds.add(m.userId)
+  for (const s of students) {
+    if (s.xp > 0) learnerIds.add(s.id)
+  }
+
+  let totalPctSum = 0
+  let validAttemptCount = 0
+  for (const a of attempts) {
+    if (a.maxScore > 0) {
+      totalPctSum += (a.score / a.maxScore) * 100
+      validAttemptCount++
+    }
+  }
+  const overallAvgScore =
+    validAttemptCount > 0 ? Math.round(totalPctSum / validAttemptCount) : 0
+
+  // Map Regency Distribution
+  const schoolById = new Map(schools.map((s) => [s.id, s]))
+  const regencyDistribution: RegencyAnalyticsRow[] = regencies.map((reg) => {
+    const regSchools = schools.filter((s) => s.regencyId === reg.id)
+    const regSchoolIds = new Set(regSchools.map((s) => s.id))
+    const regStudents = students.filter(
+      (u) => u.schoolId && regSchoolIds.has(u.schoolId)
+    ).length
+    const regTeachers = teachers.filter(
+      (u) => u.schoolId && regSchoolIds.has(u.schoolId)
+    ).length
+    const regCerts = regionalCerts.filter(
+      (c) => c.user?.school?.regencyId === reg.id
+    ).length
+
+    return {
+      regencyId: reg.id,
+      regencyName: reg.name,
+      schoolsCount: regSchools.length,
+      studentsCount: regStudents,
+      teachersCount: regTeachers,
+      certificatesCount: regCerts,
+    }
+  })
+
+  // Top School Distribution
+  const schoolDistribution = schools.map((sch) => {
+    const schStudents = students.filter((u) => u.schoolId === sch.id).length
+    const schTeachers = teachers.filter((u) => u.schoolId === sch.id).length
+    const schAttempts = attempts.filter((a) => a.user?.schoolId === sch.id)
+    let schPctSum = 0
+    let schValid = 0
+    for (const a of schAttempts) {
+      if (a.maxScore > 0) {
+        schPctSum += (a.score / a.maxScore) * 100
+        schValid++
+      }
+    }
+
+    return {
+      schoolId: sch.id,
+      schoolName: sch.name,
+      regencyName: sch.regency?.name ?? schoolById.get(sch.id)?.regency?.name ?? "-",
+      studentsCount: schStudents,
+      teachersCount: schTeachers,
+      attemptsCount: schAttempts.length,
+      avgScore: schValid > 0 ? Math.round(schPctSum / schValid) : 0,
+    }
+  })
+
+  // Regional Language Performance (9 Bahasa Daerah)
+  const languagePerformance: RegionalLanguageAnalyticsRow[] = REGIONAL_LANGUAGES.map(
+    (langMeta) => {
+      const langAttempts = attempts.filter(
+        (a) => a.quiz.regionalLanguage === langMeta.code
+      )
+      const langMods = moduleProgressRows.filter(
+        (m) => m.regionalLanguage === langMeta.code
+      )
+      const langCerts = regionalCerts.filter(
+        (c) => c.bahasaDaerah === langMeta.code
+      ).length
+
+      let pctSum = 0
+      let validCnt = 0
+      let passedCnt = 0
+      for (const a of langAttempts) {
+        if (a.maxScore > 0) {
+          pctSum += (a.score / a.maxScore) * 100
+          validCnt++
+        }
+        if (a.passed) passedCnt++
+      }
+
+      // Include module progress scores when dedicated quiz attempts are still empty
+      if (validCnt === 0 && langMods.length > 0) {
+        const modScores = langMods.filter((m) => m.bestQuizScore > 0)
+        if (modScores.length > 0) {
+          pctSum = modScores.reduce((acc, m) => acc + m.bestQuizScore, 0)
+          validCnt = modScores.length
+        }
+      }
+
+      return {
+        code: langMeta.code,
+        name: langMeta.name,
+        attemptsCount: langAttempts.length,
+        avgScore: validCnt > 0 ? Math.round(pctSum / validCnt) : 0,
+        passRate:
+          langAttempts.length > 0
+            ? Math.round((passedCnt / langAttempts.length) * 100)
+            : 0,
+        moduleStarters: langMods.length,
+        certificatesCount: langCerts,
+      }
+    }
+  )
+
+  // Ungkapan Paling Dikuasai vs Paling Sulit
+  const questionStatsMap = new Map<
+    string,
+    {
+      questionId: string
+      label: string
+      meaning: string | null
+      languageName: string
+      totalAnswered: number
+      correctCount: number
+    }
+  >()
+
+  for (const ans of answers) {
+    const q = ans.question
+    if (!q) continue
+    const langCode = q.regionalLanguage ?? q.quiz?.regionalLanguage
+    const languageName = langCode
+      ? REGIONAL_LANGUAGE_LABELS[langCode] ?? langCode
+      : "Literasi & Karakter"
+
+    const label = q.wiseSayingText ? `"${q.wiseSayingText}"` : q.question
+    const existingStat = questionStatsMap.get(q.id)
+    if (existingStat) {
+      existingStat.totalAnswered += 1
+      if (ans.isCorrect) existingStat.correctCount += 1
+    } else {
+      questionStatsMap.set(q.id, {
+        questionId: q.id,
+        label,
+        meaning: q.wiseSayingMeaning,
+        languageName,
+        totalAnswered: 1,
+        correctCount: ans.isCorrect ? 1 : 0,
+      })
+    }
+  }
+
+  const allExpressionPerf: ExpressionPerformanceItem[] = Array.from(
+    questionStatsMap.values()
+  ).map((item) => ({
+    ...item,
+    accuracyPercent:
+      item.totalAnswered > 0
+        ? Math.round((item.correctCount / item.totalAnswered) * 100)
+        : 0,
+  }))
+
+  const mostMasteredExpressions = [...allExpressionPerf]
+    .sort((a, b) => {
+      if (b.accuracyPercent !== a.accuracyPercent) {
+        return b.accuracyPercent - a.accuracyPercent
+      }
+      return b.totalAnswered - a.totalAnswered
+    })
+    .slice(0, 5)
+
+  const hardestExpressions = [...allExpressionPerf]
+    .sort((a, b) => {
+      if (a.accuracyPercent !== b.accuracyPercent) {
+        return a.accuracyPercent - b.accuracyPercent
+      }
+      return b.totalAnswered - a.totalAnswered
+    })
+    .slice(0, 5)
+
+  return {
+    summary: {
+      totalActiveUsers: users.length,
+      totalStudents: students.length,
+      totalTeachers: teachers.length,
+      activeLearnersCount: learnerIds.size,
+      totalSchools: schools.length,
+      totalRegencies: regencies.length,
+      totalQuizAttempts: attempts.length,
+      totalRegionalCertificates: regionalCerts.length,
+      totalMaterialCertificates: materialCertCount,
+      overallAvgScore,
+    },
+    regencyDistribution,
+    schoolDistribution,
+    languagePerformance,
+    mostMasteredExpressions,
+    hardestExpressions,
+  }
 }

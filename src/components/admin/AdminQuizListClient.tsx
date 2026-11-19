@@ -30,6 +30,7 @@ import {
   ChevronRight,
   Sparkles,
   Languages,
+  ShieldCheck,
 } from "lucide-react"
 import type { Category, RegionalLanguage } from "@/types"
 
@@ -51,9 +52,10 @@ interface QuizItem {
 
 interface AdminQuizListClientProps {
   quizzes: QuizItem[]
+  pendingCount?: number
 }
 
-export function AdminQuizListClient({ quizzes }: AdminQuizListClientProps) {
+export function AdminQuizListClient({ quizzes, pendingCount = 0 }: AdminQuizListClientProps) {
   const router = useRouter()
   const [search, setSearch] = useState("")
   const [selectedCategory, setSelectedCategory] = useState<string>("ALL")
@@ -179,12 +181,26 @@ export function AdminQuizListClient({ quizzes }: AdminQuizListClientProps) {
           </select>
         </div>
 
-        <Button
-          onClick={openCreate}
-          className="bg-[#3C22BB] hover:bg-[#2E1994] text-white rounded-xl text-xs font-semibold px-4 h-10 shadow-xs flex items-center gap-2 shrink-0"
-        >
-          <Plus className="w-4 h-4" /> Buat Kuis Baru
-        </Button>
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
+          <Link
+            href="/admin/verifikasi-soal"
+            className="inline-flex items-center gap-2 rounded-xl border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-900 px-3.5 h-10 text-xs font-bold transition-colors"
+          >
+            <ShieldCheck className="w-4 h-4 text-amber-600" />
+            <span>Verifikasi Soal</span>
+            {pendingCount > 0 && (
+              <span className="px-1.5 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500 text-white">
+                {pendingCount}
+              </span>
+            )}
+          </Link>
+          <Button
+            onClick={openCreate}
+            className="bg-[#3C22BB] hover:bg-[#2E1994] text-white rounded-xl text-xs font-semibold px-4 h-10 shadow-xs flex items-center gap-2"
+          >
+            <Plus className="w-4 h-4" /> Buat Kuis Baru
+          </Button>
+        </div>
       </div>
 
       {/* Quizzes Grid */}

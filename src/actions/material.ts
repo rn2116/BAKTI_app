@@ -4,12 +4,17 @@ import { randomUUID } from "crypto"
 import { z } from "zod"
 import { prisma } from "@/lib/prisma"
 import { getSession } from "@/lib/auth"
+import { verifyReadingStartToken } from "@/lib/readingVerification"
 import { XP_COMPLETE_MATERIAL } from "@/lib/constants"
 import { getCategoryStats } from "@/services/material"
 
 const markCompleteSchema = z.object({
   materialId: z.string().min(1, "ID materi diperlukan"),
   startedAt: z.coerce.number().optional(),
+  readingToken: z.string().min(1, "Token verifikasi bacaan diperlukan"),
+  checkVerified: z.boolean(),
+  segmentsCompleted: z.coerce.number().min(1).optional(),
+  totalSegments: z.coerce.number().min(1).optional(),
 })
 
 export async function markMaterialComplete(
@@ -25,22 +30,63 @@ export async function markMaterialComplete(
   const parsed = markCompleteSchema.safeParse({
     materialId: formData.get("materialId"),
     startedAt: formData.get("startedAt"),
+    readingToken: formData.get("readingToken"),
+    checkVerified: formData.get("checkVerified") === "true",
+    segmentsCompleted: formData.get("segmentsCompleted") || undefined,
+    totalSegments: formData.get("totalSegments") || undefined,
   })
   if (!parsed.success) {
-    return { success: false, error: "ID materi tidak valid" }
+    return {
+      success: false,
+      error: "Validasi bacaan belum lengkap. Harap selesaikan bacaan dan cek pemahaman.",
+    }
   }
 
-  const { materialId, startedAt } = parsed.data
+  const {
+    materialId,
+    startedAt,
+    readingToken,
+    checkVerified,
+    segmentsCompleted,
+    totalSegments,
+  } = parsed.data
 
-  // Validasi waktu membaca minimal di sisi server (minimal 20 detik untuk mencegah bypass skrip/bot)
-  if (startedAt) {
-    const elapsedSeconds = (Date.now() - startedAt) / 1000
-    if (elapsedSeconds < 20) {
-      return {
-        success: false,
-        error:
-          "Waktu membaca terlalu singkat. Harap baca materi dengan saksama sebelum mengklaim poin.",
-      }
+  if (!checkVerified) {
+    return {
+      success: false,
+      error: "Harap selesaikan verifikasi cek pemahaman singkat sebelum mengklaim poin.",
+    }
+  }
+
+  if (
+    segmentsCompleted !== undefined &&
+    totalSegments !== undefined &&
+    segmentsCompleted < totalSegments
+  ) {
+    return {
+      success: false,
+      error: "Masih ada bagian materi yang belum terbaca. Silakan baca hingga bagian akhir.",
+    }
+  }
+
+  // Validasi token sesi baca HMAC dari server (mencegah pemalsuan timestamp/bot)
+  const tokenCheck = verifyReadingStartToken(readingToken, session.userId, materialId)
+  if (!tokenCheck.valid || !tokenCheck.issuedAt) {
+    return {
+      success: false,
+      error: tokenCheck.error ?? "Token verifikasi bacaan tidak valid.",
+    }
+  }
+
+  // Hitung durasi baca aktual di server menggunakan timestamp penerbitan server & startedAt
+  const serverElapsedSeconds = (Date.now() - tokenCheck.issuedAt) / 1000
+  const clientElapsedSeconds = startedAt ? (Date.now() - startedAt) / 1000 : serverElapsedSeconds
+
+  if (serverElapsedSeconds < 20 || clientElapsedSeconds < 20) {
+    return {
+      success: false,
+      error:
+        "Waktu membaca terlalu singkat. Harap baca materi secara perlahan sebelum mengklaim poin.",
     }
   }
 

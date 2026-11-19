@@ -27,6 +27,14 @@ export const RegionalLanguage = {
 } as const
 export type RegionalLanguage = (typeof RegionalLanguage)[keyof typeof RegionalLanguage]
 
+export const QuestionVerificationStatus = {
+  PENDING_REVIEW: "PENDING_REVIEW",
+  APPROVED: "APPROVED",
+  REJECTED: "REJECTED",
+} as const
+export type QuestionVerificationStatus =
+  (typeof QuestionVerificationStatus)[keyof typeof QuestionVerificationStatus]
+
 export type CharacterMatrix = {
   id: number
   indonesianCharacter: string

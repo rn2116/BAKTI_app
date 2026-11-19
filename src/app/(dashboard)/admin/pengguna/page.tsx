@@ -1,14 +1,10 @@
-import { getCurrentUser } from "@/lib/auth"
+import { requireDashboardUser } from "@/lib/auth"
 import { getAllUsersAdmin, getAllSchoolsAdmin, getAllClassesAdmin } from "@/services/admin-guru"
 import { PageHeader } from "@/components/shared/PageHeader"
 import { PenggunaManagementClient } from "@/components/admin/PenggunaManagementClient"
-import { redirect } from "next/navigation"
 
 export default async function AdminPenggunaPage() {
-  const user = await getCurrentUser()
-  if (!user || user.role !== "ADMIN") {
-    redirect("/masuk")
-  }
+  await requireDashboardUser("ADMIN")
 
   const [users, schools, classes] = await Promise.all([
     getAllUsersAdmin(),

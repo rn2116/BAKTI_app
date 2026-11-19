@@ -7,6 +7,7 @@ interface MaterialContentRendererProps {
   content: string
   className?: string
   fontSize?: "sm" | "base" | "lg"
+  readSegmentCount?: number
 }
 
 interface ContentBlock {
@@ -194,12 +195,37 @@ function renderInlineFormatted(text: string) {
   })
 }
 
+function groupBlocksIntoSegments(blocks: ContentBlock[]): ContentBlock[][] {
+  if (blocks.length === 0) return []
+  const segments: ContentBlock[][] = []
+  let current: ContentBlock[] = []
+
+  for (const block of blocks) {
+    const shouldSplitAtHeading = block.type === "heading" && current.length > 0
+    const shouldSplitForSize = current.length >= 3
+
+    if (shouldSplitAtHeading || shouldSplitForSize) {
+      segments.push(current)
+      current = []
+    }
+    current.push(block)
+  }
+
+  if (current.length > 0) {
+    segments.push(current)
+  }
+
+  return segments
+}
+
 export function MaterialContentRenderer({
   content,
   className = "",
   fontSize = "base",
+  readSegmentCount,
 }: MaterialContentRendererProps) {
   const blocks = React.useMemo(() => normalizeContentToBlocks(content), [content])
+  const segments = React.useMemo(() => groupBlocksIntoSegments(blocks), [blocks])
 
   const textSizeClass =
     fontSize === "sm"
@@ -208,91 +234,114 @@ export function MaterialContentRenderer({
         ? "text-[18px] sm:text-[19px]"
         : "text-[16px] sm:text-[17px]"
 
-  return (
-    <div
-      className={`font-serif space-y-5 leading-relaxed ${textSizeClass} select-text ${className}`}
-      style={{ fontFamily: "var(--font-lora), Georgia, serif" }}
-    >
-      {blocks.map((block, index) => {
-        if (block.type === "heading") {
-          return (
-            <div key={index} className="pt-4 first:pt-0">
-              <h3 className="text-lg sm:text-xl font-black text-[#1E135E] pb-2 border-b border-zinc-200/80 flex items-center gap-2.5 font-sans tracking-tight">
-                <Bookmark className="w-5 h-5 text-[#3C22BB] shrink-0" />
-                <span>{block.text}</span>
-              </h3>
-            </div>
-          )
-        }
+  function renderBlock(block: ContentBlock, index: number) {
+    if (block.type === "heading") {
+      return (
+        <div key={index} className="pt-2 first:pt-0">
+          <h3 className="text-lg sm:text-xl font-black text-[#1E135E] pb-2 border-b border-zinc-200/80 flex items-center gap-2.5 font-sans tracking-tight">
+            <Bookmark className="w-5 h-5 text-[#3C22BB] shrink-0" />
+            <span>{block.text}</span>
+          </h3>
+        </div>
+      )
+    }
 
-        if (block.type === "callout") {
-          return (
-            <div
-              key={index}
-              className="bg-indigo-50/70 border-l-4 border-[#3C22BB] p-4 sm:p-5 rounded-r-2xl my-5 text-zinc-850 shadow-2xs space-y-2.5 font-sans"
-            >
-              <div className="flex items-center gap-2 font-black text-xs sm:text-sm text-[#3C22BB] uppercase tracking-wider">
-                <Info className="w-4 h-4 text-[#3C22BB] shrink-0" />
-                <span>{block.title ?? "Catatan Penting"}</span>
-              </div>
-              {block.text && (
-                <p className="text-[15px] sm:text-[16px] text-zinc-800 leading-relaxed font-serif">
-                  {renderInlineFormatted(block.text)}
-                </p>
-              )}
-              {block.items && block.items.length > 0 && (
-                <ul className="space-y-2 pt-1 font-serif text-[15px] sm:text-[16px]">
-                  {block.items.map((it, itIdx) => (
-                    <li key={itIdx} className="flex items-start gap-2.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#3C22BB] mt-2 shrink-0" />
-                      <div>
-                        {it.term && (
-                          <span className="font-bold text-zinc-950 mr-1.5 font-sans">
-                            {it.term}
-                          </span>
-                        )}
-                        <span className="text-zinc-800">
-                          {renderInlineFormatted(it.text)}
-                        </span>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          )
-        }
-
-        if (block.type === "list" && block.items) {
-          return (
-            <ul key={index} className="space-y-3 pl-2 sm:pl-3 my-4">
+    if (block.type === "callout") {
+      return (
+        <div
+          key={index}
+          className="bg-indigo-50/70 border-l-4 border-[#3C22BB] p-4 sm:p-5 rounded-r-2xl my-4 text-zinc-850 shadow-2xs space-y-2.5 font-sans"
+        >
+          <div className="flex items-center gap-2 font-black text-xs sm:text-sm text-[#3C22BB] uppercase tracking-wider">
+            <Info className="w-4 h-4 text-[#3C22BB] shrink-0" />
+            <span>{block.title ?? "Catatan Penting"}</span>
+          </div>
+          {block.text && (
+            <p className="text-[15px] sm:text-[16px] text-zinc-800 leading-relaxed font-serif">
+              {renderInlineFormatted(block.text)}
+            </p>
+          )}
+          {block.items && block.items.length > 0 && (
+            <ul className="space-y-2 pt-1 font-serif text-[15px] sm:text-[16px]">
               {block.items.map((it, itIdx) => (
-                <li key={itIdx} className="flex items-start gap-3">
-                  <div className="w-5 h-5 rounded-full bg-indigo-100/70 text-[#3C22BB] flex items-center justify-center text-[10px] font-bold mt-1 shrink-0">
-                    {itIdx + 1}
-                  </div>
-                  <div className="text-[16px] sm:text-[17px] leading-relaxed text-zinc-800">
+                <li key={itIdx} className="flex items-start gap-2.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#3C22BB] mt-2 shrink-0" />
+                  <div>
                     {it.term && (
                       <span className="font-bold text-zinc-950 mr-1.5 font-sans">
                         {it.term}
                       </span>
                     )}
-                    <span>{renderInlineFormatted(it.text)}</span>
+                    <span className="text-zinc-800">
+                      {renderInlineFormatted(it.text)}
+                    </span>
                   </div>
                 </li>
               ))}
             </ul>
-          )
-        }
+          )}
+        </div>
+      )
+    }
 
-        // Paragraf biasa
+    if (block.type === "list" && block.items) {
+      return (
+        <ul key={index} className="space-y-3 pl-2 sm:pl-3 my-4">
+          {block.items.map((it, itIdx) => (
+            <li key={itIdx} className="flex items-start gap-3">
+              <div className="w-5 h-5 rounded-full bg-indigo-100/70 text-[#3C22BB] flex items-center justify-center text-[10px] font-bold mt-1 shrink-0">
+                {itIdx + 1}
+              </div>
+              <div className="text-[16px] sm:text-[17px] leading-relaxed text-zinc-800">
+                {it.term && (
+                  <span className="font-bold text-zinc-950 mr-1.5 font-sans">
+                    {it.term}
+                  </span>
+                )}
+                <span>{renderInlineFormatted(it.text)}</span>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )
+    }
+
+    return (
+      <p
+        key={index}
+        className="leading-relaxed text-[16px] sm:text-[17px] text-zinc-800 text-justify sm:text-left"
+      >
+        {renderInlineFormatted(block.text ?? "")}
+      </p>
+    )
+  }
+
+  return (
+    <div
+      className={`font-serif space-y-6 leading-relaxed ${textSizeClass} select-text ${className}`}
+      style={{ fontFamily: "var(--font-lora), Georgia, serif" }}
+    >
+      {segments.map((segBlocks, segIdx) => {
+        const isTracked = readSegmentCount !== undefined
+        const isSegRead = isTracked && segIdx < readSegmentCount
+        const isSegActive = isTracked && segIdx === readSegmentCount
+
+        const borderClass = !isTracked
+          ? ""
+          : isSegRead
+            ? "border-l-2 border-emerald-500/80 pl-3.5 sm:pl-5 transition-colors duration-300"
+            : isSegActive
+              ? "border-l-2 border-[#3C22BB]/70 pl-3.5 sm:pl-5 transition-colors duration-300"
+              : "border-l-2 border-zinc-200/70 pl-3.5 sm:pl-5 transition-colors duration-300"
+
         return (
-          <p
-            key={index}
-            className="leading-relaxed text-[16px] sm:text-[17px] text-zinc-800 text-justify sm:text-left"
+          <section
+            key={segIdx}
+            data-reading-segment={segIdx}
+            className={`space-y-4 ${borderClass}`}
           >
-            {renderInlineFormatted(block.text ?? "")}
-          </p>
+            {segBlocks.map((block, bIdx) => renderBlock(block, bIdx))}
+          </section>
         )
       })}
     </div>

@@ -6,7 +6,7 @@ import { z } from "zod"
 import { prisma } from "@/lib/prisma"
 import { getSession } from "@/lib/auth"
 import { hashPassword } from "@/lib/auth"
-import { Category, Role, RegionalLanguage } from "@/types"
+import { Category, Role, RegionalLanguage, QuestionVerificationStatus } from "@/types"
 
 type ActionState = { success: boolean; error?: string; message?: string }
 
@@ -180,6 +180,7 @@ const quizHeaderSchema = z.object({
   description: z.string().optional().default(""),
   category: z.nativeEnum(Category),
   regionalLanguage: z.nativeEnum(RegionalLanguage).optional().nullable(),
+  referenceSource: z.string().optional().nullable(),
   materialId: z.string().optional().nullable(),
   timeLimit: z.coerce.number().min(1, "Waktu minimal 1 menit").default(30),
   passingScore: z.coerce.number().min(0).max(100, "KKM antara 0-100").default(75),
@@ -193,6 +194,7 @@ type QuizHeaderData = {
   description: string
   category: Category
   regionalLanguage?: RegionalLanguage | null
+  referenceSource?: string | null
   materialId?: string | null
   timeLimit: number
   passingScore: number
@@ -216,6 +218,7 @@ export async function saveQuizHeader(
     description: (formData.get("description") as string) || "",
     category: formData.get("category"),
     regionalLanguage: (formData.get("regionalLanguage") as RegionalLanguage) || null,
+    referenceSource: (formData.get("referenceSource") as string) || null,
     materialId: (formData.get("materialId") as string) || null,
     timeLimit: formData.get("timeLimit") || 30,
     passingScore: formData.get("passingScore") || 75,
@@ -233,13 +236,14 @@ export async function saveQuizHeader(
   try {
     let quizId = quizData.id
     if (quizId) {
-      await (prisma.quiz.update as any)({
+      await prisma.quiz.update({
         where: { id: quizId },
         data: {
           title: quizData.title,
           description: quizData.description,
           category: quizData.category,
           regionalLanguage: quizData.regionalLanguage || null,
+          referenceSource: quizData.referenceSource?.trim() || null,
           materialId: quizData.materialId || null,
           timeLimit: quizData.timeLimit,
           passingScore: quizData.passingScore,
@@ -249,13 +253,14 @@ export async function saveQuizHeader(
       })
     } else {
       quizId = randomUUID()
-      await (prisma.quiz.create as any)({
+      await prisma.quiz.create({
         data: {
           id: quizId,
           title: quizData.title,
           description: quizData.description,
           category: quizData.category,
           regionalLanguage: quizData.regionalLanguage || null,
+          referenceSource: quizData.referenceSource?.trim() || null,
           materialId: quizData.materialId || null,
           timeLimit: quizData.timeLimit,
           passingScore: quizData.passingScore,
@@ -281,10 +286,11 @@ export async function saveQuizWithQuestions(
   formData: FormData
 ): Promise<ActionState> {
   const session = await getSession()
-  if (!session || session.role !== Role.ADMIN) {
-    return { success: false, error: "Hanya Administrator Balai Bahasa yang berwenang mengelola kuis" }
+  if (!session || (session.role !== Role.ADMIN && session.role !== Role.GURU)) {
+    return { success: false, error: "Akses tidak diizinkan untuk mengelola kuis" }
   }
 
+  const isGuru = session.role === Role.GURU
   const id = formData.get("id") as string | undefined
   const title = formData.get("title") as string
   const description = (formData.get("description") as string) || ""
@@ -308,7 +314,11 @@ export async function saveQuizWithQuestions(
     correctIndex: number
     explanation?: string
     points?: number
-    regionalLanguage?: RegionalLanguage
+    regionalLanguage?: RegionalLanguage | null
+    wiseSayingText?: string | null
+    wiseSayingMeaning?: string | null
+    referenceSource?: string | null
+    audioUrl?: string | null
   }> = []
 
   try {
@@ -322,10 +332,20 @@ export async function saveQuizWithQuestions(
   }
 
   try {
+    if (id && isGuru) {
+      const existingQuiz = await prisma.quiz.findUnique({
+        where: { id },
+        select: { createdBy: true },
+      })
+      if (!existingQuiz || existingQuiz.createdBy !== session.userId) {
+        return { success: false, error: "Anda tidak memiliki izin mengubah paket kuis ini" }
+      }
+    }
+
     await prisma.$transaction(async (tx) => {
       let quizId = id
       if (quizId) {
-        await (tx.quiz.update as any)({
+        await tx.quiz.update({
           where: { id: quizId },
           data: {
             title,
@@ -339,11 +359,10 @@ export async function saveQuizWithQuestions(
             isPublished,
           },
         })
-        // Hapus soal lama dan buat baru
         await tx.quizQuestion.deleteMany({ where: { quizId } })
       } else {
         quizId = randomUUID()
-        await (tx.quiz.create as any)({
+        await tx.quiz.create({
           data: {
             id: quizId,
             title,
@@ -362,7 +381,7 @@ export async function saveQuizWithQuestions(
 
       for (let i = 0; i < questions.length; i++) {
         const q = questions[i]
-        await (tx.quizQuestion.create as any)({
+        await tx.quizQuestion.create({
           data: {
             id: randomUUID(),
             quizId,
@@ -371,7 +390,15 @@ export async function saveQuizWithQuestions(
             correctIndex: q.correctIndex,
             explanation: q.explanation || null,
             points: q.points || 10,
-            regionalLanguage: q.regionalLanguage || null,
+            regionalLanguage: q.regionalLanguage || regionalLanguage || null,
+            wiseSayingText: q.wiseSayingText?.trim() || null,
+            wiseSayingMeaning: q.wiseSayingMeaning?.trim() || null,
+            referenceSource: q.referenceSource?.trim() || null,
+            verificationStatus: isGuru
+              ? QuestionVerificationStatus.PENDING_REVIEW
+              : QuestionVerificationStatus.APPROVED,
+            createdBy: session.userId,
+            verifiedBy: isGuru ? null : session.userId,
             orderIndex: i + 1,
           },
         })
@@ -379,9 +406,17 @@ export async function saveQuizWithQuestions(
     })
 
     revalidatePath("/admin/kuis")
+    revalidatePath("/guru/kuis")
+    revalidatePath("/admin/verifikasi-soal")
     revalidatePath("/siswa/kuis")
     revalidatePath("/admin/konten")
-    return { success: true, message: "Kuis dan bank soal berhasil disimpan" }
+    revalidatePath("/", "layout")
+    return {
+      success: true,
+      message: isGuru
+        ? "Kuis berhasil dibuat dan butir soal diajukan untuk verifikasi Admin"
+        : "Kuis dan bank soal berhasil disimpan",
+    }
   } catch (error) {
     console.error("Gagal simpan kuis:", error)
     return { success: false, error: "Gagal menyimpan kuis" }
@@ -390,15 +425,28 @@ export async function saveQuizWithQuestions(
 
 export async function deleteQuiz(quizId: string): Promise<ActionState> {
   const session = await getSession()
-  if (!session || session.role !== Role.ADMIN) {
-    return { success: false, error: "Hanya Administrator Balai Bahasa yang berwenang menghapus kuis" }
+  if (!session || (session.role !== Role.ADMIN && session.role !== Role.GURU)) {
+    return { success: false, error: "Akses tidak diizinkan untuk menghapus kuis" }
   }
 
   try {
+    if (session.role === Role.GURU) {
+      const existing = await prisma.quiz.findUnique({
+        where: { id: quizId },
+        select: { createdBy: true },
+      })
+      if (!existing || existing.createdBy !== session.userId) {
+        return { success: false, error: "Anda hanya dapat menghapus kuis yang Anda buat sendiri" }
+      }
+    }
+
     await prisma.quiz.delete({ where: { id: quizId } })
     revalidatePath("/admin/kuis")
+    revalidatePath("/guru/kuis")
+    revalidatePath("/admin/verifikasi-soal")
     revalidatePath("/siswa/kuis")
     revalidatePath("/admin/konten")
+    revalidatePath("/", "layout")
     return { success: true, message: "Kuis berhasil dihapus" }
   } catch (error) {
     return { success: false, error: "Gagal menghapus kuis" }
@@ -410,10 +458,11 @@ export async function saveQuizQuestion(
   formData: FormData
 ): Promise<ActionState> {
   const session = await getSession()
-  if (!session || session.role !== Role.ADMIN) {
-    return { success: false, error: "Hanya Admin yang berwenang menambah/mengubah butir soal" }
+  if (!session || (session.role !== Role.ADMIN && session.role !== Role.GURU)) {
+    return { success: false, error: "Hanya Guru atau Admin yang berwenang menambah/mengubah butir soal" }
   }
 
+  const isGuru = session.role === Role.GURU
   const id = (formData.get("id") as string) || undefined
   const quizId = formData.get("quizId") as string
   const question = (formData.get("question") as string) || ""
@@ -421,6 +470,11 @@ export async function saveQuizQuestion(
   const points = parseInt((formData.get("points") as string) || "10", 10)
   const correctIndex = parseInt((formData.get("correctIndex") as string) || "0", 10)
   const regionalLanguage = (formData.get("regionalLanguage") as RegionalLanguage) || null
+  const wiseSayingText = (formData.get("wiseSayingText") as string) || null
+  const wiseSayingMeaning = (formData.get("wiseSayingMeaning") as string) || null
+  const referenceSource = (formData.get("referenceSource") as string) || null
+  const audioUrl = (formData.get("audioUrl") as string) || null
+  const approveOnSave = formData.get("approveOnSave") === "true"
 
   const optA = (formData.get("optionA") as string) || ""
   const optB = (formData.get("optionB") as string) || ""
@@ -438,7 +492,18 @@ export async function saveQuizQuestion(
 
   try {
     if (id) {
-      await (prisma.quizQuestion.update as any)({
+      const existing = await prisma.quizQuestion.findUnique({
+        where: { id },
+        select: { createdBy: true, verificationStatus: true },
+      })
+      if (!existing) {
+        return { success: false, error: "Butir soal tidak ditemukan" }
+      }
+      if (isGuru && existing.createdBy !== session.userId) {
+        return { success: false, error: "Anda hanya dapat mengubah butir soal yang Anda ajukan sendiri" }
+      }
+
+      await prisma.quizQuestion.update({
         where: { id },
         data: {
           question: question.trim(),
@@ -447,6 +512,23 @@ export async function saveQuizQuestion(
           explanation: explanation ? explanation.trim() : null,
           points,
           regionalLanguage,
+          wiseSayingText: wiseSayingText ? wiseSayingText.trim() : null,
+          wiseSayingMeaning: wiseSayingMeaning ? wiseSayingMeaning.trim() : null,
+          referenceSource: referenceSource ? referenceSource.trim() : null,
+          audioUrl: audioUrl ? audioUrl.trim() : null,
+          ...(isGuru
+            ? {
+                verificationStatus: QuestionVerificationStatus.PENDING_REVIEW,
+                verifiedBy: null,
+                reviewNotes: null,
+              }
+            : approveOnSave
+              ? {
+                  verificationStatus: QuestionVerificationStatus.APPROVED,
+                  verifiedBy: session.userId,
+                  reviewNotes: null,
+                }
+              : {}),
         },
       })
     } else {
@@ -457,7 +539,7 @@ export async function saveQuizQuestion(
       })
       const nextOrder = (highestOrder?.orderIndex ?? 0) + 1
 
-      await (prisma.quizQuestion.create as any)({
+      await prisma.quizQuestion.create({
         data: {
           id: randomUUID(),
           quizId,
@@ -467,15 +549,33 @@ export async function saveQuizQuestion(
           explanation: explanation ? explanation.trim() : null,
           points,
           regionalLanguage,
+          wiseSayingText: wiseSayingText ? wiseSayingText.trim() : null,
+          wiseSayingMeaning: wiseSayingMeaning ? wiseSayingMeaning.trim() : null,
+          referenceSource: referenceSource ? referenceSource.trim() : null,
+          audioUrl: audioUrl ? audioUrl.trim() : null,
+          verificationStatus: isGuru
+            ? QuestionVerificationStatus.PENDING_REVIEW
+            : QuestionVerificationStatus.APPROVED,
+          createdBy: session.userId,
+          verifiedBy: isGuru ? null : session.userId,
           orderIndex: nextOrder,
         },
       })
     }
 
     revalidatePath(`/admin/kuis/${quizId}/soal`)
+    revalidatePath(`/guru/kuis/${quizId}/soal`)
     revalidatePath("/admin/kuis")
+    revalidatePath("/guru/kuis")
+    revalidatePath("/admin/verifikasi-soal")
     revalidatePath("/siswa/kuis")
-    return { success: true, message: "Butir soal berhasil disimpan" }
+    revalidatePath("/", "layout")
+    return {
+      success: true,
+      message: isGuru
+        ? "Butir soal berhasil diajukan dan menunggu verifikasi Admin"
+        : "Butir soal berhasil disimpan & tayang",
+    }
   } catch (error) {
     console.error("Gagal simpan butir soal:", error)
     return { success: false, error: "Gagal menyimpan butir soal" }
@@ -484,15 +584,29 @@ export async function saveQuizQuestion(
 
 export async function deleteQuizQuestion(questionId: string, quizId: string): Promise<ActionState> {
   const session = await getSession()
-  if (!session || session.role !== Role.ADMIN) {
-    return { success: false, error: "Hanya Admin yang berwenang menghapus butir soal" }
+  if (!session || (session.role !== Role.ADMIN && session.role !== Role.GURU)) {
+    return { success: false, error: "Akses tidak diizinkan untuk menghapus butir soal" }
   }
 
   try {
+    if (session.role === Role.GURU) {
+      const existing = await prisma.quizQuestion.findUnique({
+        where: { id: questionId },
+        select: { createdBy: true },
+      })
+      if (!existing || existing.createdBy !== session.userId) {
+        return { success: false, error: "Anda hanya dapat menghapus butir soal yang Anda ajukan sendiri" }
+      }
+    }
+
     await prisma.quizQuestion.delete({ where: { id: questionId } })
     revalidatePath(`/admin/kuis/${quizId}/soal`)
+    revalidatePath(`/guru/kuis/${quizId}/soal`)
     revalidatePath("/admin/kuis")
+    revalidatePath("/guru/kuis")
+    revalidatePath("/admin/verifikasi-soal")
     revalidatePath("/siswa/kuis")
+    revalidatePath("/", "layout")
     return { success: true, message: "Butir soal berhasil dihapus" }
   } catch (error) {
     return { success: false, error: "Gagal menghapus butir soal" }
@@ -504,9 +618,11 @@ export async function importQuizQuestionsAction(
   questionsJson: string
 ): Promise<ActionState & { count?: number }> {
   const session = await getSession()
-  if (!session || session.role !== Role.ADMIN) {
-    return { success: false, error: "Hanya Admin yang berwenang mengimpor soal" }
+  if (!session || (session.role !== Role.ADMIN && session.role !== Role.GURU)) {
+    return { success: false, error: "Hanya Guru atau Admin yang berwenang mengimpor soal" }
   }
+
+  const isGuru = session.role === Role.GURU
 
   if (!quizId) {
     return { success: false, error: "ID Kuis tidak ditemukan" }
@@ -518,7 +634,11 @@ export async function importQuizQuestionsAction(
     correctIndex: number
     explanation?: string
     points?: number
-    regionalLanguage?: RegionalLanguage
+    regionalLanguage?: RegionalLanguage | null
+    wiseSayingText?: string | null
+    wiseSayingMeaning?: string | null
+    referenceSource?: string | null
+    audioUrl?: string | null
   }> = []
 
   try {
@@ -550,6 +670,15 @@ export async function importQuizQuestionsAction(
         explanation: item.explanation?.trim() || null,
         points: item.points && item.points > 0 ? item.points : 10,
         regionalLanguage: item.regionalLanguage || null,
+        wiseSayingText: item.wiseSayingText?.trim() || null,
+        wiseSayingMeaning: item.wiseSayingMeaning?.trim() || null,
+        referenceSource: item.referenceSource?.trim() || null,
+        audioUrl: item.audioUrl?.trim() || null,
+        verificationStatus: isGuru
+          ? QuestionVerificationStatus.PENDING_REVIEW
+          : QuestionVerificationStatus.APPROVED,
+        createdBy: session.userId,
+        verifiedBy: isGuru ? null : session.userId,
         orderIndex: currentOrder,
       }
     })
@@ -559,16 +688,133 @@ export async function importQuizQuestionsAction(
     })
 
     revalidatePath(`/admin/kuis/${quizId}/soal`)
+    revalidatePath(`/guru/kuis/${quizId}/soal`)
     revalidatePath("/admin/kuis")
+    revalidatePath("/guru/kuis")
+    revalidatePath("/admin/verifikasi-soal")
     revalidatePath("/siswa/kuis")
+    revalidatePath("/", "layout")
     return {
       success: true,
-      message: `Berhasil mengimpor ${createData.length} butir soal ke kuis!`,
+      message: isGuru
+        ? `Berhasil mengimpor ${createData.length} soal pengajuan! Menunggu verifikasi Admin.`
+        : `Berhasil mengimpor ${createData.length} butir soal ke kuis!`,
       count: createData.length,
     }
   } catch (error) {
     console.error("Gagal impor soal:", error)
     return { success: false, error: "Gagal menyimpan daftar soal ke database" }
+  }
+}
+
+const verifyQuestionSchema = z.object({
+  questionId: z.string().min(1, "ID soal diperlukan"),
+  decision: z.enum(["APPROVED", "REJECTED"]),
+  reviewNotes: z.string().optional(),
+  question: z.string().optional(),
+  options: z.array(z.string()).length(4).optional(),
+  correctIndex: z.number().min(0).max(3).optional(),
+  explanation: z.string().nullable().optional(),
+  points: z.number().min(1).optional(),
+  regionalLanguage: z.nativeEnum(RegionalLanguage).nullable().optional(),
+  wiseSayingText: z.string().nullable().optional(),
+  wiseSayingMeaning: z.string().nullable().optional(),
+  referenceSource: z.string().nullable().optional(),
+  audioUrl: z.string().nullable().optional(),
+})
+
+export async function verifyQuizQuestionAction(input: {
+  questionId: string
+  decision: "APPROVED" | "REJECTED"
+  reviewNotes?: string
+  question?: string
+  options?: string[]
+  correctIndex?: number
+  explanation?: string | null
+  points?: number
+  regionalLanguage?: RegionalLanguage | null
+  wiseSayingText?: string | null
+  wiseSayingMeaning?: string | null
+  referenceSource?: string | null
+  audioUrl?: string | null
+}): Promise<ActionState> {
+  const session = await getSession()
+  if (!session || session.role !== Role.ADMIN) {
+    return { success: false, error: "Hanya Admin Balai Bahasa yang berwenang memverifikasi soal" }
+  }
+
+  const parsed = verifyQuestionSchema.safeParse(input)
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.errors[0]?.message ?? "Input verifikasi tidak valid" }
+  }
+
+  const data = parsed.data
+  if (data.decision === "REJECTED" && (!data.reviewNotes || !data.reviewNotes.trim())) {
+    return { success: false, error: "Catatan revisi wajib diisi saat menolak/meminta revisi soal" }
+  }
+
+  try {
+    const existing = await prisma.quizQuestion.findUnique({
+      where: { id: data.questionId },
+      select: { id: true, quizId: true },
+    })
+    if (!existing) {
+      return { success: false, error: "Butir soal tidak ditemukan" }
+    }
+
+    await prisma.quizQuestion.update({
+      where: { id: data.questionId },
+      data: {
+        verificationStatus:
+          data.decision === "APPROVED"
+            ? QuestionVerificationStatus.APPROVED
+            : QuestionVerificationStatus.REJECTED,
+        verifiedBy: session.userId,
+        reviewNotes: data.decision === "REJECTED" ? data.reviewNotes!.trim() : null,
+        ...(data.question !== undefined ? { question: data.question.trim() } : {}),
+        ...(data.options !== undefined
+          ? { options: JSON.stringify(data.options.map((o) => o.trim())) }
+          : {}),
+        ...(data.correctIndex !== undefined ? { correctIndex: data.correctIndex } : {}),
+        ...(data.explanation !== undefined
+          ? { explanation: data.explanation ? data.explanation.trim() : null }
+          : {}),
+        ...(data.points !== undefined ? { points: data.points } : {}),
+        ...(data.regionalLanguage !== undefined ? { regionalLanguage: data.regionalLanguage } : {}),
+        ...(data.wiseSayingText !== undefined
+          ? { wiseSayingText: data.wiseSayingText ? data.wiseSayingText.trim() : null }
+          : {}),
+        ...(data.wiseSayingMeaning !== undefined
+          ? { wiseSayingMeaning: data.wiseSayingMeaning ? data.wiseSayingMeaning.trim() : null }
+          : {}),
+        ...(data.referenceSource !== undefined
+          ? { referenceSource: data.referenceSource ? data.referenceSource.trim() : null }
+          : {}),
+        ...(data.audioUrl !== undefined
+          ? { audioUrl: data.audioUrl ? data.audioUrl.trim() : null }
+          : {}),
+      },
+    })
+
+    revalidatePath("/admin/verifikasi-soal")
+    revalidatePath(`/admin/kuis/${existing.quizId}/soal`)
+    revalidatePath(`/guru/kuis/${existing.quizId}/soal`)
+    revalidatePath("/admin/kuis")
+    revalidatePath("/guru/kuis")
+    revalidatePath("/siswa/kuis")
+    revalidatePath("/siswa")
+    revalidatePath("/", "layout")
+
+    return {
+      success: true,
+      message:
+        data.decision === "APPROVED"
+          ? "Soal berhasil disetujui dan diterbitkan ke kuis siswa!"
+          : "Soal dikembalikan ke Guru untuk revisi dengan catatan.",
+    }
+  } catch (error) {
+    console.error("Gagal memverifikasi soal:", error)
+    return { success: false, error: "Gagal menyimpan keputusan verifikasi soal" }
   }
 }
 
@@ -582,6 +828,7 @@ const characterMatrixSchema = z.object({
   regionalTerm: z.string().min(2, "Istilah/ungkapan daerah minimal 2 karakter"),
   characterSource: z.string().min(3, "Sumber karakter minimal 3 karakter"),
   implementation: z.string().min(5, "Implementasi perilaku minimal 5 karakter"),
+  audioUrl: z.string().optional().nullable(),
 })
 
 type CharacterMatrixData = {
@@ -591,6 +838,7 @@ type CharacterMatrixData = {
   regionalTerm: string
   characterSource: string
   implementation: string
+  audioUrl?: string | null
 }
 
 export async function saveCharacterMatrixAction(
@@ -610,6 +858,7 @@ export async function saveCharacterMatrixAction(
     regionalTerm: formData.get("regionalTerm"),
     characterSource: formData.get("characterSource"),
     implementation: formData.get("implementation"),
+    audioUrl: (formData.get("audioUrl") as string) || null,
   }
 
   const parsed = characterMatrixSchema.safeParse(raw)
@@ -621,7 +870,7 @@ export async function saveCharacterMatrixAction(
 
   try {
     if (matrixData.id) {
-      await (prisma as any).characterMatrix.update({
+      await prisma.characterMatrix.update({
         where: { id: matrixData.id },
         data: {
           indonesianCharacter: matrixData.indonesianCharacter.trim(),
@@ -629,16 +878,18 @@ export async function saveCharacterMatrixAction(
           regionalTerm: matrixData.regionalTerm.trim(),
           characterSource: matrixData.characterSource.trim(),
           implementation: matrixData.implementation.trim(),
+          audioUrl: matrixData.audioUrl ? matrixData.audioUrl.trim() : null,
         },
       })
     } else {
-      await (prisma as any).characterMatrix.create({
+      await prisma.characterMatrix.create({
         data: {
           indonesianCharacter: matrixData.indonesianCharacter.trim(),
           regionalLanguage: matrixData.regionalLanguage,
           regionalTerm: matrixData.regionalTerm.trim(),
           characterSource: matrixData.characterSource.trim(),
           implementation: matrixData.implementation.trim(),
+          audioUrl: matrixData.audioUrl ? matrixData.audioUrl.trim() : null,
           createdBy: session.userId,
         },
       })
@@ -685,6 +936,7 @@ export async function importCharacterMatrixAction(
     regionalTerm: string
     characterSource: string
     implementation: string
+    audioUrl?: string | null
   }> = []
 
   try {
@@ -705,6 +957,7 @@ export async function importCharacterMatrixAction(
       regionalTerm: string
       characterSource: string
       implementation: string
+      audioUrl: string | null
       createdBy: string
     }> = []
 
@@ -723,6 +976,7 @@ export async function importCharacterMatrixAction(
         regionalTerm: item.regionalTerm.trim(),
         characterSource: (item.characterSource || "-").trim(),
         implementation: (item.implementation || "-").trim(),
+        audioUrl: item.audioUrl?.trim() || null,
         createdBy: session.userId,
       })
     }

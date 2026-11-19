@@ -1,4 +1,5 @@
 import { getCurrentUser } from "@/lib/auth"
+import { createReadingStartToken } from "@/lib/readingVerification"
 import { getMaterialBySlug, getMaterialProgress } from "@/services/material"
 import { CategoryBadge } from "@/components/shared/CategoryBadge"
 import { SultengIllustration, getThemeByIndexAndCategory } from "@/components/shared/SultengIllustration"
@@ -21,6 +22,7 @@ export default async function MateriDetailPage({
 
   const progress = await getMaterialProgress(user.id, material.id)
   const isDone = progress?.status === "SELESAI"
+  const readingToken = createReadingStartToken(user.id, material.id)
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
@@ -70,7 +72,9 @@ export default async function MateriDetailPage({
         materialId={material.id}
         initialIsDone={isDone}
         title={material.title}
+        summary={material.description}
         contentHtml={material.content}
+        readingToken={readingToken}
       />
 
       {/* Kuis Terkait Materi Ini (Jika Ada) */}

@@ -15,12 +15,16 @@ export default async function KuisMulaiPage({
 
   const quiz = await getQuizById(id)
 
-  if (!quiz) {
+  if (!quiz || quiz.questions.length === 0) {
     return (
       <div className="p-12 text-center max-w-md mx-auto space-y-4">
-        <h1 className="text-xl font-bold text-zinc-900">Kuis tidak ditemukan</h1>
+        <h1 className="text-xl font-bold text-zinc-900">
+          {!quiz ? "Kuis tidak ditemukan" : "Soal kuis belum tersedia"}
+        </h1>
         <p className="text-xs text-zinc-500">
-          Paket kuis mungkin telah dihapus atau belum dipublikasikan oleh guru.
+          {!quiz
+            ? "Paket kuis mungkin telah dihapus atau belum dipublikasikan oleh guru."
+            : "Butir soal pada paket kuis ini masih dalam proses verifikasi oleh Balai Bahasa."}
         </p>
         <Link
           href="/siswa/kuis"

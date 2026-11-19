@@ -44,7 +44,11 @@ export async function submitQuizAttempt(
   try {
     const quiz = await prisma.quiz.findUnique({
       where: { id: quizId },
-      include: { questions: true },
+      include: {
+        questions: {
+          where: { verificationStatus: "APPROVED" },
+        },
+      },
     })
     if (!quiz) {
       return { success: false, error: "Kuis tidak ditemukan" }
@@ -127,6 +131,120 @@ export async function submitQuizAttempt(
         })
       }
 
+      // Pembaruan Progres Modul Bahasa Daerah & Penerbitan Sertifikat Otomatis (Tugas 5)
+      if (passed) {
+        const pctScore = maxScore > 0 ? Math.round((score / maxScore) * 100) : 0
+        const currentYear = new Date().getFullYear()
+
+        if (quiz.regionalLanguage) {
+          const existingMod = await tx.regionalModuleProgress.findUnique({
+            where: {
+              userId_regionalLanguage: {
+                userId: session.userId,
+                regionalLanguage: quiz.regionalLanguage,
+              },
+            },
+          })
+
+          const newBest = Math.max(existingMod?.bestQuizScore ?? 0, pctScore)
+          if (existingMod) {
+            await tx.regionalModuleProgress.update({
+              where: { id: existingMod.id },
+              data: {
+                stage3Completed: true,
+                bestQuizScore: newBest,
+              },
+            })
+          } else {
+            await tx.regionalModuleProgress.create({
+              data: {
+                id: randomUUID(),
+                userId: session.userId,
+                regionalLanguage: quiz.regionalLanguage,
+                learnedCardIds: "[]",
+                stage3Completed: true,
+                bestQuizScore: newBest,
+              },
+            })
+          }
+
+          if (existingMod?.stage1Completed && existingMod?.stage2Completed) {
+            const existingCert = await tx.sertifikat.findUnique({
+              where: {
+                userId_bahasaDaerah: {
+                  userId: session.userId,
+                  bahasaDaerah: quiz.regionalLanguage,
+                },
+              },
+            })
+            if (existingCert) {
+              if (pctScore > existingCert.skorAkhir) {
+                await tx.sertifikat.update({
+                  where: { id: existingCert.id },
+                  data: { skorAkhir: pctScore },
+                })
+              }
+            } else {
+              const shortCode = randomUUID().slice(0, 6).toUpperCase()
+              await tx.sertifikat.create({
+                data: {
+                  id: randomUUID(),
+                  nomorSertifikat: `BBPST-${quiz.regionalLanguage}-${currentYear}-${shortCode}`,
+                  userId: session.userId,
+                  bahasaDaerah: quiz.regionalLanguage,
+                  skorAkhir: pctScore,
+                },
+              })
+            }
+          }
+        } else if (quiz.category === "BUDAYA_SULTENG") {
+          const pendingModules = await tx.regionalModuleProgress.findMany({
+            where: {
+              userId: session.userId,
+              stage1Completed: true,
+              stage2Completed: true,
+            },
+          })
+
+          for (const mod of pendingModules) {
+            const hasDedicatedQuiz = await tx.quiz.count({
+              where: { isPublished: true, regionalLanguage: mod.regionalLanguage },
+            })
+            if (hasDedicatedQuiz > 0) continue
+
+            const newBest = Math.max(mod.bestQuizScore, pctScore)
+            await tx.regionalModuleProgress.update({
+              where: { id: mod.id },
+              data: {
+                stage3Completed: true,
+                bestQuizScore: newBest,
+              },
+            })
+
+            const existingCert = await tx.sertifikat.findUnique({
+              where: {
+                userId_bahasaDaerah: {
+                  userId: session.userId,
+                  bahasaDaerah: mod.regionalLanguage,
+                },
+              },
+            })
+            if (!existingCert) {
+              const shortCode = randomUUID().slice(0, 6).toUpperCase()
+              await tx.sertifikat.create({
+                data: {
+                  id: randomUUID(),
+                  nomorSertifikat: `BBPST-${mod.regionalLanguage}-${currentYear}-${shortCode}`,
+                  userId: session.userId,
+                  bahasaDaerah: mod.regionalLanguage,
+                  skorAkhir: newBest,
+                },
+              })
+            }
+          }
+        }
+      }
+
       return createdAttempt
     })
 
@@ -135,6 +253,10 @@ export async function submitQuizAttempt(
     revalidatePath("/siswa")
     revalidatePath("/siswa/kuis")
     revalidatePath("/siswa/peringkat")
+    revalidatePath("/siswa/sertifikat")
+    if (quiz.regionalLanguage) {
+      revalidatePath(`/siswa/belajar-bahasa/${quiz.regionalLanguage}`)
+    }
 
     return { success: true, attemptId: attempt.id }
   } catch (error) {

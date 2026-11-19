@@ -1,14 +1,14 @@
 "use client"
 
 import { useState } from "react"
+import Link from "next/link"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
+import { AudioButton } from "@/components/shared/AudioButton"
 import { notify } from "@/lib/notify"
 import { REGIONAL_LANGUAGES, REGIONAL_LANGUAGE_LABELS } from "@/lib/constants"
 import {
   Search,
-  Volume2,
-  VolumeX,
   Sparkles,
   Compass,
   Copy,
@@ -18,6 +18,8 @@ import {
   Languages,
   ShieldCheck,
   GraduationCap,
+  ArrowRight,
+  Layers,
 } from "lucide-react"
 import type { RegionalLanguage } from "@/types"
 
@@ -28,6 +30,7 @@ interface MatrixItem {
   regionalTerm: string
   characterSource: string
   implementation: string
+  audioUrl?: string | null
   createdAt: Date
 }
 
@@ -53,33 +56,7 @@ export function RegionalLanguageDictionaryClient({
 }: RegionalLanguageDictionaryClientProps) {
   const [activeTab, setActiveTab] = useState<string>("ALL")
   const [search, setSearch] = useState("")
-  const [speakingId, setSpeakingId] = useState<number | null>(null)
   const [copiedId, setCopiedId] = useState<number | null>(null)
-
-  // Web Speech API Pronunciation
-  function handleSpeak(id: number, text: string) {
-    if (typeof window === "undefined" || !("speechSynthesis" in window)) {
-      notify.info("Browser Anda tidak mendukung pelafalan suara otomatis.")
-      return
-    }
-
-    if (speakingId === id) {
-      window.speechSynthesis.cancel()
-      setSpeakingId(null)
-      return
-    }
-
-    window.speechSynthesis.cancel()
-    const utterance = new SpeechSynthesisUtterance(text)
-    utterance.lang = "id-ID"
-    utterance.rate = 0.9
-
-    utterance.onstart = () => setSpeakingId(id)
-    utterance.onend = () => setSpeakingId(null)
-    utterance.onerror = () => setSpeakingId(null)
-
-    window.speechSynthesis.speak(utterance)
-  }
 
   function handleCopy(id: number, text: string) {
     if (typeof navigator !== "undefined" && navigator.clipboard) {
@@ -165,12 +142,29 @@ export function RegionalLanguageDictionaryClient({
             )
           })}
         </div>
+        {/* CTA Alur Belajar Bertahap 3 Tahap saat memilih bahasa */}
+        {activeTab !== "ALL" && (
+          <div className="p-4 rounded-2xl bg-indigo-50/80 border border-[#3C22BB]/25 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5 text-xs text-[#1E135E]">
+              <Layers className="w-4 h-4 text-[#3C22BB] shrink-0" />
+              <span>
+                Ingin belajar <strong>{REGIONAL_LANGUAGE_LABELS[activeTab] ?? activeTab}</strong> secara bertahap (Kartu Ungkapan → Latihan Mencocokkan → Kuis & Sertifikat)?
+              </span>
+            </div>
+            <Link
+              href={`/siswa/belajar-bahasa/${activeTab}`}
+              className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-[#3C22BB] hover:bg-[#2E1994] text-white text-xs font-bold shadow-xs shrink-0 transition-colors"
+            >
+              <span>Mulai Belajar 3 Tahap</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+        )}
       </div>
 
       {/* Cards Grid */}
       <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
         {filteredMatrices.map((item) => {
-          const isSpeaking = speakingId === item.id
           const isCopied = copiedId === item.id
 
           return (
@@ -206,26 +200,17 @@ export function RegionalLanguageDictionaryClient({
                 {/* Regional Term & Pronunciation */}
                 <div>
                   <div className="flex items-center justify-between gap-2">
-                    <h3 className="text-xl font-extrabold text-zinc-900 group-hover:text-[#3C22BB] transition-colors tracking-tight">
+                    <h3 className="text-xl font-extrabold text-zinc-900 group-hover:text-[#3C22BB] transition-colors tracking-tight break-words">
                       &ldquo;{item.regionalTerm}&rdquo;
                     </h3>
-                    <Button
+                    <AudioButton
+                      audioUrl={item.audioUrl}
+                      text={item.regionalTerm}
+                      label="Lafalkan"
+                      variant="indigo"
                       size="sm"
-                      variant="ghost"
-                      onClick={() => handleSpeak(item.id, item.regionalTerm)}
-                      className={`h-8 w-8 p-0 rounded-full transition-all shrink-0 ${
-                        isSpeaking
-                          ? "bg-[#3C22BB] text-white animate-pulse"
-                          : "text-[#3C22BB] bg-indigo-50 hover:bg-[#3C22BB] hover:text-white"
-                      }`}
-                      title={isSpeaking ? "Hentikan Suara" : "Dengarkan Pelafalan"}
-                    >
-                      {isSpeaking ? (
-                        <VolumeX className="w-4 h-4" />
-                      ) : (
-                        <Volume2 className="w-4 h-4" />
-                      )}
-                    </Button>
+                      className="rounded-full"
+                    />
                   </div>
 
                   {/* Indonesian Character Value Badge */}
@@ -259,16 +244,20 @@ export function RegionalLanguageDictionaryClient({
               </div>
 
               {/* Card Footer */}
-              <div className="pt-3 mt-4 border-t border-zinc-100 flex items-center justify-between text-[11px] text-zinc-400">
-                <span className="flex items-center gap-1">
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" /> Kurikulum Resmi BBPST
-                </span>
-                <button
-                  onClick={() => handleSpeak(item.id, `${item.regionalTerm}. Maknanya adalah nilai ${item.indonesianCharacter}. ${item.implementation}`)}
-                  className="text-[#3C22BB] hover:underline font-semibold text-[10px]"
+              <div className="pt-3 mt-4 border-t border-zinc-100 flex items-center justify-between gap-2 text-[11px] text-zinc-400">
+                <Link
+                  href={`/siswa/belajar-bahasa/${item.regionalLanguage}`}
+                  className="inline-flex items-center gap-1 font-bold text-[#3C22BB] hover:underline"
                 >
-                  Dengar Makna
-                </button>
+                  <Layers className="w-3 h-3" /> Belajar 3 Tahap
+                </Link>
+                <AudioButton
+                  text={`${item.regionalTerm}. Maknanya adalah nilai ${item.indonesianCharacter}. ${item.implementation}`}
+                  label="Dengar Makna"
+                  variant="ghost"
+                  size="sm"
+                  showTextOnMobile={true}
+                />
               </div>
             </div>
           )

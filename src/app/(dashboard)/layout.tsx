@@ -8,8 +8,8 @@ export default async function DashboardLayout({
   children: React.ReactNode
 }) {
   const user = await getCurrentUser()
-  if (!user) {
-    redirect("/masuk")
+  if (!user || !user.isActive) {
+    redirect("/api/auth/clear-session")
   }
 
   return <AppShell user={user}>{children}</AppShell>

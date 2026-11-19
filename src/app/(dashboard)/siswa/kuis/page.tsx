@@ -97,7 +97,7 @@ export default async function KuisSiswaPage() {
                 )}
               </div>
 
-              <div className="pt-5">
+              <div className="pt-5 flex flex-col gap-2">
                 <Link
                   href={`/siswa/kuis/${q.id}/mulai`}
                   className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-[#3C22BB] hover:bg-[#2E1994] text-white py-2.5 px-4 text-xs font-bold transition-all shadow-xs"
@@ -105,6 +105,14 @@ export default async function KuisSiswaPage() {
                   <span>{attempt?.passed ? "Uji Coba Ulang" : "Mulai Kuis Sekarang"}</span>
                   <ChevronRight className="w-4 h-4" />
                 </Link>
+                {q.regionalLanguage && (
+                  <Link
+                    href={`/siswa/belajar-bahasa/${q.regionalLanguage}`}
+                    className="w-full inline-flex items-center justify-center gap-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-[#3C22BB] py-2 px-3 text-[11px] font-bold transition-colors border border-indigo-200/80"
+                  >
+                    <span>Alur Belajar 3 Tahap (Kartu & Latihan)</span>
+                  </Link>
+                )}
               </div>
             </Card>
           )

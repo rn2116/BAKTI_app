@@ -29,7 +29,8 @@ export async function middleware(request: NextRequest) {
   }
 
   if (AUTH_ROUTES.includes(pathname)) {
-    if (payload) {
+    const isExpired = request.nextUrl.searchParams.get("expired") === "1"
+    if (payload && !isExpired) {
       return NextResponse.redirect(
         new URL(DASHBOARD_PREFIX[payload.role] ?? "/siswa", request.url)
       )

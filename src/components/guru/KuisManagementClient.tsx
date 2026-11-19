@@ -16,8 +16,20 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { Plus, Trash2, Edit3, HelpCircle, CheckCircle2 } from "lucide-react"
-import type { Category } from "@/types"
+import {
+  Plus,
+  Trash2,
+  HelpCircle,
+  ChevronRight,
+  Languages,
+  Hourglass,
+  CheckCircle2,
+  AlertTriangle,
+  ShieldCheck,
+} from "lucide-react"
+import Link from "next/link"
+import type { Category, RegionalLanguage } from "@/types"
+import { REGIONAL_LANGUAGE_LABELS } from "@/lib/constants"
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog"
 import { notify } from "@/lib/notify"
 
@@ -35,14 +47,21 @@ interface QuizItem {
   title: string
   description: string | null
   category: Category
+  regionalLanguage?: RegionalLanguage | null
   materialId: string | null
+  createdBy?: string
   timeLimit: number
   passingScore: number
   xpReward: number
   isPublished: boolean
-  creator?: { fullName: string }
+  creator?: { id?: string; fullName: string; role?: string }
   material?: { title: string } | null
   _count?: { questions: number; attempts: number }
+  teacherSubmissionStats?: {
+    pending: number
+    approved: number
+    rejected: number
+  }
 }
 
 interface MaterialOption {
@@ -53,9 +72,11 @@ interface MaterialOption {
 export function KuisManagementClient({
   quizzes,
   materials,
+  currentUserId,
 }: {
   quizzes: QuizItem[]
   materials: MaterialOption[]
+  currentUserId: string
 }) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
@@ -112,7 +133,11 @@ export function KuisManagementClient({
     setQuestions((prev) => prev.filter((_, i) => i !== index))
   }
 
-  function updateQuestion(index: number, field: string, val: any) {
+  function updateQuestion<K extends keyof QuestionFormItem>(
+    index: number,
+    field: K,
+    val: QuestionFormItem[K]
+  ) {
     setQuestions((prev) => {
       const copy = [...prev]
       copy[index] = { ...copy[index], [field]: val }
@@ -168,7 +193,10 @@ export function KuisManagementClient({
     if (res.success) {
       setOpen(false)
       notify.success(
-        selectedQuiz ? "Paket kuis berhasil diperbarui" : "Paket kuis baru berhasil dibuat"
+        res.message ||
+          (selectedQuiz
+            ? "Paket kuis berhasil diperbarui"
+            : "Paket kuis dibuat & soal menunggu verifikasi Admin")
       )
       router.refresh()
     } else {
@@ -433,63 +461,107 @@ export function KuisManagementClient({
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {quizzes.map((q) => (
-          <Card key={q.id} className="border-zinc-200/90 rounded-2xl bg-white shadow-xs flex flex-col justify-between hover:border-[#3C22BB]/40 hover:shadow-md transition-all">
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between mb-2">
-                <CategoryBadge category={q.category} />
-                <span
-                  className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
-                    q.isPublished
-                      ? "bg-emerald-100 text-emerald-800"
-                      : "bg-amber-100 text-amber-800"
-                  }`}
-                >
-                  {q.isPublished ? "Terbit" : "Draft"}
-                </span>
-              </div>
-              <CardTitle className="text-base line-clamp-1">{q.title}</CardTitle>
-              {q.material && (
-                <p className="text-xs text-primary font-medium truncate mt-0.5">
-                  Modul: {q.material.title}
-                </p>
-              )}
-            </CardHeader>
+        {quizzes.map((q) => {
+          const isOwner = q.createdBy === currentUserId || q.creator?.id === currentUserId
+          const stats = q.teacherSubmissionStats
 
-            <CardContent className="pt-0 space-y-3">
-              <div className="grid grid-cols-3 gap-1 text-center bg-muted/30 p-2 rounded-lg text-xs">
-                <div>
-                  <div className="text-[10px] text-muted-foreground">Soal</div>
-                  <div className="font-semibold">{q._count?.questions ?? 0}</div>
-                </div>
-                <div>
-                  <div className="text-[10px] text-muted-foreground">Waktu</div>
-                  <div className="font-semibold">{q.timeLimit} m</div>
-                </div>
-                <div>
-                  <div className="text-[10px] text-muted-foreground">Peserta</div>
-                  <div className="font-semibold">{q._count?.attempts ?? 0}</div>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between pt-1">
-                <div className="text-[11px] text-muted-foreground">
-                  KKM: {q.passingScore}%
-                </div>
-                <div className="flex items-center gap-1">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setDeleteTargetId(q.id)}
-                    className="h-8 px-2 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
+          return (
+            <Card
+              key={q.id}
+              className="border-zinc-200/90 rounded-2xl bg-white shadow-xs flex flex-col justify-between hover:border-[#3C22BB]/40 hover:shadow-md transition-all"
+            >
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <CategoryBadge category={q.category} />
+                    {q.regionalLanguage && (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-teal-50 text-teal-800 border border-teal-200">
+                        <Languages className="w-2.5 h-2.5" />
+                        {REGIONAL_LANGUAGE_LABELS[q.regionalLanguage] ?? q.regionalLanguage}
+                      </span>
+                    )}
+                  </div>
+                  <span
+                    className={`text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0 ${
+                      q.isPublished
+                        ? "bg-emerald-100 text-emerald-800"
+                        : "bg-amber-100 text-amber-800"
+                    }`}
                   >
-                    <Trash2 className="w-3.5 h-3.5 mr-1" /> Hapus
-                  </Button>
+                    {q.isPublished ? "Terbit" : "Draft"}
+                  </span>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+                <CardTitle className="text-base line-clamp-2 leading-snug">{q.title}</CardTitle>
+                {q.material && (
+                  <p className="text-xs text-[#3C22BB] font-medium truncate mt-0.5">
+                    Modul: {q.material.title}
+                  </p>
+                )}
+              </CardHeader>
+
+              <CardContent className="pt-0 space-y-3">
+                <div className="grid grid-cols-3 gap-1 text-center bg-zinc-50 border border-zinc-100 p-2 rounded-xl text-xs">
+                  <div>
+                    <div className="text-[10px] text-zinc-500">Soal Tayang</div>
+                    <div className="font-bold text-zinc-900">{q._count?.questions ?? 0}</div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] text-zinc-500">Waktu</div>
+                    <div className="font-bold text-zinc-900">{q.timeLimit} m</div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] text-zinc-500">Peserta</div>
+                    <div className="font-bold text-zinc-900">{q._count?.attempts ?? 0}</div>
+                  </div>
+                </div>
+
+                {/* Ringkasan Status Pengajuan Soal Guru pada Paket Ini */}
+                {stats && (stats.pending > 0 || stats.approved > 0 || stats.rejected > 0) && (
+                  <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                    {stats.pending > 0 && (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200">
+                        <Hourglass className="w-2.5 h-2.5" /> {stats.pending} Menunggu
+                      </span>
+                    )}
+                    {stats.approved > 0 && (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
+                        <CheckCircle2 className="w-2.5 h-2.5" /> {stats.approved} Disetujui
+                      </span>
+                    )}
+                    {stats.rejected > 0 && (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-50 text-rose-800 border border-rose-200">
+                        <AlertTriangle className="w-2.5 h-2.5" /> {stats.rejected} Perlu Revisi
+                      </span>
+                    )}
+                  </div>
+                )}
+
+                <div className="flex items-center justify-between pt-2 border-t border-zinc-100 gap-2">
+                  <Link
+                    href={`/guru/kuis/${q.id}/soal`}
+                    className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl bg-[#3C22BB]/10 hover:bg-[#3C22BB] text-[#3C22BB] hover:text-white px-3 py-2 text-xs font-bold transition-colors"
+                  >
+                    <ShieldCheck className="w-3.5 h-3.5" />
+                    <span>Ajukan / Kelola Soal</span>
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </Link>
+
+                  {isOwner && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setDeleteTargetId(q.id)}
+                      className="h-8 px-2 text-xs text-rose-600 hover:text-rose-700 hover:bg-rose-50 shrink-0"
+                      title="Hapus paket kuis ini"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )
+        })}
 
         {quizzes.length === 0 && (
           <div className="col-span-full p-10 border border-dashed rounded-xl text-center text-sm text-muted-foreground">

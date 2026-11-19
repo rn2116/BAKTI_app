@@ -8,6 +8,8 @@ import { Card } from "@/components/ui/card"
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog"
 import { notify } from "@/lib/notify"
 import { QuizSecurityGuard } from "@/components/quiz/QuizSecurityGuard"
+import { WiseSayingQuoteCard } from "@/components/shared/WiseSayingQuoteCard"
+import { AudioButton } from "@/components/shared/AudioButton"
 import {
   Clock,
   Volume2,
@@ -42,6 +44,11 @@ interface QuestionItem {
   orderIndex: number
   explanation?: string | null
   correctIndex?: number
+  regionalLanguage?: string | null
+  wiseSayingText?: string | null
+  wiseSayingMeaning?: string | null
+  referenceSource?: string | null
+  audioUrl?: string | null
 }
 
 interface InteractiveQuizRunnerProps {
@@ -367,6 +374,17 @@ export function InteractiveQuizRunner({ quiz }: InteractiveQuizRunnerProps) {
                   </span>
                 </div>
 
+                {q.wiseSayingText && (
+                  <div className="p-3 rounded-xl bg-white/90 border border-indigo-200/70 space-y-1">
+                    <p className="font-serif italic font-bold text-sm text-[#1E135E]">
+                      &ldquo;{q.wiseSayingText}&rdquo;
+                    </p>
+                    {q.wiseSayingMeaning && (
+                      <p className="text-[11px] text-zinc-600">{q.wiseSayingMeaning}</p>
+                    )}
+                  </div>
+                )}
+
                 <p className="text-sm font-bold text-zinc-900 leading-snug">
                   {q.question}
                 </p>
@@ -526,14 +544,34 @@ export function InteractiveQuizRunner({ quiz }: InteractiveQuizRunnerProps) {
           transition={{ duration: 0.2 }}
         >
           <Card className="rounded-3xl border-zinc-200/90 bg-white p-6 sm:p-8 shadow-xs space-y-5">
-            <div className="space-y-2">
+            <div className="space-y-4">
               <div className="flex items-center justify-between text-xs font-bold text-zinc-400">
                 <span>PERTANYAAN NO. {currentIndex + 1}</span>
                 <span>+{currentQuestion.points} POIN</span>
               </div>
-              <h3 className="text-base sm:text-lg font-bold text-zinc-900 leading-relaxed break-words">
-                {currentQuestion.question}
-              </h3>
+
+              {currentQuestion.wiseSayingText && (
+                <WiseSayingQuoteCard
+                  wiseSayingText={currentQuestion.wiseSayingText}
+                  wiseSayingMeaning={currentQuestion.wiseSayingMeaning}
+                  referenceSource={currentQuestion.referenceSource}
+                  regionalLanguage={currentQuestion.regionalLanguage}
+                  audioUrl={currentQuestion.audioUrl}
+                />
+              )}
+
+              <div className="flex items-start justify-between gap-3">
+                <h3 className="text-base sm:text-lg font-bold text-zinc-900 leading-relaxed break-words flex-1">
+                  {currentQuestion.question}
+                </h3>
+                <AudioButton
+                  audioUrl={currentQuestion.wiseSayingText ? null : currentQuestion.audioUrl}
+                  text={currentQuestion.question}
+                  label="Dengarkan"
+                  variant="ghost"
+                  size="sm"
+                />
+              </div>
             </div>
 
             {/* Opsi Pilihan Jawaban A, B, C, D */}

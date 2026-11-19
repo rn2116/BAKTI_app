@@ -1,4 +1,4 @@
-import { getCurrentUser } from "@/lib/auth"
+import { requireDashboardUser } from "@/lib/auth"
 import {
   getAllStudentRecapReport,
   getAllRegencies,
@@ -6,13 +6,9 @@ import {
 } from "@/services/admin-guru"
 import { PageHeader } from "@/components/shared/PageHeader"
 import { AdminLaporanClient } from "@/components/admin/AdminLaporanClient"
-import { redirect } from "next/navigation"
 
 export default async function AdminLaporanPage() {
-  const user = await getCurrentUser()
-  if (!user || user.role !== "ADMIN") {
-    redirect("/masuk")
-  }
+  await requireDashboardUser("ADMIN")
 
   const [reports, regencies, schools] = await Promise.all([
     getAllStudentRecapReport(),

@@ -17,9 +17,23 @@ export function AuthVisualPanel() {
         <path d="M120 400 L240 250 L360 380 L480 220 L580 340 V600 H120 Z" fill="#FFFFFF" />
       </svg>
 
-      {/* Bagian Atas: Brand Logo BBPST */}
+      {/* Bagian Atas: Logo Resmi BBPST Kemendikdasmen */}
       <div className="relative z-10">
-        <BrandLogo light={true} />
+        <div className="bg-white rounded-2xl px-4 py-3 shadow-md inline-flex flex-wrap items-center gap-3 max-w-full">
+          <img
+            src="/images/logo-bbpst-kemendikdasmen.png"
+            alt="Logo Kemendikdasmen — Balai Bahasa Provinsi Sulawesi Tengah"
+            className="h-12 sm:h-14 w-auto object-contain shrink-0"
+          />
+          <div className="border-l border-zinc-200 pl-3 min-w-0">
+            <div className="text-sm font-black tracking-tight uppercase text-[#1E135E]">
+              Bahasa &amp; Karakter
+            </div>
+            <div className="text-[11px] font-medium text-zinc-500">
+              Platform LMS Resmi BBPST
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Bagian Tengah: Headline & Kartu Pratinjau 3 Pilar + Gamifikasi */}

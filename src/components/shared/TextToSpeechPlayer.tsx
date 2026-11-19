@@ -1,21 +1,23 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
-import { Volume2, VolumeX, Pause, Play, Square, Gauge } from "lucide-react"
+import { useState } from "react"
+import { Volume2, Square, Gauge, Loader2, AlertCircle } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
+import { useAudioPlayer } from "@/hooks/useAudioPlayer"
 
 interface TextToSpeechPlayerProps {
   textToRead: string
   title?: string
+  audioUrl?: string | null
 }
 
 function cleanTextForSpeech(raw: string): string {
   if (!raw) return ""
   return raw
-    .replace(/<[^>]+>/g, " ") // Hapus tag HTML
-    .replace(/^#+\s+/gm, "") // Hapus header markdown
-    .replace(/[*_~`]/g, "") // Hapus markdown formatting
-    .replace(/[-*•]\s+/g, ". ") // Jadwalkan jeda pada list
+    .replace(/<[^>]+>/g, " ")
+    .replace(/^#+\s+/gm, "")
+    .replace(/[*_~`]/g, "")
+    .replace(/[-*•]\s+/g, ". ")
     .replace(/\s+/g, " ")
     .trim()
 }
@@ -23,156 +25,72 @@ function cleanTextForSpeech(raw: string): string {
 export function TextToSpeechPlayer({
   textToRead,
   title,
+  audioUrl,
 }: TextToSpeechPlayerProps) {
-  const [isSupported, setIsSupported] = useState(false)
-  const [isPlaying, setIsPlaying] = useState(false)
-  const [isPaused, setIsPaused] = useState(false)
   const [rate, setRate] = useState<number>(1.0)
-  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null)
+  const cleaned = cleanTextForSpeech(textToRead)
+  const fullText = title ? `${title}. ${cleaned}` : cleaned
 
-  useEffect(() => {
-    if (typeof window !== "undefined" && "speechSynthesis" in window) {
-      setIsSupported(true)
-    }
-
-    return () => {
-      if (typeof window !== "undefined" && "speechSynthesis" in window) {
-        window.speechSynthesis.cancel()
-      }
-    }
-  }, [])
-
-  function startSpeech() {
-    if (!isSupported) return
-    window.speechSynthesis.cancel()
-
-    const cleaned = cleanTextForSpeech(textToRead)
-    const textToSpeak = title ? `${title}. ${cleaned}` : cleaned
-    if (!textToSpeak) return
-
-    const utterance = new SpeechSynthesisUtterance(textToSpeak)
-    utterance.lang = "id-ID"
-    utterance.rate = rate
-
-    // Coba temukan suara bahasa Indonesia jika tersedia di sistem
-    const voices = window.speechSynthesis.getVoices()
-    const idVoice = voices.find(
-      (v) => v.lang === "id-ID" || v.lang.startsWith("id")
-    )
-    if (idVoice) {
-      utterance.voice = idVoice
-    }
-
-    utterance.onstart = () => {
-      setIsPlaying(true)
-      setIsPaused(false)
-    }
-
-    utterance.onpause = () => {
-      setIsPaused(true)
-    }
-
-    utterance.onresume = () => {
-      setIsPaused(false)
-    }
-
-    utterance.onend = () => {
-      setIsPlaying(false)
-      setIsPaused(false)
-    }
-
-    utterance.onerror = () => {
-      setIsPlaying(false)
-      setIsPaused(false)
-    }
-
-    utteranceRef.current = utterance
-    window.speechSynthesis.speak(utterance)
-  }
-
-  function togglePause() {
-    if (!isSupported) return
-    if (isPaused) {
-      window.speechSynthesis.resume()
-      setIsPaused(false)
-    } else {
-      window.speechSynthesis.pause()
-      setIsPaused(true)
-    }
-  }
-
-  function stopSpeech() {
-    if (!isSupported) return
-    window.speechSynthesis.cancel()
-    setIsPlaying(false)
-    setIsPaused(false)
-  }
+  const { isPlaying, isLoading, error, play, stop } = useAudioPlayer({
+    audioUrl,
+    text: fullText,
+    lang: "id",
+    rate,
+  })
 
   function handleRateChange(newRate: number) {
     setRate(newRate)
     if (isPlaying) {
-      // Re-trigger dengan kecepatan baru
-      startSpeech()
+      stop()
+      setTimeout(() => {
+        void play()
+      }, 60)
     }
-  }
-
-  if (!isSupported) {
-    return (
-      <div className="flex items-center gap-2 text-xs text-zinc-400 bg-zinc-50 border border-zinc-200/60 rounded-xl px-3 py-2">
-        <VolumeX className="w-4 h-4 text-zinc-400 shrink-0" />
-        <span>Pelafalan audio suara tidak didukung browser ini.</span>
-      </div>
-    )
   }
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 p-3 sm:p-3.5 rounded-2xl bg-indigo-50/70 border border-indigo-100 shadow-2xs">
-      {/* Sisi Kiri: Tombol Play/Pause/Stop & Animasi Audio Wave */}
+      {/* Sisi Kiri: Tombol Putar / Hentikan & Animasi Audio Wave */}
       <div className="flex items-center gap-2 sm:gap-3">
-        {!isPlaying ? (
+        {!isPlaying && !isLoading ? (
           <button
             type="button"
-            onClick={startSpeech}
+            onClick={() => void play()}
             className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-[#3C22BB] hover:bg-[#2E1994] text-white text-xs font-bold transition-all shadow-xs min-h-[36px]"
           >
             <Volume2 className="w-4 h-4" />
             <span>Dengarkan Bacaan</span>
           </button>
         ) : (
-          <div className="flex items-center gap-1.5">
-            <button
-              type="button"
-              onClick={togglePause}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white text-[#3C22BB] border border-indigo-200 text-xs font-bold hover:bg-indigo-50 transition-colors shadow-2xs min-h-[36px]"
-            >
-              {isPaused ? (
-                <>
-                  <Play className="w-3.5 h-3.5 fill-current" />
-                  <span>Lanjutkan</span>
-                </>
-              ) : (
-                <>
-                  <Pause className="w-3.5 h-3.5 fill-current" />
-                  <span>Jeda</span>
-                </>
-              )}
-            </button>
-
-            <button
-              type="button"
-              onClick={stopSpeech}
-              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 text-xs font-bold transition-colors min-h-[36px]"
-              title="Hentikan bacaan"
-            >
-              <Square className="w-3.5 h-3.5 fill-current" />
-              <span className="hidden sm:inline">Hentikan</span>
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={stop}
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 text-xs font-bold transition-colors min-h-[36px]"
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                <span>Memuat Audio...</span>
+              </>
+            ) : (
+              <>
+                <Square className="w-3.5 h-3.5 fill-current" />
+                <span>Hentikan</span>
+              </>
+            )}
+          </button>
         )}
 
-        {/* Indikator Gelombang Suara (Voice Wave Visualizer) */}
+        {error && !isPlaying && !isLoading && (
+          <span className="inline-flex items-center gap-1 text-[11px] font-medium text-rose-600">
+            <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+            <span className="hidden sm:inline">{error}</span>
+          </span>
+        )}
+
+        {/* Indikator Gelombang Suara */}
         <AnimatePresence>
-          {isPlaying && !isPaused && (
+          {isPlaying && (
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}

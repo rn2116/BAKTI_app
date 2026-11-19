@@ -1,4 +1,4 @@
-import { getCurrentUser } from "@/lib/auth"
+import { requireDashboardUser } from "@/lib/auth"
 import { getAdminSystemStats, getAdminRegencyStats } from "@/services/admin-guru"
 import { RegencyAnalyticsChart } from "@/components/admin/RegencyAnalyticsChart"
 import { Card, CardContent } from "@/components/ui/card"
@@ -17,13 +17,9 @@ import {
   ChevronRight,
   ExternalLink,
 } from "lucide-react"
-import { redirect } from "next/navigation"
 
 export default async function AdminDashboard() {
-  const user = await getCurrentUser()
-  if (!user || user.role !== "ADMIN") {
-    redirect("/masuk")
-  }
+  await requireDashboardUser("ADMIN")
 
   const [stats, regencyStats] = await Promise.all([
     getAdminSystemStats(),
