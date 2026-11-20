@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useRef } from "react"
+import dynamic from "next/dynamic"
 import { useRouter } from "next/navigation"
 import * as XLSX from "xlsx"
 import {
@@ -14,7 +15,19 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog"
 import { AudioButton } from "@/components/shared/AudioButton"
-import { MiniAudioStudio } from "@/components/shared/MiniAudioStudio"
+
+const MiniAudioStudio = dynamic(
+  () =>
+    import("@/components/shared/MiniAudioStudio").then(
+      (mod) => mod.MiniAudioStudio
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-24 rounded-2xl bg-zinc-100 animate-pulse" />
+    ),
+  }
+)
 import { notify } from "@/lib/notify"
 import { REGIONAL_LANGUAGE_LABELS } from "@/lib/constants"
 import {

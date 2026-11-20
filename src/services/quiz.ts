@@ -1,3 +1,4 @@
+import { randomUUID } from "crypto"
 import { prisma } from "@/lib/prisma"
 import { unstable_cache } from "next/cache"
 import { XP_QUIZ_BASE } from "@/lib/constants"
@@ -18,9 +19,15 @@ export async function getPublishedQuizzes() {
 }
 
 export async function getQuizById(id: string) {
-  return prisma.quiz.findUnique({
-    where: { id },
-    include: {
+  return prisma.quiz.findFirst({
+    where: { id, isPublished: true },
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      timeLimit: true,
+      passingScore: true,
+      xpReward: true,
       questions: {
         where: { verificationStatus: "APPROVED" },
         orderBy: { orderIndex: "asc" },
@@ -30,8 +37,6 @@ export async function getQuizById(id: string) {
           options: true,
           points: true,
           orderIndex: true,
-          correctIndex: true,
-          explanation: true,
           regionalLanguage: true,
           wiseSayingText: true,
           wiseSayingMeaning: true,
@@ -41,6 +46,58 @@ export async function getQuizById(id: string) {
       },
     },
   })
+}
+
+/**
+ * Mencatat atau melanjutkan sesi mulai kuis di database (menyimpan `startedAt` asli di server)
+ * agar validasi durasi pengerjaan saat submit tidak dapat dimanipulasi dari sisi klien.
+ */
+export async function startOrResumeQuizAttempt(
+  userId: string,
+  quizId: string,
+  timeLimitMinutes: number
+): Promise<{ attemptId: string; remainingSeconds: number }> {
+  const maxSeconds = Math.max(60, timeLimitMinutes * 60)
+  const existingOpen = await prisma.quizAttempt.findFirst({
+    where: {
+      userId,
+      quizId,
+      completedAt: null,
+    },
+    orderBy: { startedAt: "desc" },
+    select: { id: true, startedAt: true },
+  })
+
+  if (existingOpen) {
+    const elapsed = Math.floor((Date.now() - existingOpen.startedAt.getTime()) / 1000)
+    const remaining = maxSeconds - elapsed
+    if (remaining > 15) {
+      return { attemptId: existingOpen.id, remainingSeconds: remaining }
+    }
+    // Tutup sesi lama yang sudah melewati batas waktu
+    await prisma.quizAttempt.update({
+      where: { id: existingOpen.id },
+      data: {
+        completedAt: new Date(),
+        timeSpent: Math.max(0, elapsed),
+        passed: false,
+        isAutoSubmitted: true,
+      },
+    })
+  }
+
+  const created = await prisma.quizAttempt.create({
+    data: {
+      id: randomUUID(),
+      userId,
+      quizId,
+      startedAt: new Date(),
+      completedAt: null,
+    },
+    select: { id: true },
+  })
+
+  return { attemptId: created.id, remainingSeconds: maxSeconds }
 }
 
 export async function getQuizAttempt(attemptId: string) {

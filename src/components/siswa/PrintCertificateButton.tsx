@@ -16,6 +16,11 @@ interface PrintCertificateButtonProps {
   finalScore?: number
 }
 
+const HEAD_OF_OFFICE_NAME =
+  process.env.NEXT_PUBLIC_KEPALA_BALAI_NAMA?.trim() || "Dr. Asrif, M.Hum."
+const HEAD_OF_OFFICE_NIP =
+  process.env.NEXT_PUBLIC_KEPALA_BALAI_NIP?.trim() || "197412152002121002"
+
 export function PrintCertificateButton({
   certificateNo,
   studentName = "Peserta Didik",
@@ -302,11 +307,11 @@ export function PrintCertificateButton({
       doc.setFont("helvetica", "bold")
       doc.setFontSize(9)
       doc.setTextColor(24, 24, 27)
-      doc.text("Dr. Asrif, M.Hum.", signX, signY + 36, { align: "center" })
+      doc.text(HEAD_OF_OFFICE_NAME, signX, signY + 36, { align: "center" })
       doc.setFont("helvetica", "normal")
       doc.setFontSize(8)
       doc.setTextColor(100, 100, 110)
-      doc.text("NIP. 197412152002121002", signX, signY + 41, { align: "center" })
+      doc.text(`NIP. ${HEAD_OF_OFFICE_NIP}`, signX, signY + 41, { align: "center" })
 
       // Unduh File PDF
       doc.save(`Sertifikat_${certificateNo}.pdf`)
@@ -469,10 +474,10 @@ export function PrintCertificateButton({
 
       ctx.fillStyle = "#18181B"
       ctx.font = "bold 24px sans-serif"
-      ctx.fillText("Dr. Asrif, M.Hum.", 1240, 974)
+      ctx.fillText(HEAD_OF_OFFICE_NAME, 1240, 974)
       ctx.fillStyle = "#64748B"
       ctx.font = "20px sans-serif"
-      ctx.fillText("NIP. 197412152002121002", 1240, 1006)
+      ctx.fillText(`NIP. ${HEAD_OF_OFFICE_NIP}`, 1240, 1006)
 
       const link = document.createElement("a")
       link.download = `Sertifikat_${certificateNo}.png`

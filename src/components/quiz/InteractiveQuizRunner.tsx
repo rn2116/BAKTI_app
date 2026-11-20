@@ -1,8 +1,12 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { submitQuizAttempt } from "@/actions/quiz"
+import {
+  submitQuizAttempt,
+  startQuizAttemptSession,
+  type ServerQuizResult,
+} from "@/actions/quiz"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog"
@@ -61,34 +65,115 @@ interface InteractiveQuizRunnerProps {
     xpReward: number
     questions: QuestionItem[]
   }
+  initialAttemptId: string
+  initialRemainingSeconds: number
 }
 
-interface QuizResultData {
-  score: number
-  maxScore: number
-  passed: boolean
-  xpEarned: number
-  violationCount: number
-  isAutoSubmitted: boolean
-  answers: Array<{
-    questionId: string
-    selectedIndex: number | null
-    isCorrect: boolean
-    correctIndex: number
-    explanation?: string | null
-  }>
-}
-
-export function InteractiveQuizRunner({ quiz }: InteractiveQuizRunnerProps) {
+export function InteractiveQuizRunner({
+  quiz,
+  initialAttemptId,
+  initialRemainingSeconds,
+}: InteractiveQuizRunnerProps) {
+  const [attemptId, setAttemptId] = useState(initialAttemptId)
   const [currentIndex, setCurrentIndex] = useState(0)
   const [userAnswers, setUserAnswers] = useState<Record<string, number>>({})
-  const [timeLeft, setTimeLeft] = useState(quiz.timeLimit * 60)
+  const [timeLeft, setTimeLeft] = useState(initialRemainingSeconds)
   const [isMuted, setIsMuted] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isRestarting, setIsRestarting] = useState(false)
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false)
-  const [result, setResult] = useState<QuizResultData | null>(null)
+  const [result, setResult] = useState<ServerQuizResult | null>(null)
   const [violationCount, setViolationCount] = useState(0)
   const [isAutoSubmitted, setIsAutoSubmitted] = useState(false)
+  const hydratedDraftIdRef = useRef<string | null>(null)
+
+  const getDraftKey = (id: string) => `bk_quiz_draft_${id}`
+
+  // Pulihkan draf jawaban dan nomor soal terakhir jika tab mobile sempat di-reload
+  useEffect(() => {
+    if (typeof window === "undefined" || result) return
+    if (hydratedDraftIdRef.current === attemptId) return
+
+    try {
+      const raw = window.sessionStorage.getItem(getDraftKey(attemptId))
+      if (raw) {
+        const parsed = JSON.parse(raw) as {
+          userAnswers?: Record<string, number>
+          currentIndex?: number
+        }
+        if (parsed.userAnswers && typeof parsed.userAnswers === "object") {
+          const validQuestionIds = new Set(quiz.questions.map((q) => q.id))
+          const restoredAnswers: Record<string, number> = {}
+          for (const [qId, optIdx] of Object.entries(parsed.userAnswers)) {
+            if (
+              validQuestionIds.has(qId) &&
+              typeof optIdx === "number" &&
+              Number.isInteger(optIdx) &&
+              optIdx >= 0 &&
+              optIdx <= 3
+            ) {
+              restoredAnswers[qId] = optIdx
+            }
+          }
+          if (Object.keys(restoredAnswers).length > 0) {
+            setUserAnswers(restoredAnswers)
+          }
+        }
+        if (
+          typeof parsed.currentIndex === "number" &&
+          Number.isInteger(parsed.currentIndex) &&
+          parsed.currentIndex >= 0 &&
+          parsed.currentIndex < quiz.questions.length
+        ) {
+          setCurrentIndex(parsed.currentIndex)
+        }
+      }
+    } catch {
+      // Abaikan draf rusak pada sessionStorage
+    } finally {
+      hydratedDraftIdRef.current = attemptId
+    }
+  }, [attemptId, quiz.questions, result])
+
+  // Simpan otomatis pilihan jawaban & nomor soal ke sessionStorage
+  useEffect(() => {
+    if (typeof window === "undefined" || result) return
+    if (hydratedDraftIdRef.current !== attemptId) return
+
+    try {
+      window.sessionStorage.setItem(
+        getDraftKey(attemptId),
+        JSON.stringify({ userAnswers, currentIndex })
+      )
+    } catch {
+      // Abaikan jika penyimpanan penuh atau mode privat ketat
+    }
+  }, [attemptId, userAnswers, currentIndex, result])
+
+  // Preload ringan audio soal berikutnya agar saat siswa menekan Dengarkan tidak menunggu buffering
+  useEffect(() => {
+    if (result) return
+    const nextQuestion = quiz.questions[currentIndex + 1]
+    if (!nextQuestion) return
+
+    if (nextQuestion.audioUrl) {
+      const normalized = nextQuestion.audioUrl.startsWith("/uploads/audio/")
+        ? `/api/audio/${nextQuestion.audioUrl.replace("/uploads/audio/", "")}`
+        : nextQuestion.audioUrl
+      const audioPreloader = new Audio()
+      audioPreloader.preload = "auto"
+      audioPreloader.src = normalized
+      return
+    }
+
+    const nextText = (nextQuestion.wiseSayingText || nextQuestion.question || "").trim()
+    if (nextText) {
+      const url = `/api/tts?text=${encodeURIComponent(nextText.slice(0, 600))}&lang=id`
+      fetch(url, { method: "GET" }).catch(() => {
+        // Abaikan error preload jaringan latar belakang
+      })
+    }
+  }, [currentIndex, quiz.questions, result])
 
   // Initialize sound preferences
   useEffect(() => {
@@ -164,6 +249,7 @@ export function InteractiveQuizRunner({ quiz }: InteractiveQuizRunnerProps) {
 
     const formData = new FormData()
     formData.append("quizId", quiz.id)
+    formData.append("attemptId", attemptId)
     formData.append("answers", JSON.stringify(answersPayload))
     formData.append("violationCount", String(finalViolationCount))
     formData.append("isAutoSubmitted", String(finalIsAutoSubmitted))
@@ -171,42 +257,22 @@ export function InteractiveQuizRunner({ quiz }: InteractiveQuizRunnerProps) {
     const res = await submitQuizAttempt(null, formData)
     setIsSubmitting(false)
 
-    if (res.success) {
-      // Evaluasi lokal untuk feedback langsung pembahasan
-      let score = 0
-      let maxScore = 0
-      const detailedAnswers = quiz.questions.map((q) => {
-        const selected = userAnswers[q.id] ?? null
-        const correct = q.correctIndex ?? 0
-        const isCorrect = selected === correct
-        const points = isCorrect ? q.points : 0
-        score += points
-        maxScore += q.points
-        return {
-          questionId: q.id,
-          selectedIndex: selected,
-          isCorrect,
-          correctIndex: correct,
-          explanation: q.explanation,
-        }
-      })
+    if (res.success && res.result) {
+      try {
+        window.sessionStorage.removeItem(getDraftKey(attemptId))
+      } catch {
+        // Abaikan error storage
+      }
+      const serverResult = res.result
+      setResult(serverResult)
 
-      const passed = maxScore > 0 && score / maxScore >= quiz.passingScore / 100
-      const xpEarned = passed ? Math.round(quiz.xpReward * (score / (maxScore || 1))) : 0
+      playQuizCompleteSound(serverResult.passed)
 
-      setResult({
-        score,
-        maxScore,
-        passed,
-        xpEarned,
-        violationCount: finalViolationCount,
-        isAutoSubmitted: finalIsAutoSubmitted,
-        answers: detailedAnswers,
-      })
-
-      playQuizCompleteSound(passed)
-
-      if (passed) {
+      if (serverResult.disqualified) {
+        notify.error(
+          "Kuis didiskualifikasi karena melampaui batas pelanggaran pindah tab (3 kali)."
+        )
+      } else if (serverResult.passed) {
         confetti({
           particleCount: 100,
           spread: 70,
@@ -214,8 +280,12 @@ export function InteractiveQuizRunner({ quiz }: InteractiveQuizRunnerProps) {
           colors: ["#3C22BB", "#065F46", "#D97706", "#FDE047"],
         })
         notify.success("Selamat! Anda berhasil lulus kuis ini!")
-        if (xpEarned > 0) {
-          notify.reward("Poin XP Berhasil Diraih!", xpEarned, `Nilai akhir: ${score}/${maxScore}`)
+        if (serverResult.xpEarned > 0) {
+          notify.reward(
+            "Poin XP Berhasil Diraih!",
+            serverResult.xpEarned,
+            `Nilai akhir: ${serverResult.score}/${serverResult.maxScore}`
+          )
         }
       } else {
         notify.warning("Belum mencapai KKM kelulusan. Pelajari kembali materi dan coba lagi!")
@@ -309,18 +379,35 @@ export function InteractiveQuizRunner({ quiz }: InteractiveQuizRunnerProps) {
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-3">
             <Button
-              onClick={() => {
+              disabled={isRestarting}
+              onClick={async () => {
+                setIsRestarting(true)
+                const started = await startQuizAttemptSession(quiz.id)
+                setIsRestarting(false)
+                if (!started.success || !started.attemptId) {
+                  notify.error(started.error ?? "Gagal memulai ulang sesi kuis")
+                  return
+                }
+                try {
+                  window.sessionStorage.removeItem(getDraftKey(attemptId))
+                  window.sessionStorage.removeItem(getDraftKey(started.attemptId))
+                } catch {
+                  // Abaikan error storage
+                }
+                hydratedDraftIdRef.current = started.attemptId
+                setAttemptId(started.attemptId)
                 setResult(null)
                 setCurrentIndex(0)
                 setUserAnswers({})
-                setTimeLeft(quiz.timeLimit * 60)
+                setTimeLeft(started.remainingSeconds ?? quiz.timeLimit * 60)
                 setViolationCount(0)
                 setIsAutoSubmitted(false)
               }}
               variant="outline"
               className="w-full sm:w-auto rounded-xl gap-2 text-xs font-bold"
             >
-              <RotateCcw className="w-4 h-4" /> Ulangi Kuis
+              <RotateCcw className="w-4 h-4" />
+              {isRestarting ? "Menyiapkan..." : "Ulangi Kuis"}
             </Button>
             <Link href="/siswa/kuis" className="w-full sm:w-auto">
               <Button className="w-full sm:w-auto rounded-xl bg-[#3C22BB] hover:bg-[#2E1994] text-white text-xs font-bold gap-2">
@@ -414,12 +501,12 @@ export function InteractiveQuizRunner({ quiz }: InteractiveQuizRunnerProps) {
                     </div>
                   )}
 
-                  {q.explanation && (
+                  {(ans?.explanation ?? q.explanation) && (
                     <div className="p-3 rounded-xl bg-white/80 border border-zinc-200/80 mt-2 text-zinc-700 leading-relaxed text-[11px]">
                       <span className="font-bold text-zinc-900 block mb-0.5">
                         💡 Penjelasan Pembahasan:
                       </span>
-                      {q.explanation}
+                      {ans?.explanation ?? q.explanation}
                     </div>
                   )}
                 </div>

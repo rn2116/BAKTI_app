@@ -11,7 +11,8 @@
     "prisma:generate": "prisma generate",
     "prisma:push": "prisma db push",
     "prisma:seed": "tsx prisma/seed.ts",
-    "prisma:studio": "prisma studio"
+    "prisma:studio": "prisma studio",
+    "pack:cpanel": "bash scripts/pack-cpanel.sh"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",

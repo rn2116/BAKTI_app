@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
+import dynamic from "next/dynamic"
 import { useRouter } from "next/navigation"
 import { verifyQuizQuestionAction } from "@/actions/admin-guru"
 import { Button } from "@/components/ui/button"
@@ -11,7 +12,19 @@ import { Textarea } from "@/components/ui/textarea"
 import { CategoryBadge } from "@/components/shared/CategoryBadge"
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog"
 import { AudioButton } from "@/components/shared/AudioButton"
-import { MiniAudioStudio } from "@/components/shared/MiniAudioStudio"
+
+const MiniAudioStudio = dynamic(
+  () =>
+    import("@/components/shared/MiniAudioStudio").then(
+      (mod) => mod.MiniAudioStudio
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-24 rounded-2xl bg-zinc-100 animate-pulse" />
+    ),
+  }
+)
 import { notify } from "@/lib/notify"
 import { REGIONAL_LANGUAGE_LABELS } from "@/lib/constants"
 import {

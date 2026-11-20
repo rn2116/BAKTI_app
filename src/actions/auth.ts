@@ -1,10 +1,11 @@
 "use server"
 import { randomUUID } from "crypto"
 import { compare } from "bcryptjs"
-import { cookies } from "next/headers"
+import { headers } from "next/headers"
 import { redirect } from "next/navigation"
 import { signToken, setAuthCookie, clearAuthCookie, hashPassword } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit"
 import { loginSchema, registerSchema } from "@/validations/auth"
 
 type ActionState = { success: boolean; error?: string }
@@ -31,6 +32,18 @@ export async function login(
   }
 
   const { email, password } = parsed.data
+  const hdrs = await headers()
+  const ip = getClientIp(hdrs)
+  const ipLimit = checkRateLimit(`login-ip:${ip}`, 25, 60_000)
+  const emailLimit = checkRateLimit(`login:${ip}:${email.toLowerCase()}`, 10, 60_000)
+  if (!ipLimit.allowed || !emailLimit.allowed) {
+    const waitSec = Math.max(ipLimit.retryAfterSeconds, emailLimit.retryAfterSeconds)
+    return {
+      success: false,
+      error: `Terlalu banyak percobaan masuk. Silakan coba lagi dalam ${waitSec} detik.`,
+    }
+  }
+
   let userId = ""
   let role = ""
 
@@ -77,6 +90,15 @@ export async function register(
   }
 
   const { fullName, email, password, schoolId, classId } = parsed.data
+  const hdrs = await headers()
+  const ip = getClientIp(hdrs)
+  const regLimit = checkRateLimit(`register:${ip}`, 10, 5 * 60_000)
+  if (!regLimit.allowed) {
+    return {
+      success: false,
+      error: `Terlalu banyak percobaan pendaftaran. Silakan tunggu ${regLimit.retryAfterSeconds} detik.`,
+    }
+  }
 
   try {
     const exists = await prisma.masterUser.findUnique({ where: { email } })

@@ -46,6 +46,10 @@ export default async function LoginPage({
               <img
                 src="/images/logo-bbpst-kemendikdasmen.png"
                 alt="Logo Kemendikdasmen — Balai Bahasa Provinsi Sulawesi Tengah"
+                width={1024}
+                height={194}
+                fetchPriority="high"
+                decoding="async"
                 className="h-12 sm:h-14 w-auto object-contain"
               />
               <span className="inline-flex items-center px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider text-[#3C22BB] bg-indigo-50 border border-indigo-100">

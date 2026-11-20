@@ -1,12 +1,25 @@
+import nextDynamic from "next/dynamic"
 import { getCurrentUser } from "@/lib/auth"
 import { getUserCertificates, getUserRegionalCertificates } from "@/services/user"
 import { REGIONAL_LANGUAGE_LABELS } from "@/lib/constants"
 import { PageHeader } from "@/components/shared/PageHeader"
 import { BadgeCard } from "@/components/gamification/BadgeCard"
 import { Card, CardContent } from "@/components/ui/card"
-import { PrintCertificateButton } from "@/components/siswa/PrintCertificateButton"
 import { Award, ShieldCheck, ExternalLink, Compass } from "lucide-react"
 import Link from "next/link"
+
+const PrintCertificateButton = nextDynamic(
+  () =>
+    import("@/components/siswa/PrintCertificateButton").then(
+      (mod) => mod.PrintCertificateButton
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-9 w-full rounded-xl bg-zinc-100 animate-pulse" />
+    ),
+  }
+)
 
 export default async function SertifikatSiswaPage() {
   const user = await getCurrentUser()

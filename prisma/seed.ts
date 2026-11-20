@@ -667,7 +667,7 @@ Pelestarian bahasa daerah dan sastra lisan Sulawesi Tengah kini menjadi priorita
     questions: [
       {
         question: "Pilihan berikut yang ejaannya BENAR menurut EYD V adalah?",
-        options: ["komitmen", "komitmen", "commintmen", "kommitmen"],
+        options: ["komitment", "komitmen", "commintmen", "kommitmen"],
         correctIndex: 1,
         explanation: "Kata yang benar menurut EYD adalah 'komitmen' (dari bahasa Inggris commitment).",
       },

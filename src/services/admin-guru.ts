@@ -475,6 +475,21 @@ export async function getCharacterMatrices() {
   })
 }
 
+export async function getCharacterMatricesForDictionary() {
+  return prisma.characterMatrix.findMany({
+    select: {
+      id: true,
+      indonesianCharacter: true,
+      regionalLanguage: true,
+      regionalTerm: true,
+      characterSource: true,
+      implementation: true,
+      audioUrl: true,
+    },
+    orderBy: [{ regionalLanguage: "asc" }, { indonesianCharacter: "asc" }],
+  })
+}
+
 // ========================
 // ADMIN - LAPORAN NILAI RESMI BBPST
 // ========================
@@ -640,22 +655,31 @@ export interface AdminAgencyAnalyticsData {
 
 export async function getAdminAgencyAnalytics(): Promise<AdminAgencyAnalyticsData> {
   const [
-    users,
+    userRoleSchoolGroups,
+    activeLearnersCount,
     regencies,
     schools,
-    attempts,
-    answers,
-    moduleProgressRows,
-    regionalCerts,
+    completedAttempts,
+    answerGroups,
+    moduleGroups,
+    regionalCertGroups,
+    regionalCertSchools,
     materialCertCount,
   ] = await Promise.all([
-    prisma.masterUser.findMany({
+    prisma.masterUser.groupBy({
+      by: ["role", "schoolId"],
       where: { isActive: true },
-      select: {
-        id: true,
-        role: true,
-        schoolId: true,
-        xp: true,
+      _count: { id: true },
+    }),
+    prisma.masterUser.count({
+      where: {
+        role: Role.SISWA,
+        isActive: true,
+        OR: [
+          { xp: { gt: 0 } },
+          { quizAttempts: { some: { completedAt: { not: null } } } },
+          { regionalProgress: { some: {} } },
+        ],
       },
     }),
     prisma.masterRegency.findMany({
@@ -673,9 +697,8 @@ export async function getAdminAgencyAnalytics(): Promise<AdminAgencyAnalyticsDat
       orderBy: { name: "asc" },
     }),
     prisma.quizAttempt.findMany({
+      where: { completedAt: { not: null } },
       select: {
-        id: true,
-        userId: true,
         score: true,
         maxScore: true,
         passed: true,
@@ -683,11 +706,195 @@ export async function getAdminAgencyAnalytics(): Promise<AdminAgencyAnalyticsDat
         quiz: { select: { regionalLanguage: true } },
       },
     }),
-    prisma.quizAttemptAnswer.findMany({
+    prisma.quizAttemptAnswer.groupBy({
+      by: ["questionId", "isCorrect"],
+      _count: { id: true },
+    }),
+    prisma.regionalModuleProgress.groupBy({
+      by: ["regionalLanguage"],
+      _count: { id: true },
+      _avg: { bestQuizScore: true },
+    }),
+    prisma.sertifikat.groupBy({
+      by: ["bahasaDaerah"],
+      _count: { id: true },
+    }),
+    prisma.sertifikat.findMany({
       select: {
-        isCorrect: true,
-        questionId: true,
-        question: {
+        user: { select: { school: { select: { regencyId: true } } } },
+      },
+    }),
+    prisma.userCertificate.count(),
+  ])
+
+  let totalStudents = 0
+  let totalTeachers = 0
+  let totalActiveUsers = 0
+  const schoolUserCounts = new Map<string, { students: number; teachers: number }>()
+
+  for (const grp of userRoleSchoolGroups) {
+    const cnt = grp._count.id
+    totalActiveUsers += cnt
+    if (grp.role === Role.SISWA) totalStudents += cnt
+    if (grp.role === Role.GURU) totalTeachers += cnt
+    if (grp.schoolId) {
+      const current = schoolUserCounts.get(grp.schoolId) ?? { students: 0, teachers: 0 }
+      if (grp.role === Role.SISWA) current.students += cnt
+      if (grp.role === Role.GURU) current.teachers += cnt
+      schoolUserCounts.set(grp.schoolId, current)
+    }
+  }
+
+  let totalPctSum = 0
+  let validAttemptCount = 0
+  const schoolAttemptStats = new Map<
+    string,
+    { count: number; pctSum: number; validCount: number }
+  >()
+  const langAttemptStats = new Map<
+    RegionalLanguage,
+    { count: number; pctSum: number; validCount: number; passedCount: number }
+  >()
+
+  for (const att of completedAttempts) {
+    const pct = att.maxScore > 0 ? (att.score / att.maxScore) * 100 : null
+    if (pct !== null) {
+      totalPctSum += pct
+      validAttemptCount++
+    }
+
+    const schId = att.user?.schoolId
+    if (schId) {
+      const sStat = schoolAttemptStats.get(schId) ?? { count: 0, pctSum: 0, validCount: 0 }
+      sStat.count += 1
+      if (pct !== null) {
+        sStat.pctSum += pct
+        sStat.validCount += 1
+      }
+      schoolAttemptStats.set(schId, sStat)
+    }
+
+    const rLang = att.quiz?.regionalLanguage
+    if (rLang) {
+      const lStat = langAttemptStats.get(rLang) ?? {
+        count: 0,
+        pctSum: 0,
+        validCount: 0,
+        passedCount: 0,
+      }
+      lStat.count += 1
+      if (pct !== null) {
+        lStat.pctSum += pct
+        lStat.validCount += 1
+      }
+      if (att.passed) lStat.passedCount += 1
+      langAttemptStats.set(rLang, lStat)
+    }
+  }
+
+  const overallAvgScore =
+    validAttemptCount > 0 ? Math.round(totalPctSum / validAttemptCount) : 0
+
+  const certCountByRegency = new Map<string, number>()
+  for (const cert of regionalCertSchools) {
+    const rId = cert.user?.school?.regencyId
+    if (rId) {
+      certCountByRegency.set(rId, (certCountByRegency.get(rId) ?? 0) + 1)
+    }
+  }
+
+  const schoolsByRegency = new Map<string, typeof schools>()
+  for (const sch of schools) {
+    const arr = schoolsByRegency.get(sch.regencyId) ?? []
+    arr.push(sch)
+    schoolsByRegency.set(sch.regencyId, arr)
+  }
+
+  const regencyDistribution: RegencyAnalyticsRow[] = regencies.map((reg) => {
+    const regSchools = schoolsByRegency.get(reg.id) ?? []
+    let regStudents = 0
+    let regTeachers = 0
+    for (const s of regSchools) {
+      const uc = schoolUserCounts.get(s.id)
+      if (uc) {
+        regStudents += uc.students
+        regTeachers += uc.teachers
+      }
+    }
+
+    return {
+      regencyId: reg.id,
+      regencyName: reg.name,
+      schoolsCount: regSchools.length,
+      studentsCount: regStudents,
+      teachersCount: regTeachers,
+      certificatesCount: certCountByRegency.get(reg.id) ?? 0,
+    }
+  })
+
+  const schoolDistribution = schools.map((sch) => {
+    const uc = schoolUserCounts.get(sch.id) ?? { students: 0, teachers: 0 }
+    const sStat = schoolAttemptStats.get(sch.id) ?? { count: 0, pctSum: 0, validCount: 0 }
+    return {
+      schoolId: sch.id,
+      schoolName: sch.name,
+      regencyName: sch.regency?.name ?? "-",
+      studentsCount: uc.students,
+      teachersCount: uc.teachers,
+      attemptsCount: sStat.count,
+      avgScore: sStat.validCount > 0 ? Math.round(sStat.pctSum / sStat.validCount) : 0,
+    }
+  })
+
+  const moduleStatMap = new Map(
+    moduleGroups.map((m) => [
+      m.regionalLanguage,
+      { count: m._count.id, avgScore: Math.round(m._avg.bestQuizScore ?? 0) },
+    ])
+  )
+  const certCountByLang = new Map(
+    regionalCertGroups.map((c) => [c.bahasaDaerah, c._count.id])
+  )
+
+  const languagePerformance: RegionalLanguageAnalyticsRow[] = REGIONAL_LANGUAGES.map(
+    (langMeta) => {
+      const lStat = langAttemptStats.get(langMeta.code)
+      const modStat = moduleStatMap.get(langMeta.code)
+      const attemptsCount = lStat?.count ?? 0
+      const avgScore =
+        lStat && lStat.validCount > 0
+          ? Math.round(lStat.pctSum / lStat.validCount)
+          : modStat?.avgScore ?? 0
+
+      return {
+        code: langMeta.code,
+        name: langMeta.name,
+        attemptsCount,
+        avgScore,
+        passRate:
+          attemptsCount > 0 && lStat
+            ? Math.round((lStat.passedCount / attemptsCount) * 100)
+            : 0,
+        moduleStarters: modStat?.count ?? 0,
+        certificatesCount: certCountByLang.get(langMeta.code) ?? 0,
+      }
+    }
+  )
+
+  // Agregasi Ungkapan Paling Dikuasai vs Paling Sulit dari hasil groupBy DB
+  const aggMap = new Map<string, { totalAnswered: number; correctCount: number }>()
+  for (const row of answerGroups) {
+    const existing = aggMap.get(row.questionId) ?? { totalAnswered: 0, correctCount: 0 }
+    existing.totalAnswered += row._count.id
+    if (row.isCorrect) existing.correctCount += row._count.id
+    aggMap.set(row.questionId, existing)
+  }
+
+  const questionIds = Array.from(aggMap.keys())
+  const questionDetails =
+    questionIds.length > 0
+      ? await prisma.quizQuestion.findMany({
+          where: { id: { in: questionIds } },
           select: {
             id: true,
             question: true,
@@ -696,193 +903,29 @@ export async function getAdminAgencyAnalytics(): Promise<AdminAgencyAnalyticsDat
             regionalLanguage: true,
             quiz: { select: { regionalLanguage: true } },
           },
-        },
-      },
-    }),
-    prisma.regionalModuleProgress.findMany({
-      select: {
-        userId: true,
-        regionalLanguage: true,
-        stage3Completed: true,
-        bestQuizScore: true,
-      },
-    }),
-    prisma.sertifikat.findMany({
-      select: {
-        id: true,
-        bahasaDaerah: true,
-        user: { select: { school: { select: { regencyId: true } } } },
-      },
-    }),
-    prisma.userCertificate.count(),
-  ])
+        })
+      : []
 
-  const students = users.filter((u) => u.role === Role.SISWA)
-  const teachers = users.filter((u) => u.role === Role.GURU)
-
-  const learnerIds = new Set<string>()
-  for (const a of attempts) learnerIds.add(a.userId)
-  for (const m of moduleProgressRows) learnerIds.add(m.userId)
-  for (const s of students) {
-    if (s.xp > 0) learnerIds.add(s.id)
-  }
-
-  let totalPctSum = 0
-  let validAttemptCount = 0
-  for (const a of attempts) {
-    if (a.maxScore > 0) {
-      totalPctSum += (a.score / a.maxScore) * 100
-      validAttemptCount++
-    }
-  }
-  const overallAvgScore =
-    validAttemptCount > 0 ? Math.round(totalPctSum / validAttemptCount) : 0
-
-  // Map Regency Distribution
-  const schoolById = new Map(schools.map((s) => [s.id, s]))
-  const regencyDistribution: RegencyAnalyticsRow[] = regencies.map((reg) => {
-    const regSchools = schools.filter((s) => s.regencyId === reg.id)
-    const regSchoolIds = new Set(regSchools.map((s) => s.id))
-    const regStudents = students.filter(
-      (u) => u.schoolId && regSchoolIds.has(u.schoolId)
-    ).length
-    const regTeachers = teachers.filter(
-      (u) => u.schoolId && regSchoolIds.has(u.schoolId)
-    ).length
-    const regCerts = regionalCerts.filter(
-      (c) => c.user?.school?.regencyId === reg.id
-    ).length
-
-    return {
-      regencyId: reg.id,
-      regencyName: reg.name,
-      schoolsCount: regSchools.length,
-      studentsCount: regStudents,
-      teachersCount: regTeachers,
-      certificatesCount: regCerts,
-    }
-  })
-
-  // Top School Distribution
-  const schoolDistribution = schools.map((sch) => {
-    const schStudents = students.filter((u) => u.schoolId === sch.id).length
-    const schTeachers = teachers.filter((u) => u.schoolId === sch.id).length
-    const schAttempts = attempts.filter((a) => a.user?.schoolId === sch.id)
-    let schPctSum = 0
-    let schValid = 0
-    for (const a of schAttempts) {
-      if (a.maxScore > 0) {
-        schPctSum += (a.score / a.maxScore) * 100
-        schValid++
-      }
-    }
-
-    return {
-      schoolId: sch.id,
-      schoolName: sch.name,
-      regencyName: sch.regency?.name ?? schoolById.get(sch.id)?.regency?.name ?? "-",
-      studentsCount: schStudents,
-      teachersCount: schTeachers,
-      attemptsCount: schAttempts.length,
-      avgScore: schValid > 0 ? Math.round(schPctSum / schValid) : 0,
-    }
-  })
-
-  // Regional Language Performance (9 Bahasa Daerah)
-  const languagePerformance: RegionalLanguageAnalyticsRow[] = REGIONAL_LANGUAGES.map(
-    (langMeta) => {
-      const langAttempts = attempts.filter(
-        (a) => a.quiz.regionalLanguage === langMeta.code
-      )
-      const langMods = moduleProgressRows.filter(
-        (m) => m.regionalLanguage === langMeta.code
-      )
-      const langCerts = regionalCerts.filter(
-        (c) => c.bahasaDaerah === langMeta.code
-      ).length
-
-      let pctSum = 0
-      let validCnt = 0
-      let passedCnt = 0
-      for (const a of langAttempts) {
-        if (a.maxScore > 0) {
-          pctSum += (a.score / a.maxScore) * 100
-          validCnt++
-        }
-        if (a.passed) passedCnt++
-      }
-
-      // Include module progress scores when dedicated quiz attempts are still empty
-      if (validCnt === 0 && langMods.length > 0) {
-        const modScores = langMods.filter((m) => m.bestQuizScore > 0)
-        if (modScores.length > 0) {
-          pctSum = modScores.reduce((acc, m) => acc + m.bestQuizScore, 0)
-          validCnt = modScores.length
-        }
-      }
-
-      return {
-        code: langMeta.code,
-        name: langMeta.name,
-        attemptsCount: langAttempts.length,
-        avgScore: validCnt > 0 ? Math.round(pctSum / validCnt) : 0,
-        passRate:
-          langAttempts.length > 0
-            ? Math.round((passedCnt / langAttempts.length) * 100)
-            : 0,
-        moduleStarters: langMods.length,
-        certificatesCount: langCerts,
-      }
-    }
-  )
-
-  // Ungkapan Paling Dikuasai vs Paling Sulit
-  const questionStatsMap = new Map<
-    string,
-    {
-      questionId: string
-      label: string
-      meaning: string | null
-      languageName: string
-      totalAnswered: number
-      correctCount: number
-    }
-  >()
-
-  for (const ans of answers) {
-    const q = ans.question
-    if (!q) continue
+  const allExpressionPerf: ExpressionPerformanceItem[] = questionDetails.map((q) => {
+    const stats = aggMap.get(q.id) ?? { totalAnswered: 0, correctCount: 0 }
     const langCode = q.regionalLanguage ?? q.quiz?.regionalLanguage
     const languageName = langCode
       ? REGIONAL_LANGUAGE_LABELS[langCode] ?? langCode
       : "Literasi & Karakter"
 
-    const label = q.wiseSayingText ? `"${q.wiseSayingText}"` : q.question
-    const existingStat = questionStatsMap.get(q.id)
-    if (existingStat) {
-      existingStat.totalAnswered += 1
-      if (ans.isCorrect) existingStat.correctCount += 1
-    } else {
-      questionStatsMap.set(q.id, {
-        questionId: q.id,
-        label,
-        meaning: q.wiseSayingMeaning,
-        languageName,
-        totalAnswered: 1,
-        correctCount: ans.isCorrect ? 1 : 0,
-      })
+    return {
+      questionId: q.id,
+      label: q.wiseSayingText ? `"${q.wiseSayingText}"` : q.question,
+      meaning: q.wiseSayingMeaning,
+      languageName,
+      totalAnswered: stats.totalAnswered,
+      correctCount: stats.correctCount,
+      accuracyPercent:
+        stats.totalAnswered > 0
+          ? Math.round((stats.correctCount / stats.totalAnswered) * 100)
+          : 0,
     }
-  }
-
-  const allExpressionPerf: ExpressionPerformanceItem[] = Array.from(
-    questionStatsMap.values()
-  ).map((item) => ({
-    ...item,
-    accuracyPercent:
-      item.totalAnswered > 0
-        ? Math.round((item.correctCount / item.totalAnswered) * 100)
-        : 0,
-  }))
+  })
 
   const mostMasteredExpressions = [...allExpressionPerf]
     .sort((a, b) => {
@@ -902,16 +945,21 @@ export async function getAdminAgencyAnalytics(): Promise<AdminAgencyAnalyticsDat
     })
     .slice(0, 5)
 
+  const totalRegionalCertificates = regionalCertGroups.reduce(
+    (acc, item) => acc + item._count.id,
+    0
+  )
+
   return {
     summary: {
-      totalActiveUsers: users.length,
-      totalStudents: students.length,
-      totalTeachers: teachers.length,
-      activeLearnersCount: learnerIds.size,
+      totalActiveUsers,
+      totalStudents,
+      totalTeachers,
+      activeLearnersCount,
       totalSchools: schools.length,
       totalRegencies: regencies.length,
-      totalQuizAttempts: attempts.length,
-      totalRegionalCertificates: regionalCerts.length,
+      totalQuizAttempts: completedAttempts.length,
+      totalRegionalCertificates,
       totalMaterialCertificates: materialCertCount,
       overallAvgScore,
     },

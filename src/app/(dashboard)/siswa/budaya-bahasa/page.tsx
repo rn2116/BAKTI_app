@@ -1,12 +1,12 @@
 import { requireDashboardUser } from "@/lib/auth"
-import { getCharacterMatrices } from "@/services/admin-guru"
+import { getCharacterMatricesForDictionary } from "@/services/admin-guru"
 import { PageHeader } from "@/components/shared/PageHeader"
 import { RegionalLanguageDictionaryClient } from "@/components/siswa/RegionalLanguageDictionaryClient"
 
 export default async function SiswaBudayaBahasaPage() {
   await requireDashboardUser("SISWA")
 
-  const matrices = await getCharacterMatrices()
+  const matrices = await getCharacterMatricesForDictionary()
 
   return (
     <div className="space-y-6">

@@ -1,3 +1,4 @@
+import dynamic from "next/dynamic"
 import { getCurrentUser } from "@/lib/auth"
 import { getStudentDashboardData } from "@/services/studentDashboardService"
 import { StudentHeroBanner } from "@/components/gamification/StudentHeroBanner"
@@ -7,8 +8,19 @@ import { ProgressRingCard } from "@/components/gamification/ProgressRingCard"
 import { WeeklyPointsChart } from "@/components/gamification/WeeklyPointsChart"
 import { StudentSidebarPanel } from "@/components/gamification/StudentSidebarPanel"
 import { DailyWiseSayingCard } from "@/components/gamification/DailyWiseSayingCard"
-import { SultengLanguageMapExplorer } from "@/components/siswa/SultengLanguageMapExplorer"
 import { SultengIllustration, getThemeByIndexAndCategory } from "@/components/shared/SultengIllustration"
+
+const SultengLanguageMapExplorer = dynamic(
+  () =>
+    import("@/components/siswa/SultengLanguageMapExplorer").then(
+      (mod) => mod.SultengLanguageMapExplorer
+    ),
+  {
+    loading: () => (
+      <div className="h-[360px] rounded-3xl border border-zinc-200 bg-white animate-pulse" />
+    ),
+  }
+)
 import { CategoryBadge } from "@/components/shared/CategoryBadge"
 import { Card } from "@/components/ui/card"
 import Link from "next/link"
