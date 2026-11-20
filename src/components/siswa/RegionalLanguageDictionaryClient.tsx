@@ -31,7 +31,7 @@ interface MatrixItem {
   characterSource: string
   implementation: string
   audioUrl?: string | null
-  createdAt: Date
+  createdAt?: Date
 }
 
 interface RegionalLanguageDictionaryClientProps {

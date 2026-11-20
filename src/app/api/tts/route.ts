@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from "next/server"
+import { createHash } from "crypto"
+import { mkdir, readFile, writeFile } from "fs/promises"
+import path from "path"
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
+
+const TTS_CACHE_DIR = path.resolve(process.cwd(), "public", "uploads", "tts-cache")
+const ALLOWED_LANGS = new Set(["id", "en"])
 
 function splitTextIntoChunks(text: string, maxLen = 180): string[] {
   const cleaned = text.replace(/\s+/g, " ").trim()
@@ -35,14 +42,36 @@ function splitTextIntoChunks(text: string, maxLen = 180): string[] {
   return chunks.filter(Boolean)
 }
 
-async function synthesizeSpeechMp3(text: string, lang = "id"): Promise<Buffer> {
-  const limitedText = text.slice(0, 2400)
-  const chunks = splitTextIntoChunks(limitedText, 180)
+async function synthesizeSpeechMp3(
+  text: string,
+  lang = "id"
+): Promise<{ buffer: Buffer; cacheHit: boolean }> {
+  const safeLang = ALLOWED_LANGS.has(lang.toLowerCase()) ? lang.toLowerCase() : "id"
+  const normalizedText = text.replace(/\s+/g, " ").trim().slice(0, 2400)
+  const hashKey = createHash("md5")
+    .update(`${safeLang}:${normalizedText}`)
+    .digest("hex")
+  const cachePath = path.resolve(TTS_CACHE_DIR, `${hashKey}.mp3`)
+
+  // 1. Cek cache berkas MD5 di server terlebih dahulu
+  if (cachePath.startsWith(`${TTS_CACHE_DIR}${path.sep}`)) {
+    try {
+      const cached = await readFile(cachePath)
+      if (cached.length > 0) {
+        return { buffer: cached, cacheHit: true }
+      }
+    } catch {
+      // Cache miss, lanjut sintesis upstream
+    }
+  }
+
+  // 2. Sintesis ulang jika belum ada di cache
+  const chunks = splitTextIntoChunks(normalizedText, 180)
   const buffers: Buffer[] = []
 
   for (const chunk of chunks) {
     const url = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${encodeURIComponent(
-      lang
+      safeLang
     )}&client=tw-ob&q=${encodeURIComponent(chunk)}`
 
     const res = await fetch(url, {
@@ -62,10 +91,43 @@ async function synthesizeSpeechMp3(text: string, lang = "id"): Promise<Buffer> {
     buffers.push(Buffer.from(arrayBuf))
   }
 
-  return Buffer.concat(buffers)
+  const combined = Buffer.concat(buffers)
+
+  // Simpan ke cache disk agar permintaan teks serupa langsung dilayani tanpa memanggil TTS ulang
+  if (combined.length > 0 && cachePath.startsWith(`${TTS_CACHE_DIR}${path.sep}`)) {
+    try {
+      await mkdir(TTS_CACHE_DIR, { recursive: true })
+      await writeFile(cachePath, combined)
+    } catch {
+      // Abaikan kegagalan tulis cache agar audio tetap terkirim ke pengguna
+    }
+  }
+
+  return { buffer: combined, cacheHit: false }
+}
+
+function buildAudioResponse(buffer: Buffer, cacheHit: boolean): NextResponse {
+  return new NextResponse(new Uint8Array(buffer), {
+    status: 200,
+    headers: {
+      "Content-Type": "audio/mpeg",
+      "Content-Length": String(buffer.length),
+      "Cache-Control": "public, max-age=604800, stale-while-revalidate=86400",
+      "X-TTS-Cache": cacheHit ? "HIT" : "MISS",
+    },
+  })
 }
 
 export async function GET(request: NextRequest) {
+  const ip = getClientIp(request.headers)
+  const rl = checkRateLimit(`tts:${ip}`, 45, 60_000)
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: "Terlalu banyak permintaan audio. Silakan tunggu sebentar." },
+      { status: 429, headers: { "Retry-After": String(rl.retryAfterSeconds) } }
+    )
+  }
+
   const { searchParams } = new URL(request.url)
   const text = searchParams.get("text")?.trim() ?? ""
   const lang = searchParams.get("lang")?.trim() || "id"
@@ -75,15 +137,8 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const audioBuffer = await synthesizeSpeechMp3(text, lang)
-    return new NextResponse(new Uint8Array(audioBuffer), {
-      status: 200,
-      headers: {
-        "Content-Type": "audio/mpeg",
-        "Content-Length": String(audioBuffer.length),
-        "Cache-Control": "public, max-age=86400",
-      },
-    })
+    const { buffer, cacheHit } = await synthesizeSpeechMp3(text, lang)
+    return buildAudioResponse(buffer, cacheHit)
   } catch (err) {
     console.error("TTS synthesis gagal:", err)
     return NextResponse.json(
@@ -94,6 +149,15 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const ip = getClientIp(request.headers)
+  const rl = checkRateLimit(`tts:${ip}`, 45, 60_000)
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: "Terlalu banyak permintaan audio. Silakan tunggu sebentar." },
+      { status: 429, headers: { "Retry-After": String(rl.retryAfterSeconds) } }
+    )
+  }
+
   try {
     const body = (await request.json()) as { text?: string; lang?: string }
     const text = body.text?.trim() ?? ""
@@ -103,15 +167,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Teks audio wajib diisi." }, { status: 400 })
     }
 
-    const audioBuffer = await synthesizeSpeechMp3(text, lang)
-    return new NextResponse(new Uint8Array(audioBuffer), {
-      status: 200,
-      headers: {
-        "Content-Type": "audio/mpeg",
-        "Content-Length": String(audioBuffer.length),
-        "Cache-Control": "public, max-age=86400",
-      },
-    })
+    const { buffer, cacheHit } = await synthesizeSpeechMp3(text, lang)
+    return buildAudioResponse(buffer, cacheHit)
   } catch (err) {
     console.error("TTS POST synthesis gagal:", err)
     return NextResponse.json(

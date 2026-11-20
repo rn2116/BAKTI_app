@@ -6,6 +6,7 @@ import { z } from "zod"
 import { prisma } from "@/lib/prisma"
 import { getSession } from "@/lib/auth"
 import { hashPassword } from "@/lib/auth"
+import { sanitizePlainText, sanitizeAudioUrl } from "@/lib/sanitize"
 import { Category, Role, RegionalLanguage, QuestionVerificationStatus } from "@/types"
 
 type ActionState = { success: boolean; error?: string; message?: string }
@@ -35,12 +36,24 @@ export async function createClass(prevState: ActionState | null, formData: FormD
   }
 
   try {
+    let targetSchoolId = parsed.data.schoolId
+    if (session.role === Role.GURU) {
+      const guru = await prisma.masterUser.findUnique({
+        where: { id: session.userId },
+        select: { schoolId: true },
+      })
+      if (!guru?.schoolId || guru.schoolId !== targetSchoolId) {
+        return { success: false, error: "Anda hanya berwenang menambah kelas di sekolah Anda sendiri" }
+      }
+      targetSchoolId = guru.schoolId
+    }
+
     await prisma.masterClass.create({
       data: {
         id: randomUUID(),
-        name: parsed.data.name,
+        name: sanitizePlainText(parsed.data.name, 50),
         grade: parsed.data.grade,
-        schoolId: parsed.data.schoolId,
+        schoolId: targetSchoolId,
         isActive: true,
       },
     })
@@ -60,6 +73,22 @@ export async function deleteClass(classId: string): Promise<ActionState> {
   }
 
   try {
+    if (session.role === Role.GURU) {
+      const [guru, targetClass] = await Promise.all([
+        prisma.masterUser.findUnique({
+          where: { id: session.userId },
+          select: { schoolId: true },
+        }),
+        prisma.masterClass.findUnique({
+          where: { id: classId },
+          select: { schoolId: true },
+        }),
+      ])
+      if (!targetClass || !guru?.schoolId || targetClass.schoolId !== guru.schoolId) {
+        return { success: false, error: "Anda tidak berwenang menghapus kelas dari sekolah lain" }
+      }
+    }
+
     await prisma.masterClass.delete({ where: { id: classId } })
     revalidatePath("/guru/kelas")
     revalidatePath("/admin/kelas")
@@ -613,6 +642,19 @@ export async function deleteQuizQuestion(questionId: string, quizId: string): Pr
   }
 }
 
+const importedQuizQuestionRowSchema = z.object({
+  question: z.string().min(3, "Teks pertanyaan minimal 3 karakter"),
+  options: z.array(z.string().min(1)).length(4, "Setiap soal harus memiliki 4 pilihan jawaban"),
+  correctIndex: z.coerce.number().int().min(0).max(3),
+  explanation: z.string().optional().nullable(),
+  points: z.coerce.number().int().min(1).max(1000).optional(),
+  regionalLanguage: z.nativeEnum(RegionalLanguage).optional().nullable(),
+  wiseSayingText: z.string().optional().nullable(),
+  wiseSayingMeaning: z.string().optional().nullable(),
+  referenceSource: z.string().optional().nullable(),
+  audioUrl: z.string().optional().nullable(),
+})
+
 export async function importQuizQuestionsAction(
   quizId: string,
   questionsJson: string
@@ -628,30 +670,29 @@ export async function importQuizQuestionsAction(
     return { success: false, error: "ID Kuis tidak ditemukan" }
   }
 
-  let items: Array<{
-    question: string
-    options: string[]
-    correctIndex: number
-    explanation?: string
-    points?: number
-    regionalLanguage?: RegionalLanguage | null
-    wiseSayingText?: string | null
-    wiseSayingMeaning?: string | null
-    referenceSource?: string | null
-    audioUrl?: string | null
-  }> = []
-
+  let rawItems: unknown
   try {
-    items = JSON.parse(questionsJson)
+    rawItems = JSON.parse(questionsJson)
   } catch {
     return { success: false, error: "Format data butir soal tidak valid (JSON error)" }
   }
 
-  if (!Array.isArray(items) || items.length === 0) {
+  if (!Array.isArray(rawItems) || rawItems.length === 0) {
     return { success: false, error: "Daftar butir soal kosong" }
+  }
+  if (rawItems.length > 500) {
+    return { success: false, error: "Maksimal 500 butir soal per sekali impor" }
   }
 
   try {
+    const targetQuiz = await prisma.quiz.findUnique({
+      where: { id: quizId },
+      select: { id: true },
+    })
+    if (!targetQuiz) {
+      return { success: false, error: "Paket kuis tujuan tidak ditemukan" }
+    }
+
     const highestOrder = await prisma.quizQuestion.findFirst({
       where: { quizId },
       orderBy: { orderIndex: "desc" },
@@ -659,21 +700,42 @@ export async function importQuizQuestionsAction(
     })
     let currentOrder = highestOrder?.orderIndex ?? 0
 
-    const createData = items.map((item) => {
+    const validatedRows: Array<z.infer<typeof importedQuizQuestionRowSchema>> = []
+    for (let i = 0; i < rawItems.length; i++) {
+      const parsedRow = importedQuizQuestionRowSchema.safeParse(rawItems[i])
+      if (!parsedRow.success) {
+        return {
+          success: false,
+          error: `Baris soal ke-${i + 1} tidak valid: ${parsedRow.error.errors[0]?.message ?? "periksa format kolom"}`,
+        }
+      }
+      validatedRows.push(parsedRow.data)
+    }
+
+    const createData = validatedRows.map((item) => {
       currentOrder += 1
+      const cleanQuestion = sanitizePlainText(item.question, 2000)
+      const cleanOptions = item.options.map((opt) => sanitizePlainText(opt, 500))
+      const cleanExplanation = item.explanation ? sanitizePlainText(item.explanation, 2000) : null
+      const cleanWiseText = item.wiseSayingText ? sanitizePlainText(item.wiseSayingText, 1000) : null
+      const cleanWiseMeaning = item.wiseSayingMeaning
+        ? sanitizePlainText(item.wiseSayingMeaning, 1000)
+        : null
+      const cleanRefSource = item.referenceSource ? sanitizePlainText(item.referenceSource, 255) : null
+
       return {
         id: randomUUID(),
         quizId,
-        question: item.question.trim(),
-        options: JSON.stringify(item.options),
-        correctIndex: Number.isInteger(item.correctIndex) ? item.correctIndex : 0,
-        explanation: item.explanation?.trim() || null,
+        question: cleanQuestion,
+        options: JSON.stringify(cleanOptions),
+        correctIndex: item.correctIndex,
+        explanation: cleanExplanation || null,
         points: item.points && item.points > 0 ? item.points : 10,
         regionalLanguage: item.regionalLanguage || null,
-        wiseSayingText: item.wiseSayingText?.trim() || null,
-        wiseSayingMeaning: item.wiseSayingMeaning?.trim() || null,
-        referenceSource: item.referenceSource?.trim() || null,
-        audioUrl: item.audioUrl?.trim() || null,
+        wiseSayingText: cleanWiseText || null,
+        wiseSayingMeaning: cleanWiseMeaning || null,
+        referenceSource: cleanRefSource || null,
+        audioUrl: sanitizeAudioUrl(item.audioUrl),
         verificationStatus: isGuru
           ? QuestionVerificationStatus.PENDING_REVIEW
           : QuestionVerificationStatus.APPROVED,
@@ -922,6 +984,15 @@ export async function deleteCharacterMatrixAction(matrixId: number): Promise<Act
   }
 }
 
+const importedMatrixRowSchema = z.object({
+  indonesianCharacter: z.string().min(1, "Nilai karakter wajib diisi"),
+  regionalLanguage: z.string().min(1, "Kode bahasa daerah wajib diisi"),
+  regionalTerm: z.string().min(1, "Istilah daerah wajib diisi"),
+  characterSource: z.string().optional().nullable(),
+  implementation: z.string().optional().nullable(),
+  audioUrl: z.string().optional().nullable(),
+})
+
 export async function importCharacterMatrixAction(
   matricesJson: string
 ): Promise<ActionState & { count?: number }> {
@@ -930,23 +1001,18 @@ export async function importCharacterMatrixAction(
     return { success: false, error: "Hanya Admin yang berwenang mengimpor Matriks Karakter" }
   }
 
-  let items: Array<{
-    indonesianCharacter: string
-    regionalLanguage: string
-    regionalTerm: string
-    characterSource: string
-    implementation: string
-    audioUrl?: string | null
-  }> = []
-
+  let rawItems: unknown
   try {
-    items = JSON.parse(matricesJson)
+    rawItems = JSON.parse(matricesJson)
   } catch {
     return { success: false, error: "Format data tidak valid (JSON error)" }
   }
 
-  if (!Array.isArray(items) || items.length === 0) {
+  if (!Array.isArray(rawItems) || rawItems.length === 0) {
     return { success: false, error: "Data impor matriks karakter kosong" }
+  }
+  if (rawItems.length > 500) {
+    return { success: false, error: "Maksimal 500 baris matriks karakter per sekali impor" }
   }
 
   try {
@@ -961,22 +1027,25 @@ export async function importCharacterMatrixAction(
       createdBy: string
     }> = []
 
-    for (const item of items) {
-      const langUpper = (item.regionalLanguage || "").trim().toUpperCase()
-      if (!validLanguages.includes(langUpper)) {
-        continue
-      }
-      if (!item.indonesianCharacter?.trim() || !item.regionalTerm?.trim()) {
-        continue
-      }
+    for (const rawRow of rawItems) {
+      const parsedRow = importedMatrixRowSchema.safeParse(rawRow)
+      if (!parsedRow.success) continue
+      const item = parsedRow.data
+
+      const langUpper = sanitizePlainText(item.regionalLanguage, 30).toUpperCase()
+      if (!validLanguages.includes(langUpper)) continue
+
+      const cleanIndo = sanitizePlainText(item.indonesianCharacter, 150)
+      const cleanTerm = sanitizePlainText(item.regionalTerm, 200)
+      if (!cleanIndo || !cleanTerm) continue
 
       validData.push({
-        indonesianCharacter: item.indonesianCharacter.trim(),
+        indonesianCharacter: cleanIndo,
         regionalLanguage: langUpper as RegionalLanguage,
-        regionalTerm: item.regionalTerm.trim(),
-        characterSource: (item.characterSource || "-").trim(),
-        implementation: (item.implementation || "-").trim(),
-        audioUrl: item.audioUrl?.trim() || null,
+        regionalTerm: cleanTerm,
+        characterSource: sanitizePlainText(item.characterSource || "-", 1500) || "-",
+        implementation: sanitizePlainText(item.implementation || "-", 1500) || "-",
+        audioUrl: sanitizeAudioUrl(item.audioUrl),
         createdBy: session.userId,
       })
     }

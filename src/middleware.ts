@@ -10,13 +10,43 @@ const DASHBOARD_PREFIX: Record<string, string> = {
 }
 
 export const config = {
-  matcher: ["/", "/masuk", "/daftar", "/siswa/:path*", "/guru/:path*", "/admin/:path*"],
+  matcher: [
+    "/",
+    "/masuk",
+    "/daftar",
+    "/siswa/:path*",
+    "/guru/:path*",
+    "/admin/:path*",
+    "/api/admin/:path*",
+    "/api/upload/:path*",
+  ],
 }
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
   const token = request.cookies.get("bk_token")?.value
   const payload = token ? await verifyToken(token) : null
+
+  // Proteksi API Admin & Upload di level Middleware
+  if (pathname.startsWith("/api/admin")) {
+    if (!payload) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 })
+    }
+    if (payload.role !== "ADMIN") {
+      return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 })
+    }
+    return NextResponse.next()
+  }
+
+  if (pathname.startsWith("/api/upload")) {
+    if (!payload) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 })
+    }
+    if (payload.role !== "ADMIN" && payload.role !== "GURU") {
+      return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 })
+    }
+    return NextResponse.next()
+  }
 
   // Alur Halaman Root (/)
   if (pathname === "/") {

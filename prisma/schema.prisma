@@ -1,5 +1,6 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "rhel-openssl-3.0.x", "rhel-openssl-1.0.x"]
 }
 
 datasource db {
@@ -120,6 +121,8 @@ model MasterUser {
   sertifikatBahasa  Sertifikat[]
 
   @@index([role])
+  @@index([role, isActive])
+  @@index([role, schoolId, isActive])
   @@index([schoolId])
   @@index([classId])
   @@index([email])
@@ -225,6 +228,7 @@ model QuizQuestion {
   answers     QuizAttemptAnswer[]
 
   @@index([quizId])
+  @@index([quizId, verificationStatus])
   @@index([regionalLanguage])
   @@index([verificationStatus])
   @@index([createdBy])
@@ -253,6 +257,8 @@ model QuizAttempt {
   @@index([userId])
   @@index([quizId])
   @@index([userId, quizId])
+  @@index([userId, completedAt])
+  @@index([completedAt])
   @@index([quizId, score]) // composite index untuk papan peringkat per kuis
   @@index([score])
   @@map("quiz_attempts")
@@ -272,6 +278,7 @@ model QuizAttemptAnswer {
 
   @@index([attemptId])
   @@index([questionId])
+  @@index([questionId, isCorrect])
   @@unique([attemptId, questionId])
   @@map("quiz_attempt_answers")
 }
@@ -343,6 +350,7 @@ model CharacterMatrix {
 
   @@index([regionalLanguage])
   @@index([indonesianCharacter])
+  @@index([regionalLanguage, indonesianCharacter])
   @@map("character_matrices")
 }
 
@@ -379,5 +387,6 @@ model Sertifikat {
   @@unique([userId, bahasaDaerah])
   @@index([userId])
   @@index([bahasaDaerah])
+  @@index([bahasaDaerah, tanggalTerbit])
   @@map("sertifikat")
 }

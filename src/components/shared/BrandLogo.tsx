@@ -38,6 +38,9 @@ export function BrandLogo({
       <img
         src="/images/logo-bbpst-kemendikdasmen.png"
         alt="Logo Kemendikdasmen — Balai Bahasa Provinsi Sulawesi Tengah"
+        width={1024}
+        height={194}
+        decoding="async"
         className={cn("w-auto object-contain shrink-0", LOGO_HEIGHT_CLASS[size])}
       />
 

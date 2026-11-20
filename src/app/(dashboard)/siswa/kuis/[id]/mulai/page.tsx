@@ -1,8 +1,10 @@
 import { getCurrentUser } from "@/lib/auth"
-import { getQuizById } from "@/services/quiz"
+import { getQuizById, startOrResumeQuizAttempt } from "@/services/quiz"
 import { InteractiveQuizRunner } from "@/components/quiz/InteractiveQuizRunner"
 import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
+
+export const dynamic = "force-dynamic"
 
 export default async function KuisMulaiPage({
   params,
@@ -36,6 +38,8 @@ export default async function KuisMulaiPage({
     )
   }
 
+  const attemptSession = await startOrResumeQuizAttempt(user.id, quiz.id, quiz.timeLimit)
+
   return (
     <div className="space-y-4">
       {/* Tombol Navigasi Keluar Mode Kuis */}
@@ -49,7 +53,11 @@ export default async function KuisMulaiPage({
         <span className="text-[11px] font-semibold text-zinc-400">Mode Fokus Ujian</span>
       </div>
 
-      <InteractiveQuizRunner quiz={quiz} />
+      <InteractiveQuizRunner
+        quiz={quiz}
+        initialAttemptId={attemptSession.attemptId}
+        initialRemainingSeconds={attemptSession.remainingSeconds}
+      />
     </div>
   )
 }
