@@ -8,12 +8,14 @@ import { prisma } from "@/lib/prisma"
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit"
 import { sanitizePlainText } from "@/lib/sanitize"
 import { sendBbpstNotificationEmail } from "@/lib/mailer"
+import { getInstitutionSettings } from "@/services/institution"
 import { loginSchema, registerSchema } from "@/validations/auth"
 import { ExpertVerificationStatus, Role } from "@/types"
 
-type ActionState = {
+export type ActionState = {
   success: boolean
   error?: string
+  message?: string
   pendingExpertApproval?: boolean
   whatsappUrl?: string
   contactEmail?: string
@@ -228,12 +230,9 @@ export async function register(
         }
       })
 
-      const contactEmail =
-        process.env.BBPST_CONTACT_EMAIL?.trim() || "balaibahasasulteng@kemdikdasmen.go.id"
-      const contactWa = (process.env.BBPST_CONTACT_WHATSAPP?.trim() || "628110000000").replace(
-        /\D/g,
-        ""
-      )
+      const instSettings = await getInstitutionSettings()
+      const contactEmail = instSettings.contactEmail
+      const contactWa = instSettings.contactWhatsapp.replace(/\D/g, "") || "628110000000"
       const appUrl =
         process.env.APP_URL?.trim() ||
         process.env.NEXT_PUBLIC_APP_URL?.trim() ||

@@ -500,9 +500,12 @@ export async function getTeacherQuizDetail(quizId: string, teacherId: string) {
 // ========================
 
 export async function getCharacterMatrices() {
-  return (prisma as any).characterMatrix.findMany({
+  return prisma.characterMatrix.findMany({
+    where: { verificationStatus: "APPROVED" },
     include: {
       creator: { select: { fullName: true } },
+      proposer: { select: { fullName: true } },
+      verifier: { select: { fullName: true, expertAffiliation: true, role: true } },
     },
     orderBy: [{ regionalLanguage: "asc" }, { indonesianCharacter: "asc" }],
   })
@@ -510,6 +513,7 @@ export async function getCharacterMatrices() {
 
 export async function getCharacterMatricesForDictionary() {
   return prisma.characterMatrix.findMany({
+    where: { verificationStatus: "APPROVED" },
     select: {
       id: true,
       indonesianCharacter: true,
@@ -518,6 +522,20 @@ export async function getCharacterMatricesForDictionary() {
       characterSource: true,
       implementation: true,
       audioUrl: true,
+      proposer: {
+        select: {
+          fullName: true,
+          participantCategory: true,
+          domicileRegency: true,
+        },
+      },
+      verifier: {
+        select: {
+          fullName: true,
+          role: true,
+          expertAffiliation: true,
+        },
+      },
     },
     orderBy: [{ regionalLanguage: "asc" }, { indonesianCharacter: "asc" }],
   })

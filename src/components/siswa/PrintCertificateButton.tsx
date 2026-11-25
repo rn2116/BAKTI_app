@@ -14,12 +14,18 @@ interface PrintCertificateButtonProps {
   materialTitle?: string
   issuedAt?: Date | string
   finalScore?: number
+  signerTitle?: string
+  signerName?: string
+  signerNip?: string
+  cityName?: string
 }
 
-const HEAD_OF_OFFICE_NAME =
+const DEFAULT_SIGNER_TITLE = "Kepala Balai Bahasa Provinsi Sulawesi Tengah"
+const DEFAULT_HEAD_OF_OFFICE_NAME =
   process.env.NEXT_PUBLIC_KEPALA_BALAI_NAMA?.trim() || "Dr. Asrif, M.Hum."
-const HEAD_OF_OFFICE_NIP =
+const DEFAULT_HEAD_OF_OFFICE_NIP =
   process.env.NEXT_PUBLIC_KEPALA_BALAI_NIP?.trim() || "197412152002121002"
+const DEFAULT_CITY_NAME = "Palu"
 
 export function PrintCertificateButton({
   certificateNo,
@@ -27,6 +33,10 @@ export function PrintCertificateButton({
   materialTitle = "Kompetensi Literasi & Karakter",
   issuedAt,
   finalScore,
+  signerTitle = DEFAULT_SIGNER_TITLE,
+  signerName = DEFAULT_HEAD_OF_OFFICE_NAME,
+  signerNip = DEFAULT_HEAD_OF_OFFICE_NIP,
+  cityName = DEFAULT_CITY_NAME,
 }: PrintCertificateButtonProps) {
   const [copied, setCopied] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)
@@ -281,37 +291,38 @@ export function PrintCertificateButton({
       doc.setFont("helvetica", "normal")
       doc.setFontSize(9)
       doc.setTextColor(50, 50, 60)
-      doc.text(`Palu, ${formattedDate}`, signX, signY, { align: "center" })
-      doc.text("Kepala Balai Bahasa Provinsi Sulawesi Tengah", signX, signY + 6, {
+      doc.text(`${cityName}, ${formattedDate}`, signX, signY, { align: "center" })
+      doc.text(signerTitle, signX, signY + 6, {
         align: "center",
+        maxWidth: 96,
       })
 
       // Stempel Digital Info
       doc.setDrawColor(60, 34, 187)
       doc.setLineWidth(0.4)
-      doc.roundedRect(signX - 35, signY + 12, 70, 16, 2, 2)
+      doc.roundedRect(signX - 35, signY + 13, 70, 16, 2, 2)
 
       doc.setFont("helvetica", "bold")
       doc.setFontSize(8)
       doc.setTextColor(60, 34, 187)
-      doc.text("TERTANDA TANGAN ELEKTRONIK", signX, signY + 19, {
+      doc.text("TERTANDA TANGAN ELEKTRONIK", signX, signY + 20, {
         align: "center",
       })
       doc.setFont("helvetica", "normal")
       doc.setFontSize(6.5)
       doc.setTextColor(110, 110, 120)
-      doc.text("Sertifikasi Otomatis Sistem Pembelajaran BAKTI", signX, signY + 24, {
+      doc.text("Sertifikasi Otomatis Sistem Pembelajaran BAKTI", signX, signY + 25, {
         align: "center",
       })
 
       doc.setFont("helvetica", "bold")
       doc.setFontSize(9)
       doc.setTextColor(24, 24, 27)
-      doc.text(HEAD_OF_OFFICE_NAME, signX, signY + 36, { align: "center" })
+      doc.text(signerName, signX, signY + 37, { align: "center" })
       doc.setFont("helvetica", "normal")
       doc.setFontSize(8)
       doc.setTextColor(100, 100, 110)
-      doc.text(`NIP. ${HEAD_OF_OFFICE_NIP}`, signX, signY + 41, { align: "center" })
+      doc.text(`NIP. ${signerNip}`, signX, signY + 42, { align: "center" })
 
       // Unduh File PDF
       doc.save(`Sertifikat_${certificateNo}.pdf`)
@@ -459,8 +470,8 @@ export function PrintCertificateButton({
       ctx.textAlign = "center"
       ctx.fillStyle = "#1E293B"
       ctx.font = "22px sans-serif"
-      ctx.fillText(`Palu, ${formattedDate}`, 1240, 788)
-      ctx.fillText("Kepala Balai Bahasa Provinsi Sulawesi Tengah", 1240, 820)
+      ctx.fillText(`${cityName}, ${formattedDate}`, 1240, 788)
+      ctx.fillText(signerTitle, 1240, 820)
 
       ctx.strokeStyle = "#3C22BB"
       ctx.lineWidth = 2
@@ -474,10 +485,10 @@ export function PrintCertificateButton({
 
       ctx.fillStyle = "#18181B"
       ctx.font = "bold 24px sans-serif"
-      ctx.fillText(HEAD_OF_OFFICE_NAME, 1240, 974)
+      ctx.fillText(signerName, 1240, 974)
       ctx.fillStyle = "#64748B"
       ctx.font = "20px sans-serif"
-      ctx.fillText(`NIP. ${HEAD_OF_OFFICE_NIP}`, 1240, 1006)
+      ctx.fillText(`NIP. ${signerNip}`, 1240, 1006)
 
       const link = document.createElement("a")
       link.download = `Sertifikat_${certificateNo}.png`

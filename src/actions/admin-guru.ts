@@ -974,6 +974,8 @@ export async function saveCharacterMatrixAction(
           characterSource: sanitizePlainText(matrixData.characterSource, 2000),
           implementation: sanitizePlainText(matrixData.implementation, 2000),
           audioUrl: sanitizeAudioUrl(matrixData.audioUrl),
+          verificationStatus: QuestionVerificationStatus.APPROVED,
+          verifiedBy: session.userId,
         },
       })
     } else {
@@ -985,7 +987,9 @@ export async function saveCharacterMatrixAction(
           characterSource: sanitizePlainText(matrixData.characterSource, 2000),
           implementation: sanitizePlainText(matrixData.implementation, 2000),
           audioUrl: sanitizeAudioUrl(matrixData.audioUrl),
+          verificationStatus: QuestionVerificationStatus.APPROVED,
           createdBy: session.userId,
+          verifiedBy: session.userId,
         },
       })
     }
@@ -1070,7 +1074,9 @@ export async function importCharacterMatrixAction(
       characterSource: string
       implementation: string
       audioUrl: string | null
+      verificationStatus: QuestionVerificationStatus
       createdBy: string
+      verifiedBy: string
     }> = []
 
     for (const rawRow of rawItems) {
@@ -1092,7 +1098,9 @@ export async function importCharacterMatrixAction(
         characterSource: sanitizePlainText(item.characterSource || "-", 1500) || "-",
         implementation: sanitizePlainText(item.implementation || "-", 1500) || "-",
         audioUrl: sanitizeAudioUrl(item.audioUrl),
+        verificationStatus: QuestionVerificationStatus.APPROVED,
         createdBy: session.userId,
+        verifiedBy: session.userId,
       })
     }
 
@@ -1100,8 +1108,10 @@ export async function importCharacterMatrixAction(
       return { success: false, error: "Tidak ada baris data yang valid untuk diimpor" }
     }
 
-    await prisma.characterMatrix.createMany({
-      data: validData,
+    await prisma.$transaction(async (tx) => {
+      await tx.characterMatrix.createMany({
+        data: validData,
+      })
     })
 
     revalidatePath("/admin/matriks-karakter")

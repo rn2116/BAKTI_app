@@ -2,6 +2,7 @@ import nextDynamic from "next/dynamic"
 import { getCurrentUser } from "@/lib/auth"
 import { getUserCertificates, getUserRegionalCertificates } from "@/services/user"
 import { getRegionalLanguageLabelMap } from "@/services/regionalLanguageService"
+import { getInstitutionSettings } from "@/services/institution"
 import { PageHeader } from "@/components/shared/PageHeader"
 import { BadgeCard } from "@/components/gamification/BadgeCard"
 import { Card, CardContent } from "@/components/ui/card"
@@ -25,10 +26,11 @@ export default async function SertifikatSiswaPage() {
   const user = await getCurrentUser()
   if (!user) return null
 
-  const [regionalCertificates, certificates, languageLabelMap] = await Promise.all([
+  const [regionalCertificates, certificates, languageLabelMap, instSettings] = await Promise.all([
     getUserRegionalCertificates(user.id),
     getUserCertificates(user.id),
     getRegionalLanguageLabelMap(),
+    getInstitutionSettings(),
   ])
 
   const hasAnyCertificate = regionalCertificates.length > 0 || certificates.length > 0
@@ -106,6 +108,10 @@ export default async function SertifikatSiswaPage() {
                         materialTitle={moduleTitle}
                         issuedAt={rc.tanggalTerbit}
                         finalScore={rc.skorAkhir}
+                        signerTitle={instSettings.signerTitle}
+                        signerName={instSettings.signerName}
+                        signerNip={instSettings.signerNip}
+                        cityName={instSettings.cityName}
                       />
                       <Link
                         href={`/verifikasi/${encodeURIComponent(rc.nomorSertifikat)}`}
@@ -162,6 +168,10 @@ export default async function SertifikatSiswaPage() {
                         studentName={user.fullName}
                         materialTitle={c.material.title}
                         issuedAt={c.issuedAt}
+                        signerTitle={instSettings.signerTitle}
+                        signerName={instSettings.signerName}
+                        signerNip={instSettings.signerNip}
+                        cityName={instSettings.cityName}
                       />
                     </div>
                   </CardContent>

@@ -8,6 +8,7 @@ import { LogOut } from "lucide-react"
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog"
 import { NotificationBell } from "@/components/layout/NotificationBell"
 import { TopHeaderProgressBar } from "@/components/layout/TopHeaderProgressBar"
+import { AllRolesFlowModal } from "@/components/shared/AllRolesFlowModal"
 
 interface MobileTopHeaderProps {
   user: AuthUser
@@ -42,8 +43,15 @@ export function MobileTopHeader({ user }: MobileTopHeaderProps) {
           </div>
         </div>
 
-        {/* Sisi Kanan: Lonceng Notifikasi + Nama Pengguna + Tombol Keluar */}
+        {/* Sisi Kanan: Panduan Alur + Lonceng Notifikasi + Nama Pengguna + Tombol Keluar */}
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          <AllRolesFlowModal
+            initialRole={user.role}
+            currentUserRole={user.role}
+            triggerVariant="mobile-header"
+            isAuthenticated={true}
+          />
+
           {/* Pusat Notifikasi Lonceng */}
           <NotificationBell userId={user.id} />
 

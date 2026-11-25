@@ -1,6 +1,7 @@
 import { getCurrentUser } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { PageHeader } from "@/components/shared/PageHeader"
+import { RoleFlowBanner } from "@/components/shared/RoleFlowBanner"
 import { StatCard } from "@/components/shared/StatCard"
 import { ClassPerformanceChart, PillarStat } from "@/components/guru/ClassPerformanceChart"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -110,6 +111,9 @@ export default async function GuruDashboard() {
 
   return (
     <div className="space-y-6 sm:space-y-8">
+      {/* PANDUAN ALUR PENGGUNA PENDIDIK */}
+      <RoleFlowBanner role="GURU" />
+
       {/* 1. TEACHER HERO BANNER */}
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#1E135E] via-[#3C22BB] to-[#0284C7] p-6 sm:p-8 text-white shadow-lg border border-white/10">
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">

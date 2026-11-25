@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createHash } from "crypto"
-import { mkdir, readFile, writeFile } from "fs/promises"
+import { createHash, randomUUID } from "crypto"
+import { mkdir, readFile, rename, unlink, writeFile } from "fs/promises"
 import path from "path"
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit"
 
@@ -9,6 +9,7 @@ export const dynamic = "force-dynamic"
 
 const TTS_CACHE_DIR = path.resolve(process.cwd(), "public", "uploads", "tts-cache")
 const ALLOWED_LANGS = new Set(["id", "en"])
+const inFlightSynthesis = new Map<string, Promise<Buffer>>()
 
 function splitTextIntoChunks(text: string, maxLen = 180): string[] {
   const cleaned = text.replace(/\s+/g, " ").trim()
@@ -65,45 +66,67 @@ async function synthesizeSpeechMp3(
     }
   }
 
-  // 2. Sintesis ulang jika belum ada di cache
-  const chunks = splitTextIntoChunks(normalizedText, 180)
-  const buffers: Buffer[] = []
-
-  for (const chunk of chunks) {
-    const url = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${encodeURIComponent(
-      safeLang
-    )}&client=tw-ob&q=${encodeURIComponent(chunk)}`
-
-    const res = await fetch(url, {
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
-        Referer: "https://translate.google.com/",
-      },
-      cache: "no-store",
-    })
-
-    if (!res.ok) {
-      throw new Error(`TTS upstream error: ${res.status}`)
-    }
-
-    const arrayBuf = await res.arrayBuffer()
-    buffers.push(Buffer.from(arrayBuf))
+  // 2. Deduplikasi permintaan serentak (singleflight) agar tidak terjadi race condition penulisan berkas
+  const existingTask = inFlightSynthesis.get(hashKey)
+  if (existingTask) {
+    const sharedBuffer = await existingTask
+    return { buffer: sharedBuffer, cacheHit: true }
   }
 
-  const combined = Buffer.concat(buffers)
+  const synthesisPromise = (async (): Promise<Buffer> => {
+    const chunks = splitTextIntoChunks(normalizedText, 180)
+    const buffers: Buffer[] = []
 
-  // Simpan ke cache disk agar permintaan teks serupa langsung dilayani tanpa memanggil TTS ulang
-  if (combined.length > 0 && cachePath.startsWith(`${TTS_CACHE_DIR}${path.sep}`)) {
-    try {
-      await mkdir(TTS_CACHE_DIR, { recursive: true })
-      await writeFile(cachePath, combined)
-    } catch {
-      // Abaikan kegagalan tulis cache agar audio tetap terkirim ke pengguna
+    for (const chunk of chunks) {
+      const url = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${encodeURIComponent(
+        safeLang
+      )}&client=tw-ob&q=${encodeURIComponent(chunk)}`
+
+      const res = await fetch(url, {
+        headers: {
+          "User-Agent":
+            "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+          Referer: "https://translate.google.com/",
+        },
+        cache: "no-store",
+      })
+
+      if (!res.ok) {
+        throw new Error(`TTS upstream error: ${res.status}`)
+      }
+
+      const arrayBuf = await res.arrayBuffer()
+      buffers.push(Buffer.from(arrayBuf))
     }
-  }
 
-  return { buffer: combined, cacheHit: false }
+    const combined = Buffer.concat(buffers)
+
+    // Penulisan atomik melalui berkas sementara + rename() untuk mencegah korup saat konkurensi tinggi
+    if (combined.length > 0 && cachePath.startsWith(`${TTS_CACHE_DIR}${path.sep}`)) {
+      const tmpPath = `${cachePath}.${randomUUID()}.tmp`
+      try {
+        await mkdir(TTS_CACHE_DIR, { recursive: true })
+        await writeFile(tmpPath, combined)
+        await rename(tmpPath, cachePath)
+      } catch {
+        try {
+          await unlink(tmpPath)
+        } catch {
+          // Abaikan kegagalan hapus berkas sementara
+        }
+      }
+    }
+
+    return combined
+  })()
+
+  inFlightSynthesis.set(hashKey, synthesisPromise)
+  try {
+    const combined = await synthesisPromise
+    return { buffer: combined, cacheHit: false }
+  } finally {
+    inFlightSynthesis.delete(hashKey)
+  }
 }
 
 function buildAudioResponse(buffer: Buffer, cacheHit: boolean): NextResponse {

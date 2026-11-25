@@ -2,7 +2,10 @@ import Link from "next/link"
 import { requireDashboardUser } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { getActiveRegionalLanguages } from "@/services/regionalLanguageService"
+import { getPendingDictionaryProposalsForCurator } from "@/services/dictionary"
 import { PageHeader } from "@/components/shared/PageHeader"
+import { RoleFlowBanner } from "@/components/shared/RoleFlowBanner"
+import { DictionaryCurationPanel } from "@/components/ahli-bahasa/DictionaryCurationPanel"
 import { Card } from "@/components/ui/card"
 import {
   Languages,
@@ -18,10 +21,13 @@ export const dynamic = "force-dynamic"
 export default async function AhliBahasaDashboardPage() {
   const user = await requireDashboardUser("AHLI_BAHASA")
 
-  const [activeLanguages, totalEntries, entriesWithAudio] = await Promise.all([
+  const [activeLanguages, totalEntries, entriesWithAudio, proposalSummary] = await Promise.all([
     getActiveRegionalLanguages(),
-    prisma.characterMatrix.count(),
-    prisma.characterMatrix.count({ where: { audioUrl: { not: null } } }),
+    prisma.characterMatrix.count({ where: { verificationStatus: "APPROVED" } }),
+    prisma.characterMatrix.count({
+      where: { verificationStatus: "APPROVED", audioUrl: { not: null } },
+    }),
+    getPendingDictionaryProposalsForCurator(user.expertLanguage),
   ])
 
   return (
@@ -30,6 +36,9 @@ export default async function AhliBahasaDashboardPage() {
         title={`Selamat Datang, ${user.fullName}`}
         description="Ruang kerja resmi Ahli Bahasa Daerah untuk memperkaya Kamus Besar Kearifan Lokal Sulawesi Tengah beserta rekaman pelafalan asli."
       />
+
+      {/* Panduan Alur Ahli Bahasa Daerah */}
+      <RoleFlowBanner role="AHLI_BAHASA" />
 
       {/* Lencana Kepakaran */}
       <Card className="rounded-3xl bg-gradient-to-r from-[#1E135E] via-[#3C22BB] to-[#065F46] text-white p-6 shadow-md border-0">
@@ -112,6 +121,13 @@ export default async function AhliBahasaDashboardPage() {
           </span>
         </Card>
       </div>
+
+      {/* Antrean Kurasi Usulan Kosakata Masyarakat */}
+      <DictionaryCurationPanel
+        summary={proposalSummary}
+        languages={activeLanguages.map((l) => ({ code: l.code, name: l.name }))}
+        expertLanguage={user.expertLanguage}
+      />
     </div>
   )
 }

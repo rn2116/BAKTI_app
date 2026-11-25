@@ -63,6 +63,8 @@ interface MatrixItem {
   audioUrl?: string | null
   createdAt: Date
   creator?: { fullName: string } | null
+  proposer?: { fullName: string } | null
+  verifier?: { fullName: string; expertAffiliation?: string | null; role: string } | null
 }
 
 interface LanguageOption {
@@ -460,7 +462,7 @@ export function AdminCharacterMatrixClient({
 
                 <div className="p-2.5 bg-indigo-50/50 rounded-xl border border-indigo-100/70">
                   <span className="font-semibold text-indigo-900 block text-[11px] mb-0.5">
-                    Implementasi Perilaku Siswa:
+                    Contoh Penerapan Sehari-hari:
                   </span>
                   <p className="text-indigo-800 line-clamp-3 leading-relaxed">
                     {item.implementation}
@@ -469,9 +471,27 @@ export function AdminCharacterMatrixClient({
               </div>
             </div>
 
-            <div className="pt-3 mt-3 border-t border-zinc-100 flex items-center justify-between text-[10px] text-zinc-400">
-              <span>BBPST Sulawesi Tengah</span>
-              <span>ID #{item.id}</span>
+            <div className="pt-3 mt-3 border-t border-zinc-100 space-y-1 text-[10px] text-zinc-500">
+              {item.proposer && (
+                <div className="font-semibold text-amber-800 truncate">
+                  Kontributor: {item.proposer.fullName}
+                </div>
+              )}
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-semibold text-[#065F46] truncate">
+                  Diverifikasi oleh:{" "}
+                  {item.verifier
+                    ? item.verifier.role === "AHLI_BAHASA"
+                      ? `${item.verifier.fullName}${
+                          item.verifier.expertAffiliation
+                            ? ` — ${item.verifier.expertAffiliation}`
+                            : ""
+                        }`
+                      : `${item.verifier.fullName} — Balai Bahasa Provinsi Sulawesi Tengah`
+                    : "Balai Bahasa Provinsi Sulawesi Tengah"}
+                </span>
+                <span className="shrink-0 text-zinc-400">#{item.id}</span>
+              </div>
             </div>
           </div>
         ))}
@@ -480,10 +500,10 @@ export function AdminCharacterMatrixClient({
           <div className="col-span-full py-16 text-center bg-white border border-dashed border-zinc-200 rounded-2xl p-8">
             <Compass className="w-12 h-12 text-zinc-300 mx-auto mb-3" />
             <h4 className="text-base font-semibold text-zinc-800">
-              Belum Ada Entri Matriks Karakter
+              Belum Ada Entri Kamus Besar
             </h4>
             <p className="text-xs text-zinc-500 max-w-sm mx-auto mt-1 mb-5">
-              Tambahkan istilah karakter kearifan lokal 9 bahasa daerah Sulawesi Tengah atau gunakan fitur impor massal Excel.
+              Tambahkan istilah karakter kearifan lokal bahasa daerah Sulawesi Tengah atau gunakan fitur impor massal Excel.
             </p>
             <div className="flex flex-wrap items-center justify-center gap-2">
               <Button

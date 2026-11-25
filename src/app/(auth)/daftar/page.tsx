@@ -2,6 +2,7 @@ import Link from "next/link"
 import RegisterForm from "@/components/auth/RegisterForm"
 import { AuthVisualPanel } from "@/components/auth/AuthVisualPanel"
 import { BrandLogo } from "@/components/shared/BrandLogo"
+import { AllRolesFlowModal } from "@/components/shared/AllRolesFlowModal"
 import { getActiveRegionalLanguages } from "@/services/regionalLanguageService"
 import { ShieldCheck } from "lucide-react"
 
@@ -46,6 +47,9 @@ export default async function RegisterPage() {
               <p className="text-xs sm:text-sm text-zinc-500 leading-relaxed">
                 Terbuka bagi masyarakat umum, pelajar, pendidik, serta ahli dan pegiat bahasa daerah di Sulawesi Tengah.
               </p>
+              <div className="pt-1 flex justify-center sm:justify-start">
+                <AllRolesFlowModal triggerVariant="auth" initialRole="SISWA" />
+              </div>
             </div>
           </div>
 

@@ -141,7 +141,9 @@ model MasterUser {
   createdQuizzes           Quiz[]                   @relation("QuizCreator")
   createdQuestions         QuizQuestion[]           @relation("QuestionCreator")
   verifiedQuestions        QuizQuestion[]           @relation("QuestionVerifier")
-  characterMatrices        CharacterMatrix[]
+  characterMatrices        CharacterMatrix[]        @relation("MatrixCreator")
+  proposedMatrices         CharacterMatrix[]        @relation("MatrixProposer")
+  verifiedMatrices         CharacterMatrix[]        @relation("MatrixVerifier")
   regionalProgress         RegionalModuleProgress[]
   sertifikatBahasa         Sertifikat[]
   createdRegionalLanguages MasterRegionalLanguage[] @relation("RegionalLanguageCreator")
@@ -383,23 +385,46 @@ model UserCertificate {
   @@map("user_certificates")
 }
 
-model CharacterMatrix {
-  id                  Int      @id @default(autoincrement()) @map("id_matrix")
-  indonesianCharacter String   @db.VarChar(150) @map("indonesian_character")
-  regionalLanguage    String   @db.VarChar(50) @map("regional_language")
-  regionalTerm        String   @db.VarChar(200) @map("regional_term")
-  characterSource     String   @db.Text @map("character_source")
-  implementation      String   @db.Text @map("implementation")
-  audioUrl            String?  @db.Text @map("audio_url")
-  createdBy           String?  @db.Char(36) @map("created_by")
-  createdAt           DateTime @default(now()) @map("created_at")
-  updatedAt           DateTime @updatedAt @map("updated_at")
+model InstitutionSetting {
+  id              String   @id @default("default") @db.VarChar(40)
+  signerTitle     String   @default("Kepala Balai Bahasa Provinsi Sulawesi Tengah") @db.VarChar(180) @map("signer_title")
+  signerName      String   @db.VarChar(150) @map("signer_name")
+  signerNip       String   @db.VarChar(50) @map("signer_nip")
+  cityName        String   @default("Palu") @db.VarChar(80) @map("city_name")
+  contactEmail    String   @db.VarChar(150) @map("contact_email")
+  contactWhatsapp String   @db.VarChar(40) @map("contact_whatsapp")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  updatedBy       String?  @db.Char(36) @map("updated_by")
 
-  creator MasterUser? @relation(fields: [createdBy], references: [id], onDelete: SetNull)
+  @@map("institution_settings")
+}
+
+model CharacterMatrix {
+  id                  Int                        @id @default(autoincrement()) @map("id_matrix")
+  indonesianCharacter String                     @db.VarChar(150) @map("indonesian_character")
+  regionalLanguage    String                     @db.VarChar(50) @map("regional_language")
+  regionalTerm        String                     @db.VarChar(200) @map("regional_term")
+  characterSource     String                     @db.Text @map("character_source")
+  implementation      String                     @db.Text @map("implementation")
+  audioUrl            String?                    @db.Text @map("audio_url")
+  verificationStatus  QuestionVerificationStatus @default(APPROVED) @map("verification_status")
+  createdBy           String?                    @db.Char(36) @map("created_by")
+  proposedBy          String?                    @db.Char(36) @map("proposed_by")
+  verifiedBy          String?                    @db.Char(36) @map("verified_by")
+  reviewNotes         String?                    @db.Text @map("review_notes")
+  createdAt           DateTime                   @default(now()) @map("created_at")
+  updatedAt           DateTime                   @updatedAt @map("updated_at")
+
+  creator  MasterUser? @relation("MatrixCreator", fields: [createdBy], references: [id], onDelete: SetNull)
+  proposer MasterUser? @relation("MatrixProposer", fields: [proposedBy], references: [id], onDelete: SetNull)
+  verifier MasterUser? @relation("MatrixVerifier", fields: [verifiedBy], references: [id], onDelete: SetNull)
 
   @@index([regionalLanguage])
   @@index([indonesianCharacter])
   @@index([regionalLanguage, indonesianCharacter])
+  @@index([verificationStatus])
+  @@index([proposedBy])
+  @@index([verifiedBy])
   @@map("character_matrices")
 }
 

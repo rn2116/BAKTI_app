@@ -15,6 +15,8 @@ export interface RegionalFlashcardItem {
   philosophicalMeaning: string
   referenceSource: string
   audioUrl: string | null
+  contributorName: string | null
+  verifierLabel: string | null
 }
 
 export interface RegionalMatchingPair {
@@ -83,11 +85,21 @@ export async function getRegionalLanguageModuleData(
       getRegionalLanguageByCode(lang),
       getRegionalLanguageLabelMap(),
       prisma.characterMatrix.findMany({
-        where: { regionalLanguage: lang },
+        where: { regionalLanguage: lang, verificationStatus: "APPROVED" },
+        include: {
+          proposer: { select: { fullName: true } },
+          verifier: {
+            select: {
+              fullName: true,
+              role: true,
+              expertAffiliation: true,
+            },
+          },
+        },
         orderBy: { id: "asc" },
       }),
       prisma.characterMatrix.findMany({
-        where: { regionalLanguage: { not: lang } },
+        where: { regionalLanguage: { not: lang }, verificationStatus: "APPROVED" },
         take: 4,
         orderBy: { id: "asc" },
       }),
@@ -154,6 +166,8 @@ export async function getRegionalLanguageModuleData(
       philosophicalMeaning: q.explanation || q.wiseSayingMeaning || charValue,
       referenceSource: q.referenceSource || "Balai Bahasa Provinsi Sulawesi Tengah",
       audioUrl: q.audioUrl ?? null,
+      contributorName: null,
+      verifierLabel: "Balai Bahasa Provinsi Sulawesi Tengah",
     })
   }
 
@@ -161,6 +175,14 @@ export async function getRegionalLanguageModuleData(
     const cleanText = m.regionalTerm.trim()
     if (!cleanText || seenTexts.has(cleanText.toLowerCase())) continue
     seenTexts.add(cleanText.toLowerCase())
+
+    const verifierLabel = m.verifier
+      ? m.verifier.role === "AHLI_BAHASA"
+        ? `${m.verifier.fullName}${
+            m.verifier.expertAffiliation ? ` — ${m.verifier.expertAffiliation}` : ""
+          }`
+        : `${m.verifier.fullName} — Balai Bahasa Provinsi Sulawesi Tengah`
+      : "Balai Bahasa Provinsi Sulawesi Tengah"
 
     flashcards.push({
       id: `m-${m.id}`,
@@ -171,6 +193,8 @@ export async function getRegionalLanguageModuleData(
       philosophicalMeaning: `${m.characterSource} Penerapan: ${m.implementation}`,
       referenceSource: m.characterSource,
       audioUrl: m.audioUrl ?? null,
+      contributorName: m.proposer?.fullName ?? null,
+      verifierLabel,
     })
   }
 
@@ -262,6 +286,7 @@ export async function getAllRegionalLanguagesSummary(
     getActiveRegionalLanguages(),
     prisma.characterMatrix.groupBy({
       by: ["regionalLanguage"],
+      where: { verificationStatus: "APPROVED" },
       _count: { id: true },
     }),
     prisma.quizQuestion.groupBy({

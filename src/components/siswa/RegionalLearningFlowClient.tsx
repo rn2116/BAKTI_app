@@ -409,12 +409,27 @@ export function RegionalLearningFlowClient({ data }: RegionalLearningFlowClientP
 
                         <div className="p-3.5 rounded-2xl bg-zinc-50 border border-zinc-200">
                           <div className="text-[11px] font-bold uppercase text-zinc-500 flex items-center gap-1">
-                            <BookOpen className="w-3.5 h-3.5" /> Makna Filosofis & Penerapan
+                            <BookOpen className="w-3.5 h-3.5" /> Makna Filosofis &amp; Penerapan
                           </div>
                           <p className="text-xs text-zinc-700 leading-relaxed mt-0.5">
                             {currentCard.philosophicalMeaning}
                           </p>
                         </div>
+
+                        {(currentCard.contributorName || currentCard.verifierLabel) && (
+                          <div className="flex flex-wrap gap-2 pt-1">
+                            {currentCard.contributorName && (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-xl bg-amber-50 text-amber-900 border border-amber-200">
+                                Kontributor: {currentCard.contributorName}
+                              </span>
+                            )}
+                            {currentCard.verifierLabel && (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-xl bg-emerald-50 text-[#065F46] border border-emerald-200">
+                                Diverifikasi oleh: {currentCard.verifierLabel}
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </motion.div>
                     )}
                   </AnimatePresence>

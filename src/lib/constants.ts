@@ -159,4 +159,5 @@ export const NAVIGATION_ITEMS_ADMIN = [
   { label: "Data Kelas", href: "/admin/kelas", icon: "Building2" },
   { label: "Data Pengguna", href: "/admin/pengguna", icon: "Users" },
   { label: "Laporan Nilai Peserta", href: "/admin/laporan", icon: "FileText" },
+  { label: "Pengaturan Instansi", href: "/admin/pengaturan-instansi", icon: "Settings" },
 ] as const

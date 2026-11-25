@@ -4,6 +4,7 @@ import { getCurrentUser } from "@/lib/auth"
 import LoginForm from "@/components/auth/LoginForm"
 import { AuthVisualPanel } from "@/components/auth/AuthVisualPanel"
 import { BrandLogo } from "@/components/shared/BrandLogo"
+import { AllRolesFlowModal } from "@/components/shared/AllRolesFlowModal"
 import { ShieldCheck, Info } from "lucide-react"
 
 const ROLE_PATH: Record<string, string> = {
@@ -80,8 +81,12 @@ export default async function LoginPage({
             <LoginForm />
           </div>
 
+          <div className="flex justify-center">
+            <AllRolesFlowModal triggerVariant="auth" initialRole="SISWA" />
+          </div>
+
           <p className="text-center text-xs text-zinc-500">
-            Belum memiliki akun siswa?{" "}
+            Belum memiliki akun peserta?{" "}
             <Link
               href="/daftar"
               className="font-bold text-[#3C22BB] hover:underline"

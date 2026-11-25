@@ -1,6 +1,7 @@
 import { requireDashboardUser } from "@/lib/auth"
 import { getAdminSystemStats, getAdminRegencyStats } from "@/services/admin-guru"
 import { RegencyAnalyticsChart } from "@/components/admin/RegencyAnalyticsChart"
+import { RoleFlowBanner } from "@/components/shared/RoleFlowBanner"
 import { Card, CardContent } from "@/components/ui/card"
 import Link from "next/link"
 import {
@@ -28,6 +29,9 @@ export default async function AdminDashboard() {
 
   return (
     <div className="space-y-6">
+      {/* Panduan Alur Administrator BBPST */}
+      <RoleFlowBanner role="ADMIN" />
+
       {/* 1. Hero Banner Eksekutif Administrator */}
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#1E135E] via-[#2A1882] to-[#3C22BB] p-6 sm:p-8 text-white shadow-lg border border-indigo-900/40">
         {/* Motif background vector halus */}

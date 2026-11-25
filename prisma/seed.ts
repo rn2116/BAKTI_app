@@ -1,4 +1,10 @@
-import { PrismaClient, Role, Category, ExpertVerificationStatus } from "@prisma/client"
+import {
+  PrismaClient,
+  Role,
+  Category,
+  ExpertVerificationStatus,
+  QuestionVerificationStatus,
+} from "@prisma/client"
 import bcrypt from "bcryptjs"
 import { randomUUID } from "crypto"
 import {
@@ -504,17 +510,60 @@ async function main() {
   ]
 
   for (const matrix of REGIONAL_MATRICES) {
-    await (prisma as any).characterMatrix.create({
+    await prisma.characterMatrix.create({
       data: {
         indonesianCharacter: matrix.indonesianCharacter,
         regionalLanguage: matrix.regionalLanguage,
         regionalTerm: matrix.regionalTerm,
         characterSource: matrix.characterSource,
         implementation: matrix.implementation,
+        verificationStatus: QuestionVerificationStatus.APPROVED,
         createdBy: adminUser.id,
+        verifiedBy: matrix.regionalLanguage === "KAILI" ? ahliBahasaUser.id : adminUser.id,
       },
     })
   }
+
+  // Contoh Usulan Masyarakat untuk Kurasi Ahli Bahasa
+  await prisma.characterMatrix.create({
+    data: {
+      indonesianCharacter: "Keramahan & Gotong Royong Pesisir",
+      regionalLanguage: "KAILI",
+      regionalTerm: "Nosintuvu Ri Posi Ranga",
+      characterSource: "Tradisi lisan masyarakat pesisir Lembah Palu dan Donggala",
+      implementation:
+        "Menjaga kerukunan antarwarga serta saling membantu menyiapkan acara kebersamaan di lingkungan.",
+      verificationStatus: QuestionVerificationStatus.PENDING_REVIEW,
+      createdBy: andiUser.id,
+      proposedBy: andiUser.id,
+    },
+  })
+
+  // Pengaturan Instansi BBPST Default (Singleton)
+  await prisma.institutionSetting.upsert({
+    where: { id: "default" },
+    update: {
+      signerTitle: "Kepala Balai Bahasa Provinsi Sulawesi Tengah",
+      signerName: process.env.NEXT_PUBLIC_KEPALA_BALAI_NAMA?.trim() || "Dr. Asrif, M.Hum.",
+      signerNip: process.env.NEXT_PUBLIC_KEPALA_BALAI_NIP?.trim() || "197412152002121002",
+      cityName: "Palu",
+      contactEmail:
+        process.env.BBPST_CONTACT_EMAIL?.trim() || "balaibahasasulteng@kemdikdasmen.go.id",
+      contactWhatsapp: process.env.BBPST_CONTACT_WHATSAPP?.trim() || "628110000000",
+      updatedBy: adminUser.id,
+    },
+    create: {
+      id: "default",
+      signerTitle: "Kepala Balai Bahasa Provinsi Sulawesi Tengah",
+      signerName: process.env.NEXT_PUBLIC_KEPALA_BALAI_NAMA?.trim() || "Dr. Asrif, M.Hum.",
+      signerNip: process.env.NEXT_PUBLIC_KEPALA_BALAI_NIP?.trim() || "197412152002121002",
+      cityName: "Palu",
+      contactEmail:
+        process.env.BBPST_CONTACT_EMAIL?.trim() || "balaibahasasulteng@kemdikdasmen.go.id",
+      contactWhatsapp: process.env.BBPST_CONTACT_WHATSAPP?.trim() || "628110000000",
+      updatedBy: adminUser.id,
+    },
+  })
 
   // ========================================================================
   // 6. MATERI PEMBELAJARAN (3 materi awal lengkap paket kuis)

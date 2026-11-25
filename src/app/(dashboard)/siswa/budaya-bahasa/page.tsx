@@ -1,19 +1,26 @@
 import { requireDashboardUser } from "@/lib/auth"
-import { getCharacterMatricesForDictionary } from "@/services/admin-guru"
+import {
+  getApprovedDictionaryEntries,
+  getUserProposedEntries,
+} from "@/services/dictionary"
 import { getActiveRegionalLanguages } from "@/services/regionalLanguageService"
 import { PageHeader } from "@/components/shared/PageHeader"
 import { RegionalLanguageDictionaryClient } from "@/components/siswa/RegionalLanguageDictionaryClient"
+
+export const dynamic = "force-dynamic"
 
 export default async function SiswaBudayaBahasaPage({
   searchParams,
 }: {
   searchParams?: Promise<{ bahasa?: string }> | { bahasa?: string }
 }) {
-  await requireDashboardUser("SISWA")
-  const resolvedParams = searchParams instanceof Promise ? await searchParams : searchParams
+  const user = await requireDashboardUser("SISWA")
+  const resolvedParams =
+    searchParams instanceof Promise ? await searchParams : searchParams
 
-  const [matrices, languages] = await Promise.all([
-    getCharacterMatricesForDictionary(),
+  const [matrices, myProposals, languages] = await Promise.all([
+    getApprovedDictionaryEntries(),
+    getUserProposedEntries(user.id),
     getActiveRegionalLanguages(),
   ])
 
@@ -25,6 +32,7 @@ export default async function SiswaBudayaBahasaPage({
       />
       <RegionalLanguageDictionaryClient
         matrices={matrices}
+        myProposals={myProposals}
         languages={languages.map((l) => ({
           code: l.code,
           name: l.name,

@@ -8,6 +8,7 @@ import { ProgressRingCard } from "@/components/gamification/ProgressRingCard"
 import { WeeklyPointsChart } from "@/components/gamification/WeeklyPointsChart"
 import { StudentSidebarPanel } from "@/components/gamification/StudentSidebarPanel"
 import { DailyWiseSayingCard } from "@/components/gamification/DailyWiseSayingCard"
+import { RoleFlowBanner } from "@/components/shared/RoleFlowBanner"
 import { SultengIllustration, getThemeByIndexAndCategory } from "@/components/shared/SultengIllustration"
 
 const SultengLanguageMapExplorer = dynamic(
@@ -34,7 +35,10 @@ export default async function SiswaDashboardPage() {
 
   return (
     <div className="space-y-6 sm:space-y-8">
-      {/* 1. HERO BANNER SAMBUTAN SISWA */}
+      {/* 1. PANDUAN ALUR PENGGUNA PESERTA */}
+      <RoleFlowBanner role="SISWA" />
+
+      {/* 2. HERO BANNER SAMBUTAN PESERTA */}
       <StudentHeroBanner fullName={data.user.fullName} />
 
       {/* 2. EMPAT KARTU STATUS GAMIFIKASI */}

@@ -5,6 +5,7 @@ import { AuthUser } from "@/types"
 import { ROLE_LABELS } from "@/lib/constants"
 import { NotificationBell } from "@/components/layout/NotificationBell"
 import { TopHeaderProgressBar } from "@/components/layout/TopHeaderProgressBar"
+import { AllRolesFlowModal } from "@/components/shared/AllRolesFlowModal"
 import { Sparkles, Calendar } from "lucide-react"
 
 interface DesktopTopHeaderProps {
@@ -67,8 +68,15 @@ export function DesktopTopHeader({ user }: DesktopTopHeaderProps) {
         </div>
       </div>
 
-      {/* Sisi Kanan Top Bar: NotificationBell & Info Pengguna */}
-      <div className="flex items-center gap-4">
+      {/* Sisi Kanan Top Bar: Panduan Alur, NotificationBell & Info Pengguna */}
+      <div className="flex items-center gap-3">
+        <AllRolesFlowModal
+          initialRole={user.role}
+          currentUserRole={user.role}
+          triggerVariant="desktop-header"
+          isAuthenticated={true}
+        />
+
         {/* Lonceng Notifikasi */}
         <NotificationBell userId={user.id} />
 

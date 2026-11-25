@@ -2,10 +2,10 @@
   "name": "bahasa-karakter",
   "version": "1.0.0",
   "private": true,
-  "description": "Platform Pembelajaran Interaktif Bahasa Indonesia, Pendidikan Karakter, dan Budaya Sulawesi Tengah",
+  "description": "Platform Pembelajaran Interaktif Bahasa Indonesia, Pendidikan Karakter, dan Kearifan Lokal Sulawesi Tengah",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "rm -rf .next && next build",
     "start": "next start",
     "lint": "next lint",
     "prisma:generate": "prisma generate",
