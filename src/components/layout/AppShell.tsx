@@ -1,4 +1,5 @@
 import { getCurrentUser, AuthUser } from "@/lib/auth"
+import { prisma } from "@/lib/prisma"
 import { getPendingVerificationCount } from "@/services/admin-guru"
 import { redirect } from "next/navigation"
 import DesktopSidebar from "@/components/layout/DesktopSidebar"
@@ -19,28 +20,39 @@ export default async function AppShell({
   }
 
   let pendingQuestionCount = 0
+  let pendingExpertCount = 0
   if (user.role === "ADMIN") {
     try {
-      pendingQuestionCount = await getPendingVerificationCount()
+      const [qCount, eCount] = await Promise.all([
+        getPendingVerificationCount(),
+        prisma.masterUser.count({
+          where: { role: "AHLI_BAHASA", expertStatus: "PENDING_EXPERT" },
+        }),
+      ])
+      pendingQuestionCount = qCount
+      pendingExpertCount = eCount
     } catch {
       pendingQuestionCount = 0
+      pendingExpertCount = 0
     }
   }
 
   return (
     <div className="min-h-screen bg-[#FAFAF8] text-[#18181B] overflow-x-hidden">
-      {/* 1. Desktop Sidebar Fixed (Lebar Baru md:w-72 / 288px) */}
-      <DesktopSidebar user={user} pendingQuestionCount={pendingQuestionCount} />
+      {/* 1. Desktop Sidebar Fixed */}
+      <DesktopSidebar
+        user={user}
+        pendingQuestionCount={pendingQuestionCount}
+        pendingExpertCount={pendingExpertCount}
+      />
 
-      {/* 2. Mobile Top Header Sticky (< 768px) dengan Lonceng Notifikasi & Tombol Keluar */}
+      {/* 2. Mobile Top Header Sticky (< 768px) */}
       <MobileTopHeader user={user} />
 
-      {/* 3. Main Content Area dengan Offset md:pl-72 yang Presisi */}
+      {/* 3. Main Content Area */}
       <main className="min-h-screen pb-24 md:pb-8 md:pl-72 transition-all duration-200 flex flex-col">
-        {/* Desktop Top Header Bar (>= 768px) dengan Lonceng Notifikasi & Tanggal */}
         <DesktopTopHeader user={user} />
 
-        {/* Konten Halaman Aktif */}
         <div className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-5 sm:pt-6 pb-12">
           {children}
         </div>
@@ -50,6 +62,7 @@ export default async function AppShell({
       <MobileBottomNav
         userRole={user.role}
         pendingQuestionCount={pendingQuestionCount}
+        pendingExpertCount={pendingExpertCount}
       />
     </div>
   )

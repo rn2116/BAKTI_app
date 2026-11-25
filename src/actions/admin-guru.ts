@@ -7,7 +7,8 @@ import { prisma } from "@/lib/prisma"
 import { getSession } from "@/lib/auth"
 import { hashPassword } from "@/lib/auth"
 import { sanitizePlainText, sanitizeAudioUrl } from "@/lib/sanitize"
-import { Category, Role, RegionalLanguage, QuestionVerificationStatus } from "@/types"
+import { getActiveRegionalLanguages } from "@/services/regionalLanguageService"
+import { Category, Role, RegionalLanguage, QuestionVerificationStatus, ExpertVerificationStatus } from "@/types"
 
 type ActionState = { success: boolean; error?: string; message?: string }
 
@@ -105,6 +106,8 @@ const materialSchema = z.object({
   id: z.string().optional(),
   title: z.string().min(3, "Judul minimal 3 karakter"),
   category: z.nativeEnum(Category, { errorMap: () => ({ message: "Kategori tidak valid" }) }),
+  regionalLanguage: z.string().optional().nullable(),
+  referenceSource: z.string().optional().nullable(),
   description: z.string().min(5, "Deskripsi minimal 5 karakter"),
   content: z.string().min(10, "Isi konten minimal 10 karakter"),
   readingTime: z.coerce.number().min(1, "Estimasi waktu baca minimal 1 menit"),
@@ -119,10 +122,14 @@ export async function saveMaterial(prevState: ActionState | null, formData: Form
   }
 
   const id = formData.get("id") as string | undefined
+  const regLang = (formData.get("regionalLanguage") as string | null)?.trim() || null
+  const refSrc = (formData.get("referenceSource") as string | null)?.trim() || null
   const raw = {
     id: id || undefined,
     title: formData.get("title"),
     category: formData.get("category"),
+    regionalLanguage: regLang ? regLang.toUpperCase() : null,
+    referenceSource: refSrc,
     description: formData.get("description"),
     content: formData.get("content"),
     readingTime: formData.get("readingTime"),
@@ -147,6 +154,8 @@ export async function saveMaterial(prevState: ActionState | null, formData: Form
         data: {
           title: parsed.data.title,
           category: parsed.data.category,
+          regionalLanguage: parsed.data.regionalLanguage ?? null,
+          referenceSource: parsed.data.referenceSource ?? null,
           description: parsed.data.description,
           content: parsed.data.content,
           readingTime: parsed.data.readingTime,
@@ -161,6 +170,8 @@ export async function saveMaterial(prevState: ActionState | null, formData: Form
           title: parsed.data.title,
           slug,
           category: parsed.data.category,
+          regionalLanguage: parsed.data.regionalLanguage ?? null,
+          referenceSource: parsed.data.referenceSource ?? null,
           description: parsed.data.description,
           content: parsed.data.content,
           readingTime: parsed.data.readingTime,
@@ -208,7 +219,7 @@ const quizHeaderSchema = z.object({
   title: z.string().min(3, "Judul kuis minimal 3 karakter"),
   description: z.string().optional().default(""),
   category: z.nativeEnum(Category),
-  regionalLanguage: z.nativeEnum(RegionalLanguage).optional().nullable(),
+  regionalLanguage: z.string().trim().max(50).optional().nullable(),
   referenceSource: z.string().optional().nullable(),
   materialId: z.string().optional().nullable(),
   timeLimit: z.coerce.number().min(1, "Waktu minimal 1 menit").default(30),
@@ -648,7 +659,7 @@ const importedQuizQuestionRowSchema = z.object({
   correctIndex: z.coerce.number().int().min(0).max(3),
   explanation: z.string().optional().nullable(),
   points: z.coerce.number().int().min(1).max(1000).optional(),
-  regionalLanguage: z.nativeEnum(RegionalLanguage).optional().nullable(),
+  regionalLanguage: z.string().trim().max(50).optional().nullable(),
   wiseSayingText: z.string().optional().nullable(),
   wiseSayingMeaning: z.string().optional().nullable(),
   referenceSource: z.string().optional().nullable(),
@@ -778,7 +789,7 @@ const verifyQuestionSchema = z.object({
   correctIndex: z.number().min(0).max(3).optional(),
   explanation: z.string().nullable().optional(),
   points: z.number().min(1).optional(),
-  regionalLanguage: z.nativeEnum(RegionalLanguage).nullable().optional(),
+  regionalLanguage: z.string().trim().max(50).nullable().optional(),
   wiseSayingText: z.string().nullable().optional(),
   wiseSayingMeaning: z.string().nullable().optional(),
   referenceSource: z.string().nullable().optional(),
@@ -881,26 +892,38 @@ export async function verifyQuizQuestionAction(input: {
 }
 
 // ---------------------------
-// ADMIN: MATRIKS KARAKTER 9 BAHASA DAERAH
+// ADMIN & AHLI BAHASA: KAMUS BESAR KEARIFAN LOKAL SULAWESI TENGAH
 // ---------------------------
 const characterMatrixSchema = z.object({
   id: z.coerce.number().optional(),
-  indonesianCharacter: z.string().min(2, "Nilai karakter Indonesia minimal 2 karakter"),
-  regionalLanguage: z.nativeEnum(RegionalLanguage, { errorMap: () => ({ message: "Bahasa daerah tidak valid" }) }),
-  regionalTerm: z.string().min(2, "Istilah/ungkapan daerah minimal 2 karakter"),
-  characterSource: z.string().min(3, "Sumber karakter minimal 3 karakter"),
-  implementation: z.string().min(5, "Implementasi perilaku minimal 5 karakter"),
+  indonesianCharacter: z.string().min(2, "Nilai karakter padanan minimal 2 karakter"),
+  regionalLanguage: z.string().trim().min(2, "Bahasa daerah wajib dipilih").max(50),
+  regionalTerm: z.string().min(2, "Kosakata atau ungkapan daerah minimal 2 karakter"),
+  characterSource: z.string().min(3, "Makna filosofis / sumber rujukan minimal 3 karakter"),
+  implementation: z.string().min(5, "Contoh penerapan minimal 5 karakter"),
   audioUrl: z.string().optional().nullable(),
 })
 
 type CharacterMatrixData = {
   id?: number
   indonesianCharacter: string
-  regionalLanguage: RegionalLanguage
+  regionalLanguage: string
   regionalTerm: string
   characterSource: string
   implementation: string
   audioUrl?: string | null
+}
+
+async function isAuthorizedDictionaryEditor(userId: string, role: string): Promise<boolean> {
+  if (role === Role.ADMIN) return true
+  if (role === Role.AHLI_BAHASA) {
+    const u = await prisma.masterUser.findUnique({
+      where: { id: userId },
+      select: { isActive: true, expertStatus: true },
+    })
+    return Boolean(u?.isActive && u.expertStatus === ExpertVerificationStatus.APPROVED)
+  }
+  return false
 }
 
 export async function saveCharacterMatrixAction(
@@ -908,8 +931,11 @@ export async function saveCharacterMatrixAction(
   formData: FormData
 ): Promise<ActionState> {
   const session = await getSession()
-  if (!session || session.role !== Role.ADMIN) {
-    return { success: false, error: "Hanya Admin yang berwenang mengelola Matriks Karakter" }
+  if (!session || !(await isAuthorizedDictionaryEditor(session.userId, session.role))) {
+    return {
+      success: false,
+      error: "Hanya Admin BBPST atau Ahli Bahasa Daerah terverifikasi yang berwenang menyunting kamus.",
+    }
   }
 
   const idVal = formData.get("id") as string | undefined
@@ -925,62 +951,78 @@ export async function saveCharacterMatrixAction(
 
   const parsed = characterMatrixSchema.safeParse(raw)
   if (!parsed.success) {
-    return { success: false, error: parsed.error.errors[0]?.message ?? "Input tidak valid" }
+    return { success: false, error: parsed.error.errors[0]?.message ?? "Masukan tidak valid." }
   }
 
   const matrixData = parsed.data as CharacterMatrixData
+  const normalizedLangCode = sanitizePlainText(matrixData.regionalLanguage, 50).toUpperCase()
 
   try {
+    const activeLangs = await getActiveRegionalLanguages()
+    const validCodes = new Set(activeLangs.map((l) => l.code.toUpperCase()))
+    if (!validCodes.has(normalizedLangCode)) {
+      return { success: false, error: `Kode bahasa daerah '${normalizedLangCode}' belum terdaftar.` }
+    }
+
     if (matrixData.id) {
       await prisma.characterMatrix.update({
         where: { id: matrixData.id },
         data: {
-          indonesianCharacter: matrixData.indonesianCharacter.trim(),
-          regionalLanguage: matrixData.regionalLanguage,
-          regionalTerm: matrixData.regionalTerm.trim(),
-          characterSource: matrixData.characterSource.trim(),
-          implementation: matrixData.implementation.trim(),
-          audioUrl: matrixData.audioUrl ? matrixData.audioUrl.trim() : null,
+          indonesianCharacter: sanitizePlainText(matrixData.indonesianCharacter, 150),
+          regionalLanguage: normalizedLangCode,
+          regionalTerm: sanitizePlainText(matrixData.regionalTerm, 200),
+          characterSource: sanitizePlainText(matrixData.characterSource, 2000),
+          implementation: sanitizePlainText(matrixData.implementation, 2000),
+          audioUrl: sanitizeAudioUrl(matrixData.audioUrl),
         },
       })
     } else {
       await prisma.characterMatrix.create({
         data: {
-          indonesianCharacter: matrixData.indonesianCharacter.trim(),
-          regionalLanguage: matrixData.regionalLanguage,
-          regionalTerm: matrixData.regionalTerm.trim(),
-          characterSource: matrixData.characterSource.trim(),
-          implementation: matrixData.implementation.trim(),
-          audioUrl: matrixData.audioUrl ? matrixData.audioUrl.trim() : null,
+          indonesianCharacter: sanitizePlainText(matrixData.indonesianCharacter, 150),
+          regionalLanguage: normalizedLangCode,
+          regionalTerm: sanitizePlainText(matrixData.regionalTerm, 200),
+          characterSource: sanitizePlainText(matrixData.characterSource, 2000),
+          implementation: sanitizePlainText(matrixData.implementation, 2000),
+          audioUrl: sanitizeAudioUrl(matrixData.audioUrl),
           createdBy: session.userId,
         },
       })
     }
 
     revalidatePath("/admin/matriks-karakter")
+    revalidatePath("/ahli-bahasa")
+    revalidatePath("/ahli-bahasa/kamus")
     revalidatePath("/siswa/budaya-bahasa")
-    return { success: true, message: "Nilai karakter 9 bahasa berhasil disimpan" }
+    revalidatePath("/siswa")
+    return { success: true, message: "Entri Kamus Besar Kearifan Lokal berhasil disimpan." }
   } catch (error) {
-    console.error("Gagal simpan matriks karakter:", error)
-    return { success: false, error: "Gagal menyimpan data matriks karakter" }
+    console.error("Gagal simpan entri kamus:", error)
+    return { success: false, error: "Gagal menyimpan entri Kamus Besar Kearifan Lokal." }
   }
 }
 
 export async function deleteCharacterMatrixAction(matrixId: number): Promise<ActionState> {
   const session = await getSession()
-  if (!session || session.role !== Role.ADMIN) {
-    return { success: false, error: "Hanya Admin yang berwenang menghapus data Matriks Karakter" }
+  if (!session || !(await isAuthorizedDictionaryEditor(session.userId, session.role))) {
+    return {
+      success: false,
+      error: "Hanya Admin BBPST atau Ahli Bahasa Daerah terverifikasi yang berwenang menghapus entri kamus.",
+    }
   }
 
   try {
-    await (prisma as any).characterMatrix.delete({
+    await prisma.characterMatrix.delete({
       where: { id: matrixId },
     })
     revalidatePath("/admin/matriks-karakter")
+    revalidatePath("/ahli-bahasa")
+    revalidatePath("/ahli-bahasa/kamus")
     revalidatePath("/siswa/budaya-bahasa")
-    return { success: true, message: "Data matriks karakter berhasil dihapus" }
-  } catch (error) {
-    return { success: false, error: "Gagal menghapus data matriks karakter" }
+    revalidatePath("/siswa")
+    return { success: true, message: "Entri kamus berhasil dihapus." }
+  } catch {
+    return { success: false, error: "Gagal menghapus entri kamus." }
   }
 }
 
@@ -997,8 +1039,11 @@ export async function importCharacterMatrixAction(
   matricesJson: string
 ): Promise<ActionState & { count?: number }> {
   const session = await getSession()
-  if (!session || session.role !== Role.ADMIN) {
-    return { success: false, error: "Hanya Admin yang berwenang mengimpor Matriks Karakter" }
+  if (!session || !(await isAuthorizedDictionaryEditor(session.userId, session.role))) {
+    return {
+      success: false,
+      error: "Hanya Admin BBPST atau Ahli Bahasa Daerah terverifikasi yang berwenang mengimpor entri kamus.",
+    }
   }
 
   let rawItems: unknown
@@ -1009,17 +1054,18 @@ export async function importCharacterMatrixAction(
   }
 
   if (!Array.isArray(rawItems) || rawItems.length === 0) {
-    return { success: false, error: "Data impor matriks karakter kosong" }
+    return { success: false, error: "Data impor kamus kosong" }
   }
   if (rawItems.length > 500) {
-    return { success: false, error: "Maksimal 500 baris matriks karakter per sekali impor" }
+    return { success: false, error: "Maksimal 500 baris entri per sekali impor" }
   }
 
   try {
-    const validLanguages = Object.values(RegionalLanguage) as string[]
+    const activeLangs = await getActiveRegionalLanguages()
+    const validLanguages = new Set(activeLangs.map((l) => l.code.toUpperCase()))
     const validData: Array<{
       indonesianCharacter: string
-      regionalLanguage: RegionalLanguage
+      regionalLanguage: string
       regionalTerm: string
       characterSource: string
       implementation: string
@@ -1032,8 +1078,8 @@ export async function importCharacterMatrixAction(
       if (!parsedRow.success) continue
       const item = parsedRow.data
 
-      const langUpper = sanitizePlainText(item.regionalLanguage, 30).toUpperCase()
-      if (!validLanguages.includes(langUpper)) continue
+      const langUpper = sanitizePlainText(item.regionalLanguage, 50).toUpperCase()
+      if (!validLanguages.has(langUpper)) continue
 
       const cleanIndo = sanitizePlainText(item.indonesianCharacter, 150)
       const cleanTerm = sanitizePlainText(item.regionalTerm, 200)
@@ -1041,7 +1087,7 @@ export async function importCharacterMatrixAction(
 
       validData.push({
         indonesianCharacter: cleanIndo,
-        regionalLanguage: langUpper as RegionalLanguage,
+        regionalLanguage: langUpper,
         regionalTerm: cleanTerm,
         characterSource: sanitizePlainText(item.characterSource || "-", 1500) || "-",
         implementation: sanitizePlainText(item.implementation || "-", 1500) || "-",
@@ -1054,15 +1100,17 @@ export async function importCharacterMatrixAction(
       return { success: false, error: "Tidak ada baris data yang valid untuk diimpor" }
     }
 
-    await (prisma as any).characterMatrix.createMany({
+    await prisma.characterMatrix.createMany({
       data: validData,
     })
 
     revalidatePath("/admin/matriks-karakter")
+    revalidatePath("/ahli-bahasa/kamus")
     revalidatePath("/siswa/budaya-bahasa")
+    revalidatePath("/siswa")
     return {
       success: true,
-      message: `Berhasil mengimpor ${validData.length} entri matriks karakter 9 bahasa daerah!`,
+      message: `Berhasil mengimpor ${validData.length} entri Kamus Besar Kearifan Lokal.`,
       count: validData.length,
     }
   } catch (error) {
@@ -1211,6 +1259,9 @@ export async function saveUserAdmin(prevState: ActionState | null, formData: For
         nisn: parsed.data.nisn,
         nip: parsed.data.nip,
         isActive: parsed.data.isActive,
+        ...(parsed.data.role === Role.AHLI_BAHASA && parsed.data.isActive
+          ? { expertStatus: ExpertVerificationStatus.APPROVED }
+          : {}),
       }
       if (parsed.data.password && parsed.data.password.length >= 6) {
         updateData.passwordHash = await hashPassword(parsed.data.password)
@@ -1237,6 +1288,13 @@ export async function saveUserAdmin(prevState: ActionState | null, formData: For
           nip: parsed.data.nip,
           isActive: parsed.data.isActive,
           emailVerified: true,
+          ...(parsed.data.role === Role.AHLI_BAHASA
+            ? {
+                expertStatus: parsed.data.isActive
+                  ? ExpertVerificationStatus.APPROVED
+                  : ExpertVerificationStatus.PENDING_EXPERT,
+              }
+            : {}),
         },
       })
     }
@@ -1302,5 +1360,228 @@ export async function toggleQuizPublish(quizId: string, isPublished: boolean): P
     return { success: true, message: `Status kuis diperbarui menjadi ${isPublished ? "Terbit" : "Draft"}` }
   } catch {
     return { success: false, error: "Gagal memperbarui status publikasi kuis" }
+  }
+}
+
+// ---------------------------
+// ADMIN & AHLI BAHASA: MASTER BAHASA DAERAH DINAMIS
+// ---------------------------
+const regionalLanguageSchema = z.object({
+  id: z.string().optional(),
+  code: z
+    .string()
+    .trim()
+    .min(2, "Kode bahasa minimal 2 huruf")
+    .max(50, "Kode bahasa maksimal 50 karakter"),
+  name: z.string().trim().min(3, "Nama bahasa daerah minimal 3 karakter").max(100),
+  regencyCoverage: z.string().trim().min(2, "Cakupan wilayah kabupaten/kota wajib diisi").max(255),
+  description: z.string().trim().max(1000).optional().nullable(),
+  isActive: z.boolean().default(true),
+})
+
+export async function saveRegionalLanguageAction(
+  prevState: ActionState | null,
+  formData: FormData
+): Promise<ActionState> {
+  const session = await getSession()
+  if (!session || !(await isAuthorizedDictionaryEditor(session.userId, session.role))) {
+    return {
+      success: false,
+      error: "Hanya Admin BBPST atau Ahli Bahasa Daerah terverifikasi yang berwenang mengelola daftar bahasa daerah.",
+    }
+  }
+
+  const rawCode = sanitizePlainText(formData.get("code"), 50)
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, "_")
+    .replace(/(^_|_$)/g, "")
+
+  const raw = {
+    id: (formData.get("id") as string) || undefined,
+    code: rawCode,
+    name: sanitizePlainText(formData.get("name"), 100),
+    regencyCoverage: sanitizePlainText(formData.get("regencyCoverage"), 255),
+    description: formData.get("description")
+      ? sanitizePlainText(formData.get("description"), 1000)
+      : null,
+    isActive: formData.get("isActive") !== "false",
+  }
+
+  const parsed = regionalLanguageSchema.safeParse(raw)
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.errors[0]?.message ?? "Masukan bahasa tidak valid." }
+  }
+
+  try {
+    if (parsed.data.id) {
+      await prisma.masterRegionalLanguage.update({
+        where: { id: parsed.data.id },
+        data: {
+          name: parsed.data.name,
+          regencyCoverage: parsed.data.regencyCoverage,
+          description: parsed.data.description,
+          isActive: parsed.data.isActive,
+        },
+      })
+    } else {
+      const existingCode = await prisma.masterRegionalLanguage.findUnique({
+        where: { code: parsed.data.code },
+        select: { id: true },
+      })
+      if (existingCode) {
+        return {
+          success: false,
+          error: `Kode bahasa daerah "${parsed.data.code}" sudah terdaftar.`,
+        }
+      }
+      await prisma.masterRegionalLanguage.create({
+        data: {
+          id: randomUUID(),
+          code: parsed.data.code,
+          name: parsed.data.name,
+          regencyCoverage: parsed.data.regencyCoverage,
+          description: parsed.data.description,
+          isActive: parsed.data.isActive,
+          createdBy: session.userId,
+        },
+      })
+    }
+
+    revalidatePath("/ahli-bahasa")
+    revalidatePath("/ahli-bahasa/bahasa")
+    revalidatePath("/ahli-bahasa/kamus")
+    revalidatePath("/admin/matriks-karakter")
+    revalidatePath("/admin/analitik")
+    revalidatePath("/siswa")
+    revalidatePath("/siswa/budaya-bahasa")
+    return { success: true, message: "Daftar bahasa daerah berhasil disimpan." }
+  } catch (err) {
+    console.error("Gagal menyimpan bahasa daerah:", err)
+    return { success: false, error: "Gagal menyimpan data bahasa daerah." }
+  }
+}
+
+export async function toggleRegionalLanguageStatusAction(
+  languageId: string,
+  isActive: boolean
+): Promise<ActionState> {
+  const session = await getSession()
+  if (!session || !(await isAuthorizedDictionaryEditor(session.userId, session.role))) {
+    return { success: false, error: "Akses ditolak." }
+  }
+
+  try {
+    await prisma.masterRegionalLanguage.update({
+      where: { id: languageId },
+      data: { isActive },
+    })
+    revalidatePath("/ahli-bahasa")
+    revalidatePath("/ahli-bahasa/bahasa")
+    revalidatePath("/admin/matriks-karakter")
+    revalidatePath("/siswa")
+    revalidatePath("/siswa/budaya-bahasa")
+    return {
+      success: true,
+      message: isActive ? "Bahasa daerah diaktifkan." : "Bahasa daerah dinonaktifkan.",
+    }
+  } catch {
+    return { success: false, error: "Gagal memperbarui status bahasa daerah." }
+  }
+}
+
+// ---------------------------
+// ADMIN BBPST: VERIFIKASI AHLI BAHASA DAERAH
+// ---------------------------
+const verifyExpertSchema = z.object({
+  userId: z.string().min(1),
+  decision: z.enum(["APPROVED", "REJECTED"]),
+  reviewNotes: z.string().max(1000).optional(),
+})
+
+export async function verifyExpertApplicantAction(input: {
+  userId: string
+  decision: "APPROVED" | "REJECTED"
+  reviewNotes?: string
+}): Promise<ActionState> {
+  const session = await getSession()
+  if (!session || session.role !== Role.ADMIN) {
+    return {
+      success: false,
+      error: "Hanya Administrator BBPST yang berwenang memverifikasi Ahli Bahasa Daerah.",
+    }
+  }
+
+  const parsed = verifyExpertSchema.safeParse(input)
+  if (!parsed.success) {
+    return { success: false, error: "Data verifikasi tidak valid." }
+  }
+
+  const { userId, decision, reviewNotes } = parsed.data
+  if (decision === "REJECTED" && (!reviewNotes || !reviewNotes.trim())) {
+    return {
+      success: false,
+      error: "Harap cantumkan alasan penolakan atau catatan perbaikan untuk pendaftar.",
+    }
+  }
+
+  try {
+    const target = await prisma.masterUser.findUnique({
+      where: { id: userId },
+      select: { id: true, fullName: true, role: true, expertLanguage: true },
+    })
+    if (!target || target.role !== Role.AHLI_BAHASA) {
+      return { success: false, error: "Akun pendaftar Ahli Bahasa Daerah tidak ditemukan." }
+    }
+
+    await prisma.$transaction(async (tx) => {
+      if (decision === "APPROVED") {
+        await tx.masterUser.update({
+          where: { id: userId },
+          data: {
+            isActive: true,
+            expertStatus: ExpertVerificationStatus.APPROVED,
+            expertReviewNotes: reviewNotes?.trim() || null,
+            emailVerified: true,
+          },
+        })
+
+        await tx.notification.create({
+          data: {
+            id: randomUUID(),
+            userId,
+            title: "Akun Ahli Bahasa Daerah Disetujui!",
+            message:
+              "Selamat! Pendaftaran Anda sebagai Ahli Bahasa Daerah telah diverifikasi dan disetujui oleh Admin BBPST. Anda kini dapat memperkaya Kamus Besar Kearifan Lokal Sulawesi Tengah.",
+            type: "system",
+            link: "/ahli-bahasa",
+            isPriority: true,
+          },
+        })
+      } else {
+        await tx.masterUser.update({
+          where: { id: userId },
+          data: {
+            isActive: false,
+            expertStatus: ExpertVerificationStatus.REJECTED,
+            expertReviewNotes: sanitizePlainText(reviewNotes, 1000),
+          },
+        })
+      }
+    })
+
+    revalidatePath("/admin/verifikasi-ahli")
+    revalidatePath("/admin/pengguna")
+    revalidatePath("/admin")
+    revalidatePath("/", "layout")
+    return {
+      success: true,
+      message:
+        decision === "APPROVED"
+          ? `Akun ${target.fullName} resmi disetujui dan diaktifkan sebagai Ahli Bahasa Daerah.`
+          : `Pengajuan ${target.fullName} telah ditolak dengan catatan alasan.`,
+    }
+  } catch (err) {
+    console.error("Gagal memverifikasi ahli bahasa:", err)
+    return { success: false, error: "Gagal memproses keputusan verifikasi Ahli Bahasa Daerah." }
   }
 }

@@ -223,7 +223,7 @@ export function PrintCertificateButton({
       doc.setFontSize(10)
       doc.setTextColor(100, 100, 110)
       doc.text(
-        "Sebagai wujud komitmen dalam merawat Bahasa Indonesia, memperkokoh karakter, dan melestarikan budaya Sulawesi Tengah.",
+        "Sebagai wujud komitmen dalam merawat Bahasa Indonesia, memperkokoh karakter, dan melestarikan kearifan lokal Sulawesi Tengah.",
         pageWidth / 2,
         typeof finalScore === "number" ? 122 : 115,
         { align: "center" }

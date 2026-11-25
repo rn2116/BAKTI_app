@@ -1,5 +1,6 @@
 import { requireDashboardUser } from "@/lib/auth"
 import { getTeacherQuizDetail } from "@/services/admin-guru"
+import { getActiveRegionalLanguages } from "@/services/regionalLanguageService"
 import { QuizQuestionsManager } from "@/components/shared/QuizQuestionsManager"
 import { redirect } from "next/navigation"
 
@@ -11,7 +12,10 @@ export default async function GuruQuizQuestionsPage({
   const user = await requireDashboardUser("GURU")
 
   const { id } = await params
-  const quiz = await getTeacherQuizDetail(id, user.id)
+  const [quiz, languages] = await Promise.all([
+    getTeacherQuizDetail(id, user.id),
+    getActiveRegionalLanguages(),
+  ])
   if (!quiz) {
     redirect("/guru/kuis")
   }
@@ -23,6 +27,7 @@ export default async function GuruQuizQuestionsPage({
         userRole="GURU"
         currentUserId={user.id}
         backHref="/guru/kuis"
+        languages={languages.map((l) => ({ code: l.code, name: l.name }))}
       />
     </div>
   )

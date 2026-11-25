@@ -143,7 +143,7 @@ export function AdminLaporanClient({
             Balai Bahasa Provinsi Sulawesi Tengah
           </h2>
           <p className="text-xs text-zinc-500">
-            Laporan Rekapitulasi Nilai Capaian Literasi Bahasa, Pendidikan Karakter, dan Budaya Lokal 9 Bahasa Daerah
+            Laporan Rekapitulasi Nilai Capaian Literasi Bahasa, Pendidikan Karakter, dan Kearifan Lokal Sulawesi Tengah
           </p>
         </div>
 
@@ -160,10 +160,10 @@ export function AdminLaporanClient({
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3.5">
         <div className="bg-white border border-zinc-200/90 rounded-2xl p-4 shadow-xs">
           <div className="text-[11px] text-zinc-500 font-medium flex items-center gap-1.5">
-            <Users className="w-3.5 h-3.5 text-[#3C22BB]" /> Total Siswa
+            <Users className="w-3.5 h-3.5 text-[#3C22BB]" /> Total Peserta
           </div>
           <div className="text-xl font-extrabold text-zinc-900 mt-1">
-            {totalStudents} Siswa
+            {totalStudents} Peserta
           </div>
         </div>
 
@@ -264,11 +264,11 @@ export function AdminLaporanClient({
             <thead className="bg-zinc-50 border-b border-zinc-200 text-zinc-700 font-bold uppercase tracking-wider text-[10px]">
               <tr>
                 <th className="px-4 py-3.5 w-10 text-center">No</th>
-                <th className="px-4 py-3.5">Nama Siswa & NISN</th>
-                <th className="px-4 py-3.5">Sekolah & Kelas</th>
+                <th className="px-4 py-3.5">Nama Peserta &amp; Identitas</th>
+                <th className="px-4 py-3.5">Instansi / Sekolah</th>
                 <th className="px-4 py-3.5 text-center">Bhs. Indonesia</th>
                 <th className="px-4 py-3.5 text-center">P. Karakter</th>
-                <th className="px-4 py-3.5 text-center">Budaya Sulteng</th>
+                <th className="px-4 py-3.5 text-center">Kearifan Lokal Sulteng</th>
                 <th className="px-4 py-3.5 text-center">Rata-rata</th>
                 <th className="px-4 py-3.5 text-center">XP / Level</th>
                 <th className="px-4 py-3.5">Predikat Karakter</th>

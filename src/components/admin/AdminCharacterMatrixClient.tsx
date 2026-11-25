@@ -65,8 +65,14 @@ interface MatrixItem {
   creator?: { fullName: string } | null
 }
 
+interface LanguageOption {
+  code: string
+  name: string
+}
+
 interface AdminCharacterMatrixClientProps {
   matrices: MatrixItem[]
+  languages?: LanguageOption[]
 }
 
 interface ParsedExcelMatrix {
@@ -80,9 +86,24 @@ interface ParsedExcelMatrix {
   errorReason?: string
 }
 
-export function AdminCharacterMatrixClient({ matrices }: AdminCharacterMatrixClientProps) {
+export function AdminCharacterMatrixClient({
+  matrices,
+  languages,
+}: AdminCharacterMatrixClientProps) {
   const router = useRouter()
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const languageOptions: LanguageOption[] =
+    languages && languages.length > 0
+      ? languages
+      : Object.entries(REGIONAL_LANGUAGE_LABELS).map(([code, name]) => ({
+          code,
+          name,
+        }))
+
+  const languageLabelMap: Record<string, string> = Object.fromEntries(
+    languageOptions.map((item) => [item.code, item.name])
+  )
 
   const [search, setSearch] = useState("")
   const [selectedLanguage, setSelectedLanguage] = useState<string>("ALL")
@@ -242,7 +263,7 @@ export function AdminCharacterMatrixClient({ matrices }: AdminCharacterMatrixCli
           return
         }
 
-        const validLangs = Object.keys(REGIONAL_LANGUAGE_LABELS)
+        const validLangs = languageOptions.map((item) => item.code)
 
         const parsed: ParsedExcelMatrix[] = rawJson.map((row) => {
           const indoChar = String(row["Nilai_Karakter_Indonesia"] || row["nilai_karakter"] || "").trim()
@@ -346,10 +367,10 @@ export function AdminCharacterMatrixClient({ matrices }: AdminCharacterMatrixCli
             onChange={(e) => setSelectedLanguage(e.target.value)}
             className="h-10 text-xs rounded-xl border border-zinc-200 bg-white px-3 text-zinc-700 outline-hidden focus:border-[#3C22BB] focus:ring-1 focus:ring-[#3C22BB]"
           >
-            <option value="ALL">Semua 9 Bahasa Daerah</option>
-            {Object.entries(REGIONAL_LANGUAGE_LABELS).map(([code, label]) => (
-              <option key={code} value={code}>
-                {label}
+            <option value="ALL">Semua Bahasa Daerah</option>
+            {languageOptions.map((lang) => (
+              <option key={lang.code} value={lang.code}>
+                {lang.name}
               </option>
             ))}
           </select>
@@ -368,7 +389,7 @@ export function AdminCharacterMatrixClient({ matrices }: AdminCharacterMatrixCli
             onClick={openCreate}
             className="bg-[#3C22BB] hover:bg-[#2E1994] text-white rounded-xl text-xs font-semibold px-4 h-10 shadow-xs gap-1.5"
           >
-            <Plus className="w-4 h-4" /> Tambah Nilai Karakter
+            <Plus className="w-4 h-4" /> Tambah Kosakata / Nilai
           </Button>
         </div>
       </div>
@@ -384,7 +405,9 @@ export function AdminCharacterMatrixClient({ matrices }: AdminCharacterMatrixCli
               <div className="flex items-center justify-between gap-2">
                 <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-teal-50 text-teal-800 border border-teal-200">
                   <Languages className="w-3 h-3" />
-                  {REGIONAL_LANGUAGE_LABELS[item.regionalLanguage] ?? item.regionalLanguage}
+                  {languageLabelMap[item.regionalLanguage] ??
+                    REGIONAL_LANGUAGE_LABELS[item.regionalLanguage] ??
+                    item.regionalLanguage}
                 </span>
 
                 <div className="flex items-center gap-1">
@@ -488,7 +511,7 @@ export function AdminCharacterMatrixClient({ matrices }: AdminCharacterMatrixCli
           <DialogHeader>
             <DialogTitle className="text-lg font-bold text-zinc-900 flex items-center gap-2">
               <Compass className="w-5 h-5 text-[#3C22BB]" />
-              {editingMatrix ? "Edit Nilai Karakter 9 Bahasa" : "Tambah Nilai Karakter Baru"}
+              {editingMatrix ? "Sunting Entri Kamus Besar Kearifan Lokal" : "Tambah Entri Kamus Baru"}
             </DialogTitle>
           </DialogHeader>
 
@@ -496,18 +519,18 @@ export function AdminCharacterMatrixClient({ matrices }: AdminCharacterMatrixCli
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label htmlFor="regionalLanguage" className="text-xs font-semibold">
-                  Bahasa Daerah Sulteng <span className="text-rose-500">*</span>
+                  Bahasa Daerah Sulawesi Tengah <span className="text-rose-500">*</span>
                 </Label>
                 <select
                   id="regionalLanguage"
                   name="regionalLanguage"
-                  defaultValue={editingMatrix?.regionalLanguage ?? "KAILI"}
+                  defaultValue={editingMatrix?.regionalLanguage ?? languageOptions[0]?.code ?? "KAILI"}
                   className="w-full text-xs h-9 rounded-xl border border-zinc-200 bg-white px-3 text-zinc-700 outline-hidden focus:border-[#3C22BB]"
                   required
                 >
-                  {Object.entries(REGIONAL_LANGUAGE_LABELS).map(([code, label]) => (
-                    <option key={code} value={code}>
-                      {label}
+                  {languageOptions.map((lang) => (
+                    <option key={lang.code} value={lang.code}>
+                      {lang.name}
                     </option>
                   ))}
                 </select>
@@ -544,14 +567,14 @@ export function AdminCharacterMatrixClient({ matrices }: AdminCharacterMatrixCli
 
             <div className="space-y-1.5">
               <Label htmlFor="characterSource" className="text-xs font-semibold">
-                Sumber Karakter (Pepatah / Folklor / Tradisi Adat) <span className="text-rose-500">*</span>
+                Makna Filosofis &amp; Sumber Rujukan (Pepatah / Folklor / Adat) <span className="text-rose-500">*</span>
               </Label>
               <Textarea
                 id="characterSource"
                 name="characterSource"
                 rows={3}
                 defaultValue={editingMatrix?.characterSource ?? ""}
-                placeholder="Cerita rakyat, pepatah luhur, atau tradisi adat asal ungkapan ini..."
+                placeholder="Makna filosofis, cerita rakyat, pepatah luhur, atau tradisi adat asal ungkapan ini..."
                 required
                 className="text-xs rounded-xl"
               />
@@ -559,14 +582,14 @@ export function AdminCharacterMatrixClient({ matrices }: AdminCharacterMatrixCli
 
             <div className="space-y-1.5">
               <Label htmlFor="implementation" className="text-xs font-semibold">
-                Implementasi Perilaku Siswa dalam Kehidupan Sehari-hari <span className="text-rose-500">*</span>
+                Contoh Penerapan dalam Kehidupan Sehari-hari <span className="text-rose-500">*</span>
               </Label>
               <Textarea
                 id="implementation"
                 name="implementation"
                 rows={3}
                 defaultValue={editingMatrix?.implementation ?? ""}
-                placeholder="Contoh tindakan nyata siswa di sekolah atau di rumah yang mencerminkan nilai ini..."
+                placeholder="Contoh tindakan nyata peserta atau masyarakat dalam kehidupan sehari-hari yang mencerminkan nilai ini..."
                 required
                 className="text-xs rounded-xl"
               />

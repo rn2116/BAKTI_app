@@ -39,9 +39,17 @@ function resolveExtension(fileName: string, mimeType: string): string {
 
 export async function POST(request: NextRequest) {
   const session = await getSession()
-  if (!session || (session.role !== Role.ADMIN && session.role !== Role.GURU)) {
+  if (
+    !session ||
+    (session.role !== Role.ADMIN &&
+      session.role !== Role.GURU &&
+      session.role !== Role.AHLI_BAHASA)
+  ) {
     return NextResponse.json(
-      { success: false, error: "Akses ditolak. Hanya Guru atau Admin yang dapat mengunggah audio." },
+      {
+        success: false,
+        error: "Akses ditolak. Hanya Guru, Ahli Bahasa Daerah, atau Admin yang dapat mengunggah audio.",
+      },
       { status: 403 }
     )
   }

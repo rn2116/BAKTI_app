@@ -19,8 +19,8 @@ export default async function AdminLaporanPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Laporan Capaian Nilai Siswa"
-        description="Laporan rekapitulasi penilaian capaian literasi bahasa, pendidikan karakter, dan budaya lokal resmi Balai Bahasa Provinsi Sulawesi Tengah."
+        title="Laporan Capaian Nilai Peserta"
+        description="Laporan rekapitulasi penilaian capaian literasi bahasa, pendidikan karakter, dan kearifan lokal Sulawesi Tengah resmi Balai Bahasa Provinsi Sulawesi Tengah."
       />
       <AdminLaporanClient
         reports={reports}

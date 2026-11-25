@@ -95,11 +95,17 @@ export interface ManagedQuizDetail {
   questions: ManagedQuestionItem[]
 }
 
+interface LanguageOption {
+  code: string
+  name: string
+}
+
 interface QuizQuestionsManagerProps {
   quiz: ManagedQuizDetail
   userRole: "ADMIN" | "GURU"
   currentUserId: string
   backHref: string
+  languages?: LanguageOption[]
 }
 
 interface ParsedExcelQuestion {
@@ -149,7 +155,19 @@ export function QuizQuestionsManager({
   userRole,
   currentUserId,
   backHref,
+  languages,
 }: QuizQuestionsManagerProps) {
+  const languageOptions: LanguageOption[] =
+    languages && languages.length > 0
+      ? languages
+      : Object.entries(REGIONAL_LANGUAGE_LABELS).map(([code, name]) => ({
+          code,
+          name,
+        }))
+  const languageLabelMap: Record<string, string> = Object.fromEntries(
+    languageOptions.map((item) => [item.code, item.name])
+  )
+  const validRegionalLanguages = new Set(languageOptions.map((item) => item.code))
   const router = useRouter()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const isGuru = userRole === "GURU"
@@ -327,7 +345,7 @@ export function QuizQuestionsManager({
           const rawLang = getStr(["Bahasa_Daerah", "bahasa_daerah"]).toUpperCase()
           const points = parseInt(getStr(["Poin", "poin"]) || "10", 10) || 10
 
-          const regionalLanguage = VALID_REGIONAL_LANGUAGES.has(rawLang)
+          const regionalLanguage = validRegionalLanguages.has(rawLang)
             ? (rawLang as RegionalLanguage)
             : quiz.regionalLanguage
 
@@ -444,7 +462,7 @@ export function QuizQuestionsManager({
             {quiz.regionalLanguage && (
               <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-teal-50 text-teal-800 border border-teal-200">
                 <Languages className="w-3 h-3" />
-                {REGIONAL_LANGUAGE_LABELS[quiz.regionalLanguage] ?? quiz.regionalLanguage}
+                {languageLabelMap[quiz.regionalLanguage] ?? REGIONAL_LANGUAGE_LABELS[quiz.regionalLanguage] ?? quiz.regionalLanguage}
               </span>
             )}
           </div>
@@ -531,7 +549,7 @@ export function QuizQuestionsManager({
                       <StatusBadge status={q.verificationStatus} />
                       {q.regionalLanguage && (
                         <span className="inline-block text-[10px] font-semibold text-teal-700 bg-teal-50 px-2 py-0.5 rounded-full border border-teal-200">
-                          {REGIONAL_LANGUAGE_LABELS[q.regionalLanguage] ?? q.regionalLanguage}
+                          {languageLabelMap[q.regionalLanguage] ?? REGIONAL_LANGUAGE_LABELS[q.regionalLanguage] ?? q.regionalLanguage}
                         </span>
                       )}
                       {q.creator?.fullName && (
@@ -777,7 +795,7 @@ export function QuizQuestionsManager({
                 name="question"
                 rows={3}
                 defaultValue={editingQuestion?.question ?? ""}
-                placeholder="Tuliskan butir soal literasi atau kuis budaya..."
+                placeholder="Tuliskan butir soal literasi atau kuis kearifan lokal..."
                 required
                 className="text-xs rounded-xl"
               />
@@ -795,9 +813,9 @@ export function QuizQuestionsManager({
                   className="w-full text-xs h-9 rounded-xl border border-zinc-200 bg-white px-3 text-zinc-700 outline-hidden focus:border-[#3C22BB]"
                 >
                   <option value="">-- Ikuti Kategori Kuis / Umum --</option>
-                  {Object.entries(REGIONAL_LANGUAGE_LABELS).map(([code, label]) => (
-                    <option key={code} value={code}>
-                      {label}
+                  {languageOptions.map((lang) => (
+                    <option key={lang.code} value={lang.code}>
+                      {lang.name}
                     </option>
                   ))}
                 </select>

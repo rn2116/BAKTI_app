@@ -40,7 +40,7 @@ export function AuthVisualPanel() {
       <div className="relative z-10 max-w-lg space-y-6 my-auto py-10">
         <div className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3.5 py-1 text-xs font-semibold backdrop-blur-md border border-white/20 text-indigo-100">
           <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-          <span>Platform Edukasi Karakter & Kebudayaan</span>
+          <span>Platform Edukasi Karakter &amp; Kearifan Lokal</span>
         </div>
 
         <h1 className="text-3xl xl:text-4xl font-black tracking-tight leading-snug text-white">
@@ -78,8 +78,8 @@ export function AuthVisualPanel() {
               <Compass className="w-4 h-4" />
             </div>
             <div>
-              <div className="text-xs font-bold text-white">Budaya Sulteng</div>
-              <div className="text-[10px] text-indigo-200">Kaili, Saluan, Banggai</div>
+              <div className="text-xs font-bold text-white">Kearifan Lokal Sulawesi Tengah</div>
+              <div className="text-[10px] text-indigo-200">Kamus Besar &amp; Bahasa Daerah</div>
             </div>
           </div>
 

@@ -34,29 +34,60 @@ interface MatrixItem {
   createdAt?: Date
 }
 
-interface RegionalLanguageDictionaryClientProps {
-  matrices: MatrixItem[]
+interface LanguageOption {
+  code: string
+  name: string
+  regencyCoverage?: string
 }
 
-const LANGUAGE_TABS = [
+interface RegionalLanguageDictionaryClientProps {
+  matrices: MatrixItem[]
+  languages?: LanguageOption[]
+  initialLanguage?: string
+}
+
+const DEFAULT_LANGUAGE_TABS = [
   { code: "ALL", label: "Semua Bahasa", region: "Sulawesi Tengah" },
-  { code: "KAILI", label: "Kaili", region: "Palu, Sigi, Donggala, Parimo" },
-  { code: "PAMONA", label: "Pamona", region: "Poso" },
-  { code: "BANGGAI", label: "Banggai", region: "Banggai Kepulauan & Laut" },
-  { code: "BUNGKU", label: "Bungku", region: "Morowali" },
-  { code: "TOLITOLI", label: "Tolitoli", region: "Tolitoli" },
-  { code: "BUOL", label: "Buol", region: "Buol" },
-  { code: "SALUAN", label: "Saluan", region: "Banggai" },
-  { code: "MORI", label: "Mori", region: "Morowali Utara" },
-  { code: "TAA", label: "Taa", region: "Tojo Una-Una" },
+  { code: "KAILI", label: "Bahasa Kaili", region: "Palu, Sigi, Donggala, Parimo" },
+  { code: "PAMONA", label: "Bahasa Pamona", region: "Poso" },
+  { code: "BANGGAI", label: "Bahasa Banggai", region: "Banggai Kepulauan & Laut" },
+  { code: "BUNGKU", label: "Bahasa Bungku", region: "Morowali" },
+  { code: "TOLITOLI", label: "Bahasa Tolitoli", region: "Tolitoli" },
+  { code: "BUOL", label: "Bahasa Buol", region: "Buol" },
+  { code: "SALUAN", label: "Bahasa Saluan", region: "Banggai" },
+  { code: "MORI", label: "Bahasa Mori", region: "Morowali Utara" },
+  { code: "TAA", label: "Bahasa Taa", region: "Tojo Una-Una" },
 ]
 
 export function RegionalLanguageDictionaryClient({
   matrices,
+  languages,
+  initialLanguage = "ALL",
 }: RegionalLanguageDictionaryClientProps) {
-  const [activeTab, setActiveTab] = useState<string>("ALL")
+  const [activeTab, setActiveTab] = useState<string>(initialLanguage || "ALL")
   const [search, setSearch] = useState("")
   const [copiedId, setCopiedId] = useState<number | null>(null)
+
+  const languageTabs =
+    languages && languages.length > 0
+      ? [
+          { code: "ALL", label: "Semua Bahasa", region: "Sulawesi Tengah" },
+          ...languages.map((lang) => ({
+            code: lang.code,
+            label: lang.name.replace(/^Bahasa\s+/i, ""),
+            region: lang.regencyCoverage || "Sulawesi Tengah",
+          })),
+        ]
+      : DEFAULT_LANGUAGE_TABS.map((t) => ({
+          ...t,
+          label: t.label.replace(/^Bahasa\s+/i, ""),
+        }))
+
+  const languageLabelMap: Record<string, string> = Object.fromEntries(
+    (languages && languages.length > 0
+      ? languages.map((l) => [l.code, l.name])
+      : Object.entries(REGIONAL_LANGUAGE_LABELS)) as [string, string][]
+  )
 
   function handleCopy(id: number, text: string) {
     if (typeof navigator !== "undefined" && navigator.clipboard) {
@@ -85,13 +116,13 @@ export function RegionalLanguageDictionaryClient({
         <div className="relative z-10 max-w-2xl space-y-3">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 text-indigo-100 text-xs font-semibold backdrop-blur-md">
             <Compass className="w-3.5 h-3.5 text-amber-300" />
-            Matriks Karakter Resmi Balai Bahasa Provinsi Sulawesi Tengah
+            Matriks Kosakata &amp; Kearifan Lokal Resmi BBPST
           </div>
           <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight leading-tight">
-            Kamus Karakter 9 Bahasa Daerah Sulawesi Tengah
+            Kamus Besar Kearifan Lokal Sulawesi Tengah
           </h2>
           <p className="text-xs sm:text-sm text-indigo-100/90 leading-relaxed">
-            Jelajahi kearifan lokal, petuah luhur nenek moyang, dan falsafah budi pekerti dalam 9 bahasa daerah Sulawesi Tengah (Kaili, Pamona, Banggai, Bungku, Tolitoli, Buol, Saluan, Mori, dan Taa) untuk membentuk generasi berkarakter unggul.
+            Jelajahi kosakata daerah, ungkapan bijak, petuah luhur leluhur, dan falsafah budi pekerti dalam berbagai bahasa daerah di Provinsi Sulawesi Tengah untuk menguatkan karakter mulia.
           </p>
         </div>
 
@@ -114,9 +145,9 @@ export function RegionalLanguageDictionaryClient({
           />
         </div>
 
-        {/* 10 Language Filter Tabs (Scrollable on mobile) */}
+        {/* Dynamic Language Filter Tabs (Scrollable on mobile) */}
         <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-          {LANGUAGE_TABS.map((tab) => {
+          {languageTabs.map((tab) => {
             const isActive = activeTab === tab.code
             return (
               <button
@@ -148,7 +179,7 @@ export function RegionalLanguageDictionaryClient({
             <div className="flex items-center gap-2.5 text-xs text-[#1E135E]">
               <Layers className="w-4 h-4 text-[#3C22BB] shrink-0" />
               <span>
-                Ingin belajar <strong>{REGIONAL_LANGUAGE_LABELS[activeTab] ?? activeTab}</strong> secara bertahap (Kartu Ungkapan → Latihan Mencocokkan → Kuis & Sertifikat)?
+                Ingin mempelajari <strong>{languageLabelMap[activeTab] ?? REGIONAL_LANGUAGE_LABELS[activeTab] ?? activeTab}</strong> secara bertahap (Kartu Kilas → Latihan Mencocokkan → Kuis &amp; Sertifikat)?
               </span>
             </div>
             <Link
@@ -178,7 +209,7 @@ export function RegionalLanguageDictionaryClient({
                   <div className="flex items-center gap-1.5">
                     <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-teal-50 text-teal-800 border border-teal-200">
                       <Languages className="w-3 h-3 text-teal-600" />
-                      Bahasa {REGIONAL_LANGUAGE_LABELS[item.regionalLanguage] ?? item.regionalLanguage}
+                      {languageLabelMap[item.regionalLanguage] ?? REGIONAL_LANGUAGE_LABELS[item.regionalLanguage] ?? item.regionalLanguage}
                     </span>
                   </div>
 
@@ -235,7 +266,7 @@ export function RegionalLanguageDictionaryClient({
                 <div className="p-3 bg-indigo-50/50 rounded-2xl border border-indigo-100/70 text-xs space-y-1">
                   <div className="font-semibold text-indigo-900 flex items-center gap-1.5 text-[11px]">
                     <GraduationCap className="w-3.5 h-3.5 text-indigo-600" />
-                    <span>Penerapan Siswa Sehari-hari:</span>
+                    <span>Contoh Penerapan Sehari-hari:</span>
                   </div>
                   <p className="text-indigo-800 leading-relaxed line-clamp-3">
                     {item.implementation}

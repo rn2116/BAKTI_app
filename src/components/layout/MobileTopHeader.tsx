@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { logout } from "@/actions/auth"
 import { AuthUser } from "@/types"
+import { ROLE_LABELS } from "@/lib/constants"
 import { LogOut } from "lucide-react"
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog"
 import { NotificationBell } from "@/components/layout/NotificationBell"
@@ -50,8 +51,8 @@ export function MobileTopHeader({ user }: MobileTopHeaderProps) {
             <div className="text-xs font-semibold text-zinc-800 truncate max-w-[100px]">
               {user.fullName.split(" ")[0]}
             </div>
-            <div className="text-[10px] text-zinc-500 capitalize leading-none">
-              {user.role.toLowerCase()}
+            <div className="text-[10px] text-zinc-500 leading-none">
+              {ROLE_LABELS[user.role] ?? user.role}
             </div>
           </div>
 

@@ -50,12 +50,32 @@ interface QuizItem {
   _count?: { questions: number; attempts: number }
 }
 
+interface LanguageOption {
+  code: string
+  name: string
+}
+
 interface AdminQuizListClientProps {
   quizzes: QuizItem[]
   pendingCount?: number
+  languages?: LanguageOption[]
 }
 
-export function AdminQuizListClient({ quizzes, pendingCount = 0 }: AdminQuizListClientProps) {
+export function AdminQuizListClient({
+  quizzes,
+  pendingCount = 0,
+  languages,
+}: AdminQuizListClientProps) {
+  const languageOptions: LanguageOption[] =
+    languages && languages.length > 0
+      ? languages
+      : Object.entries(REGIONAL_LANGUAGE_LABELS).map(([code, name]) => ({
+          code,
+          name,
+        }))
+  const languageLabelMap: Record<string, string> = Object.fromEntries(
+    languageOptions.map((item) => [item.code, item.name])
+  )
   const router = useRouter()
   const [search, setSearch] = useState("")
   const [selectedCategory, setSelectedCategory] = useState<string>("ALL")
@@ -163,7 +183,7 @@ export function AdminQuizListClient({ quizzes, pendingCount = 0 }: AdminQuizList
             <option value="ALL">Semua Kategori</option>
             <option value="BAHASA_INDONESIA">Bahasa Indonesia</option>
             <option value="KARAKTER">Pendidikan Karakter</option>
-            <option value="BUDAYA_SULTENG">Budaya Sulteng</option>
+            <option value="BUDAYA_SULTENG">Kearifan Lokal Sulawesi Tengah</option>
           </select>
 
           {/* Regional Language Filter */}
@@ -173,9 +193,9 @@ export function AdminQuizListClient({ quizzes, pendingCount = 0 }: AdminQuizList
             className="h-10 text-xs rounded-xl border border-zinc-200 bg-white px-3 text-zinc-700 outline-hidden focus:border-[#3C22BB] focus:ring-1 focus:ring-[#3C22BB]"
           >
             <option value="ALL">Semua Bahasa Daerah</option>
-            {Object.entries(REGIONAL_LANGUAGE_LABELS).map(([code, label]) => (
-              <option key={code} value={code}>
-                {label}
+            {languageOptions.map((lang) => (
+              <option key={lang.code} value={lang.code}>
+                {lang.name}
               </option>
             ))}
           </select>
@@ -217,7 +237,7 @@ export function AdminQuizListClient({ quizzes, pendingCount = 0 }: AdminQuizList
                   {quiz.regionalLanguage && (
                     <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-teal-50 text-teal-800 border border-teal-200">
                       <Languages className="w-2.5 h-2.5" />
-                      {REGIONAL_LANGUAGE_LABELS[quiz.regionalLanguage] ?? quiz.regionalLanguage}
+                      {languageLabelMap[quiz.regionalLanguage] ?? REGIONAL_LANGUAGE_LABELS[quiz.regionalLanguage] ?? quiz.regionalLanguage}
                     </span>
                   )}
                 </div>
@@ -315,7 +335,7 @@ export function AdminQuizListClient({ quizzes, pendingCount = 0 }: AdminQuizList
               Belum Ada Kuis Ditemukan
             </h4>
             <p className="text-xs text-zinc-500 max-w-sm mx-auto mt-1 mb-4">
-              Silakan buat kuis baru untuk modul Bahasa Indonesia, Pendidikan Karakter, atau Budaya 9 Bahasa Daerah Sulawesi Tengah.
+              Silakan buat kuis baru untuk modul Bahasa Indonesia, Pendidikan Karakter, atau Kearifan Lokal Sulawesi Tengah.
             </p>
             <Button
               onClick={openCreate}
@@ -365,7 +385,7 @@ export function AdminQuizListClient({ quizzes, pendingCount = 0 }: AdminQuizList
                 >
                   <option value="BAHASA_INDONESIA">Bahasa Indonesia</option>
                   <option value="KARAKTER">Pendidikan Karakter</option>
-                  <option value="BUDAYA_SULTENG">Budaya Sulteng</option>
+                  <option value="BUDAYA_SULTENG">Kearifan Lokal Sulawesi Tengah</option>
                 </select>
               </div>
 
@@ -380,9 +400,9 @@ export function AdminQuizListClient({ quizzes, pendingCount = 0 }: AdminQuizList
                   className="w-full text-xs h-9 rounded-xl border border-zinc-200 bg-white px-3 text-zinc-700 outline-hidden focus:border-[#3C22BB]"
                 >
                   <option value="">-- Umum / Tanpa Bahasa Daerah --</option>
-                  {Object.entries(REGIONAL_LANGUAGE_LABELS).map(([code, label]) => (
-                    <option key={code} value={code}>
-                      {label}
+                  {languageOptions.map((lang) => (
+                    <option key={lang.code} value={lang.code}>
+                      {lang.name}
                     </option>
                   ))}
                 </select>

@@ -1,13 +1,15 @@
 "use client"
 
 import React from "react"
-import { Bookmark, Info, CheckCircle2, BookOpen } from "lucide-react"
+import { Bookmark, Info, BookOpen } from "lucide-react"
 
 interface MaterialContentRendererProps {
   content: string
   className?: string
   fontSize?: "sm" | "base" | "lg"
   readSegmentCount?: number
+  protectCopy?: boolean
+  onCopyAttempt?: () => void
 }
 
 interface ContentBlock {
@@ -223,6 +225,8 @@ export function MaterialContentRenderer({
   className = "",
   fontSize = "base",
   readSegmentCount,
+  protectCopy = true,
+  onCopyAttempt,
 }: MaterialContentRendererProps) {
   const blocks = React.useMemo(() => normalizeContentToBlocks(content), [content])
   const segments = React.useMemo(() => groupBlocksIntoSegments(blocks), [blocks])
@@ -318,7 +322,27 @@ export function MaterialContentRenderer({
 
   return (
     <div
-      className={`font-serif space-y-6 leading-relaxed ${textSizeClass} select-text ${className}`}
+      onCopy={(e) => {
+        if (protectCopy) {
+          e.preventDefault()
+          onCopyAttempt?.()
+        }
+      }}
+      onCut={(e) => {
+        if (protectCopy) {
+          e.preventDefault()
+          onCopyAttempt?.()
+        }
+      }}
+      onContextMenu={(e) => {
+        if (protectCopy) {
+          e.preventDefault()
+          onCopyAttempt?.()
+        }
+      }}
+      className={`font-serif space-y-6 leading-relaxed ${textSizeClass} ${
+        protectCopy ? "select-none" : "select-text"
+      } ${className}`}
       style={{ fontFamily: "var(--font-lora), Georgia, serif" }}
     >
       {segments.map((segBlocks, segIdx) => {

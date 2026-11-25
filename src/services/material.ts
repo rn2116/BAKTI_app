@@ -10,6 +10,8 @@ export async function getPublishedMaterials() {
       title: true,
       slug: true,
       category: true,
+      regionalLanguage: true,
+      referenceSource: true,
       description: true,
       thumbnail: true,
       readingTime: true,
@@ -22,17 +24,44 @@ export async function getPublishedMaterials() {
 }
 
 export async function getMaterialBySlug(slug: string) {
-  return prisma.learningMaterial.findUnique({
-    where: { slug },
+  return prisma.learningMaterial.findFirst({
+    where: { slug, isPublished: true },
     include: {
       quizzes: {
         where: { isPublished: true },
         orderBy: { createdAt: "desc" },
         include: {
-          questions: { select: { id: true } },
+          questions: {
+            where: { verificationStatus: "APPROVED" },
+            select: { id: true },
+          },
         },
       },
     },
+  })
+}
+
+export async function getNextMaterialCard(currentOrderIndex: number, currentId: string, category: Category) {
+  const nextSameCategory = await prisma.learningMaterial.findFirst({
+    where: {
+      isPublished: true,
+      category,
+      id: { not: currentId },
+      orderIndex: { gt: currentOrderIndex },
+    },
+    orderBy: { orderIndex: "asc" },
+    select: { slug: true, title: true, category: true },
+  })
+  if (nextSameCategory) return nextSameCategory
+
+  return prisma.learningMaterial.findFirst({
+    where: {
+      isPublished: true,
+      id: { not: currentId },
+      orderIndex: { gt: currentOrderIndex },
+    },
+    orderBy: { orderIndex: "asc" },
+    select: { slug: true, title: true, category: true },
   })
 }
 

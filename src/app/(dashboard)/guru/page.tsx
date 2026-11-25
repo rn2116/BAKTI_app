@@ -33,7 +33,7 @@ export default async function GuruDashboard() {
   let pillarStats: PillarStat[] = [
     { category: "BAHASA_INDONESIA", label: "Bahasa Indonesia", color: "#0284C7", avgScore: 0, totalAttempts: 0 },
     { category: "KARAKTER", label: "Pendidikan Karakter", color: "#059669", avgScore: 0, totalAttempts: 0 },
-    { category: "BUDAYA_SULTENG", label: "Budaya Sulawesi Tengah", color: "#0D9488", avgScore: 0, totalAttempts: 0 },
+    { category: "BUDAYA_SULTENG", label: "Kearifan Lokal Sulawesi Tengah", color: "#0D9488", avgScore: 0, totalAttempts: 0 },
   ]
 
   try {

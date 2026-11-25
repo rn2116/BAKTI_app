@@ -1,7 +1,8 @@
 import { prisma } from "@/lib/prisma"
 import Link from "next/link"
 import { BrandLogo } from "@/components/shared/BrandLogo"
-import { REGIONAL_LANGUAGE_LABELS } from "@/lib/constants"
+import { getRegionalLanguageLabelMap } from "@/services/regionalLanguageService"
+import { CATEGORY_LABELS } from "@/lib/constants"
 import {
   CheckCircle2,
   XCircle,
@@ -16,9 +17,9 @@ import {
 export const dynamic = "force-dynamic"
 
 interface VerifikasiPageProps {
-  params: {
+  params: Promise<{
     kode: string
-  }
+  }>
 }
 
 interface VerifiedCertificateDisplay {
@@ -36,9 +37,10 @@ interface VerifiedCertificateDisplay {
 export default async function VerifikasiSertifikatPage({
   params,
 }: VerifikasiPageProps) {
-  const kodeSertifikat = decodeURIComponent(params.kode || "").trim()
+  const { kode } = await params
+  const kodeSertifikat = decodeURIComponent(kode || "").trim()
 
-  const [materialCert, regionalCert] = await Promise.all([
+  const [materialCert, regionalCert, languageLabelMap] = await Promise.all([
     prisma.userCertificate.findUnique({
       where: { certificateNo: kodeSertifikat },
       include: {
@@ -46,6 +48,9 @@ export default async function VerifikasiSertifikatPage({
           select: {
             fullName: true,
             nisn: true,
+            domicileRegency: true,
+            participantCategory: true,
+            institutionName: true,
             school: {
               select: {
                 name: true,
@@ -75,6 +80,9 @@ export default async function VerifikasiSertifikatPage({
           select: {
             fullName: true,
             nisn: true,
+            domicileRegency: true,
+            participantCategory: true,
+            institutionName: true,
             school: {
               select: {
                 name: true,
@@ -85,35 +93,50 @@ export default async function VerifikasiSertifikatPage({
         },
       },
     }),
+    getRegionalLanguageLabelMap(),
   ])
 
   let certificate: VerifiedCertificateDisplay | null = null
   if (materialCert) {
+    const categoryLabel =
+      CATEGORY_LABELS[materialCert.material.category as keyof typeof CATEGORY_LABELS] ??
+      materialCert.material.category.replace(/_/g, " ")
     certificate = {
       certificateNo: materialCert.certificateNo,
       studentName: materialCert.user.fullName,
       nisn: materialCert.user.nisn,
-      schoolName: materialCert.user.school?.name ?? "Sekolah Sulawesi Tengah",
+      schoolName:
+        materialCert.user.institutionName ||
+        materialCert.user.school?.name ||
+        materialCert.user.participantCategory ||
+        "Masyarakat Umum",
       regencyName:
-        materialCert.user.school?.regency?.name ?? "Provinsi Sulawesi Tengah",
+        materialCert.user.domicileRegency ||
+        materialCert.user.school?.regency?.name ||
+        "Provinsi Sulawesi Tengah",
       competenceTitle: materialCert.material.title,
-      competenceSub: `Kategori: ${materialCert.material.category.replace(/_/g, " ")}`,
+      competenceSub: `Kategori: ${categoryLabel}`,
       evaluationText: `LULUS (${materialCert.quizAttempt.score} / ${materialCert.quizAttempt.maxScore} Poin)`,
       issuedAt: materialCert.issuedAt,
     }
   } else if (regionalCert) {
     const langName =
-      REGIONAL_LANGUAGE_LABELS[regionalCert.bahasaDaerah] ??
-      regionalCert.bahasaDaerah
+      languageLabelMap[regionalCert.bahasaDaerah] ?? regionalCert.bahasaDaerah
     certificate = {
       certificateNo: regionalCert.nomorSertifikat,
       studentName: regionalCert.user.fullName,
       nisn: regionalCert.user.nisn,
-      schoolName: regionalCert.user.school?.name ?? "Sekolah Sulawesi Tengah",
+      schoolName:
+        regionalCert.user.institutionName ||
+        regionalCert.user.school?.name ||
+        regionalCert.user.participantCategory ||
+        "Masyarakat Umum",
       regencyName:
-        regionalCert.user.school?.regency?.name ?? "Provinsi Sulawesi Tengah",
+        regionalCert.user.domicileRegency ||
+        regionalCert.user.school?.regency?.name ||
+        "Provinsi Sulawesi Tengah",
       competenceTitle: `Penguasaan ${langName} & Nilai Karakter`,
-      competenceSub: "Sertifikasi Modul 3 Tahap Bahasa Daerah (BBPST)",
+      competenceSub: "Sertifikasi Modul 3 Tahap Kearifan Lokal Sulawesi Tengah (BBPST)",
       evaluationText: `LULUS (Skor Akhir: ${regionalCert.skorAkhir} / 100)`,
       issuedAt: regionalCert.tanggalTerbit,
     }
@@ -194,7 +217,7 @@ export default async function VerifikasiSertifikatPage({
                 <div className="p-4 rounded-2xl bg-zinc-50 border border-zinc-200/80 space-y-1">
                   <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-500 flex items-center gap-1">
                     <School className="w-3.5 h-3.5 text-zinc-400" />
-                    <span>Asal Satuan Pendidikan</span>
+                    <span>Asal Daerah / Instansi</span>
                   </span>
                   <div className="text-sm font-bold text-zinc-900">
                     {certificate.schoolName}

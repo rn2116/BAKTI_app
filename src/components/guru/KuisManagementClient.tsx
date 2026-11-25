@@ -73,11 +73,18 @@ export function KuisManagementClient({
   quizzes,
   materials,
   currentUserId,
+  languages,
 }: {
   quizzes: QuizItem[]
   materials: MaterialOption[]
   currentUserId: string
+  languages?: Array<{ code: string; name: string }>
 }) {
+  const languageLabelMap: Record<string, string> = Object.fromEntries(
+    languages && languages.length > 0
+      ? languages.map((l) => [l.code, l.name])
+      : Object.entries(REGIONAL_LANGUAGE_LABELS)
+  )
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -277,7 +284,7 @@ export function KuisManagementClient({
                     >
                       <option value="BAHASA_INDONESIA">Bahasa Indonesia</option>
                       <option value="KARAKTER">Pendidikan Karakter</option>
-                      <option value="BUDAYA_SULTENG">Budaya Sulawesi Tengah</option>
+                      <option value="BUDAYA_SULTENG">Kearifan Lokal Sulawesi Tengah</option>
                     </select>
                   </div>
 
@@ -477,7 +484,7 @@ export function KuisManagementClient({
                     {q.regionalLanguage && (
                       <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-teal-50 text-teal-800 border border-teal-200">
                         <Languages className="w-2.5 h-2.5" />
-                        {REGIONAL_LANGUAGE_LABELS[q.regionalLanguage] ?? q.regionalLanguage}
+                        {languageLabelMap[q.regionalLanguage] ?? REGIONAL_LANGUAGE_LABELS[q.regionalLanguage] ?? q.regionalLanguage}
                       </span>
                     )}
                   </div>

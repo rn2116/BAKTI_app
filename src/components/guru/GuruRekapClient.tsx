@@ -99,7 +99,7 @@ export function GuruRekapClient({ recapAttempts, classList }: GuruRekapClientPro
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Cari siswa / kuis..."
+              placeholder="Cari peserta / kuis..."
               className="pl-9 h-10 text-xs rounded-xl border-zinc-200"
             />
           </div>
@@ -127,7 +127,7 @@ export function GuruRekapClient({ recapAttempts, classList }: GuruRekapClientPro
             <option value="ALL">Semua Kategori</option>
             <option value="BAHASA_INDONESIA">Bahasa Indonesia</option>
             <option value="KARAKTER">Pendidikan Karakter</option>
-            <option value="BUDAYA_SULTENG">Budaya Sulteng</option>
+            <option value="BUDAYA_SULTENG">Kearifan Lokal Sulawesi Tengah</option>
           </select>
         </div>
 

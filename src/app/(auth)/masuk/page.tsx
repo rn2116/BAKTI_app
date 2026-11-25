@@ -62,7 +62,7 @@ export default async function LoginPage({
                 Selamat Datang Kembali! 👋
               </h1>
               <p className="text-xs sm:text-sm text-zinc-500 leading-relaxed">
-                Masuk untuk melanjutkan petualangan belajar bahasa, karakter, dan budaya Sulawesi Tengah.
+                Masuk untuk melanjutkan petualangan belajar bahasa, karakter, dan kearifan lokal Sulawesi Tengah.
               </p>
             </div>
           </div>

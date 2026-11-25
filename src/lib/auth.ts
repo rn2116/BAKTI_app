@@ -61,6 +61,11 @@ export const getCurrentUser = cache(async () => {
       role: true,
       schoolId: true,
       classId: true,
+      domicileRegency: true,
+      participantCategory: true,
+      institutionName: true,
+      expertStatus: true,
+      expertLanguage: true,
       xp: true,
       level: true,
       isActive: true,
@@ -80,6 +85,7 @@ export async function requireDashboardUser(allowedRole?: string) {
       SISWA: "/siswa",
       GURU: "/guru",
       ADMIN: "/admin",
+      AHLI_BAHASA: "/ahli-bahasa",
     }
     redirect(dashMap[user.role] ?? "/api/auth/clear-session")
   }

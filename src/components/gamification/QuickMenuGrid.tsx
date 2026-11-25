@@ -49,8 +49,8 @@ const MENU_ITEMS = [
     icon: Target,
   },
   {
-    title: "Bahasa & Budaya Sulteng",
-    description: "Kearifan lokal Kaili, Saluan, Banggai",
+    title: "Kearifan Lokal Sulteng",
+    description: "Bahasa & kearifan lokal Sulawesi Tengah",
     href: "/siswa/materi?kategori=BUDAYA_SULTENG",
     bgColor: "bg-[#0D9488]",
     hoverColor: "hover:bg-[#0F766E]",
@@ -85,10 +85,10 @@ export function QuickMenuGrid() {
               </span>
             </div>
             <h3 className="font-bold text-sm sm:text-base text-zinc-900 mt-1">
-              Jelajahi Bahasa & Budaya Sulawesi Tengah Hari Ini!
+              Jelajahi Kearifan Lokal Sulawesi Tengah Hari Ini!
             </h3>
             <p className="text-xs text-zinc-500 mt-0.5">
-              Selesaikan minimal 1 materi Budaya Sulteng hari ini untuk mempertahankan streak belajar dan mengklaim lencana Tadulako.
+              Selesaikan minimal 1 materi Kearifan Lokal Sulawesi Tengah hari ini untuk mempertahankan rentetan belajar dan meraih lencana Tadulako.
             </p>
           </div>
         </div>

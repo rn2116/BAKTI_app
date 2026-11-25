@@ -8,11 +8,13 @@ import {
 interface AdminQuizQuestionsClientProps {
   quiz: ManagedQuizDetail
   currentUserId: string
+  languages?: Array<{ code: string; name: string }>
 }
 
 export function AdminQuizQuestionsClient({
   quiz,
   currentUserId,
+  languages,
 }: AdminQuizQuestionsClientProps) {
   return (
     <QuizQuestionsManager
@@ -20,6 +22,7 @@ export function AdminQuizQuestionsClient({
       userRole="ADMIN"
       currentUserId={currentUserId}
       backHref="/admin/kuis"
+      languages={languages}
     />
   )
 }

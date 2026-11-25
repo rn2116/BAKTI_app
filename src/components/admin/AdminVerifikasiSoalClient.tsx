@@ -83,6 +83,11 @@ export interface VerificationQuestionItem {
   } | null
 }
 
+interface LanguageOption {
+  code: string
+  name: string
+}
+
 interface AdminVerifikasiSoalClientProps {
   questions: VerificationQuestionItem[]
   counts: {
@@ -91,6 +96,7 @@ interface AdminVerifikasiSoalClientProps {
     rejected: number
     total: number
   }
+  languages?: LanguageOption[]
 }
 
 type StatusTab = "PENDING_REVIEW" | "APPROVED" | "REJECTED" | "ALL"
@@ -110,10 +116,22 @@ function parseOptions(optStr: string): string[] {
 export function AdminVerifikasiSoalClient({
   questions,
   counts,
+  languages,
 }: AdminVerifikasiSoalClientProps) {
   const router = useRouter()
   const [activeTab, setActiveTab] = useState<StatusTab>("PENDING_REVIEW")
   const [search, setSearch] = useState("")
+
+  const languageOptions: LanguageOption[] =
+    languages && languages.length > 0
+      ? languages
+      : Object.entries(REGIONAL_LANGUAGE_LABELS).map(([code, name]) => ({
+          code,
+          name,
+        }))
+  const languageLabelMap: Record<string, string> = Object.fromEntries(
+    languageOptions.map((item) => [item.code, item.name])
+  )
 
   // Approve confirm state
   const [approveTarget, setApproveTarget] = useState<VerificationQuestionItem | null>(null)
@@ -387,7 +405,7 @@ export function AdminVerifikasiSoalClient({
                   {q.regionalLanguage && (
                     <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-teal-50 text-teal-800 border border-teal-200">
                       <Languages className="w-3 h-3" />
-                      {REGIONAL_LANGUAGE_LABELS[q.regionalLanguage] ?? q.regionalLanguage}
+                      {languageLabelMap[q.regionalLanguage] ?? REGIONAL_LANGUAGE_LABELS[q.regionalLanguage] ?? q.regionalLanguage}
                     </span>
                   )}
                 </div>
@@ -710,9 +728,9 @@ export function AdminVerifikasiSoalClient({
                   className="w-full text-xs h-9 rounded-xl border border-zinc-200 bg-white px-3 text-zinc-700"
                 >
                   <option value="">-- Umum --</option>
-                  {Object.entries(REGIONAL_LANGUAGE_LABELS).map(([code, label]) => (
-                    <option key={code} value={code}>
-                      {label}
+                  {languageOptions.map((lang) => (
+                    <option key={lang.code} value={lang.code}>
+                      {lang.name}
                     </option>
                   ))}
                 </select>

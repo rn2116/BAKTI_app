@@ -14,6 +14,7 @@ import {
   type ReaderTheme,
 } from "@/components/shared/ReaderToolbar"
 import { TextToSpeechPlayer } from "@/components/shared/TextToSpeechPlayer"
+import { BookMarked, ShieldCheck } from "lucide-react"
 import confetti from "canvas-confetti"
 
 interface ReadingViewClientProps {
@@ -23,6 +24,8 @@ interface ReadingViewClientProps {
   summary: string
   contentHtml: string
   readingToken: string
+  referenceSource?: string | null
+  regionalLanguageName?: string | null
 }
 
 export function ReadingViewClient({
@@ -32,6 +35,8 @@ export function ReadingViewClient({
   summary,
   contentHtml,
   readingToken,
+  referenceSource,
+  regionalLanguageName,
 }: ReadingViewClientProps) {
   const [isDone, setIsDone] = useState(initialIsDone)
   const [loading, setLoading] = useState(false)
@@ -108,7 +113,7 @@ export function ReadingViewClient({
         <TextToSpeechPlayer textToRead={contentHtml} title={title} />
       </div>
 
-      {/* 2. Konten Bacaan Utama Berstruktur dengan Pelacakan Segmen */}
+      {/* 2. Konten Bacaan Utama Berstruktur dengan Pelacakan Segmen & Proteksi Salin */}
       <div
         className={`p-6 sm:p-10 rounded-3xl border transition-colors duration-200 ${containerThemeClass}`}
       >
@@ -116,8 +121,35 @@ export function ReadingViewClient({
           content={contentHtml}
           fontSize={fontSize}
           readSegmentCount={isDone ? undefined : readSegmentCount}
+          protectCopy={true}
+          onCopyAttempt={() =>
+            notify.info(
+              "Penyalinan massal dinonaktifkan untuk melindungi naskah rujukan resmi BBPST."
+            )
+          }
           className={theme === "sepia" ? "text-[#2C241B]" : "text-zinc-850"}
         />
+
+        {/* Kotak Atribusi Hak Cipta & Sumber Rujukan */}
+        <div className="mt-8 p-4 rounded-2xl bg-indigo-50/70 border border-indigo-200/80 flex items-start gap-3 text-xs text-[#1E135E]">
+          <div className="w-8 h-8 rounded-xl bg-white border border-indigo-200 text-[#3C22BB] flex items-center justify-center shrink-0">
+            <BookMarked className="w-4 h-4" />
+          </div>
+          <div className="space-y-1">
+            <div className="font-extrabold flex items-center gap-1.5">
+              <span>Atribusi Hak Cipta &amp; Sumber Rujukan Resmi</span>
+              <ShieldCheck className="w-3.5 h-3.5 text-[#065F46]" />
+            </div>
+            <p className="text-[11px] text-zinc-700 leading-relaxed">
+              Sumber:{" "}
+              <strong>
+                {referenceSource ||
+                  "Modul Pembelajaran Resmi Balai Bahasa Provinsi Sulawesi Tengah (Kemendikdasmen)"}
+              </strong>
+              {regionalLanguageName ? ` • Cakupan: ${regionalLanguageName}` : ""}. Naskah ini disajikan khusus untuk pembelajaran daring pada LMS Bahasa &amp; Karakter (BAKTI) dan dilindungi ketentuan hak cipta.
+            </p>
+          </div>
+        </div>
 
         {/* 3. Sistem Penjaminan Engagement Membaca 3 Lapis */}
         <ReadingEngagementGate

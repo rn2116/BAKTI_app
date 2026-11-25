@@ -126,7 +126,17 @@ export function SultengLanguageMapExplorer({ languages }: SultengLanguageMapExpl
 
   if (!selected) return null
 
-  const meta = LANGUAGE_MAP_COORDS[selected.code]
+  const meta = LANGUAGE_MAP_COORDS[selected.code] ?? {
+    x: 215,
+    y: 135,
+    labelX: 215,
+    labelY: 120,
+    anchor: "middle" as const,
+    tagline: selected.region
+      ? `Bahasa daerah penutur wilayah ${selected.region}, Sulawesi Tengah.`
+      : "Khazanah bahasa daerah dan kearifan lokal Provinsi Sulawesi Tengah.",
+    highlightWord: "Kearifan Lokal Sulteng",
+  }
   const totalMastered = languages.filter((l) => l.stage3Completed).length
   const totalExpressions = languages.reduce((acc, item) => acc + item.expressionCount, 0)
 
@@ -146,7 +156,7 @@ export function SultengLanguageMapExplorer({ languages }: SultengLanguageMapExpl
             id="peta-bahasa-sulteng-heading"
             className="text-lg sm:text-xl font-extrabold text-[#1E135E] tracking-tight"
           >
-            Jelajahi 9 Bahasa Daerah Sulawesi Tengah
+            Jelajahi Bahasa Daerah Sulawesi Tengah
           </h2>
           <p className="text-xs text-zinc-600">
             Ketuk wilayah pada peta atau pilih kartu bahasa untuk melihat progres belajar 3 tahap dan kosakata karakternya.
@@ -160,7 +170,9 @@ export function SultengLanguageMapExplorer({ languages }: SultengLanguageMapExpl
           </div>
           <div className="px-3 py-2 rounded-2xl bg-emerald-50 border border-emerald-200 text-xs">
             <span className="text-emerald-700">Tuntas: </span>
-            <strong className="text-emerald-900">{totalMastered}/9 Bahasa</strong>
+            <strong className="text-emerald-900">
+              {totalMastered}/{languages.length} Bahasa
+            </strong>
           </div>
         </div>
       </div>
@@ -183,7 +195,7 @@ export function SultengLanguageMapExplorer({ languages }: SultengLanguageMapExpl
             <svg
               viewBox="0 0 430 270"
               role="img"
-              aria-label="Peta interaktif 9 bahasa daerah di Provinsi Sulawesi Tengah"
+              aria-label="Peta interaktif bahasa daerah di Provinsi Sulawesi Tengah"
               className="w-full h-auto max-h-[290px] select-none drop-shadow-xs"
             >
               <defs>
@@ -291,7 +303,7 @@ export function SultengLanguageMapExplorer({ languages }: SultengLanguageMapExpl
                 TELUK TOMINI
               </text>
 
-              {/* 9 Interactive Language Pins */}
+              {/* Interactive Language Pins */}
               {languages.map((lang) => {
                 const pos = LANGUAGE_MAP_COORDS[lang.code]
                 if (!pos) return null
@@ -362,7 +374,7 @@ export function SultengLanguageMapExplorer({ languages }: SultengLanguageMapExpl
             </svg>
           </div>
 
-          {/* 9 Language Quick Selector Chips */}
+          {/* Dynamic Language Quick Selector Chips */}
           <div className="flex flex-wrap gap-1.5 pt-3 border-t border-indigo-100/80">
             {languages.map((lang) => {
               const isSelected = lang.code === selected.code
@@ -507,9 +519,9 @@ export function SultengLanguageMapExplorer({ languages }: SultengLanguageMapExpl
               variant="outline"
               className="rounded-xl h-10 text-xs font-bold border-zinc-200 hover:border-[#3C22BB] hover:text-[#3C22BB]"
             >
-              <Link href="/siswa/bahasa-daerah">
+              <Link href="/siswa/budaya-bahasa">
                 <BookOpen className="w-3.5 h-3.5 mr-1.5" />
-                Kamus
+                Kamus Besar
               </Link>
             </Button>
           </div>

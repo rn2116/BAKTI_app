@@ -7,6 +7,8 @@ import {
   NAVIGATION_ITEMS_SISWA,
   NAVIGATION_ITEMS_GURU,
   NAVIGATION_ITEMS_ADMIN,
+  NAVIGATION_ITEMS_AHLI_BAHASA,
+  ROLE_LABELS,
 } from "@/lib/constants"
 import { AuthUser } from "@/types"
 import { cn } from "@/lib/utils"
@@ -31,6 +33,8 @@ import {
   Compass,
   Award,
   BarChart3,
+  UserCheck,
+  Languages,
 } from "lucide-react"
 
 const ICON_MAP: Record<string, React.ElementType> = {
@@ -49,24 +53,21 @@ const ICON_MAP: Record<string, React.ElementType> = {
   Compass,
   Award,
   BarChart3,
+  UserCheck,
+  Languages,
 }
-
-// Navigasi yang lebih lengkap & menarik khusus Siswa
-const SISWA_MENU_ITEMS = [
-  { label: "Beranda", href: "/siswa", icon: "LayoutDashboard" },
-  { label: "Materi Belajar", href: "/siswa/materi", icon: "BookOpen" },
-  { label: "Kuis Interaktif", href: "/siswa/kuis", icon: "ClipboardList" },
-  { label: "Kamus Karakter 9 Bahasa", href: "/siswa/budaya-bahasa", icon: "Compass" },
-  { label: "Papan Peringkat", href: "/siswa/peringkat", icon: "Trophy" },
-  { label: "Prestasi & Sertifikat", href: "/siswa/sertifikat", icon: "Award" },
-]
 
 interface DesktopSidebarProps {
   user: AuthUser
   pendingQuestionCount?: number
+  pendingExpertCount?: number
 }
 
-export default function DesktopSidebar({ user, pendingQuestionCount = 0 }: DesktopSidebarProps) {
+export default function DesktopSidebar({
+  user,
+  pendingQuestionCount = 0,
+  pendingExpertCount = 0,
+}: DesktopSidebarProps) {
   const pathname = usePathname()
   const isSiswa = user.role === "SISWA"
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
@@ -82,7 +83,9 @@ export default function DesktopSidebar({ user, pendingQuestionCount = 0 }: Deskt
       ? NAVIGATION_ITEMS_GURU
       : user.role === "ADMIN"
         ? NAVIGATION_ITEMS_ADMIN
-        : SISWA_MENU_ITEMS
+        : user.role === "AHLI_BAHASA"
+          ? NAVIGATION_ITEMS_AHLI_BAHASA
+          : NAVIGATION_ITEMS_SISWA
 
   return (
     <>
@@ -101,7 +104,10 @@ export default function DesktopSidebar({ user, pendingQuestionCount = 0 }: Deskt
             <nav className="space-y-1.5">
               {items.map((item) => {
                 const isRootDash =
-                  item.href === "/siswa" || item.href === "/guru" || item.href === "/admin"
+                  item.href === "/siswa" ||
+                  item.href === "/guru" ||
+                  item.href === "/admin" ||
+                  item.href === "/ahli-bahasa"
                 const active =
                   pathname === item.href ||
                   (!isRootDash && pathname.startsWith(`${item.href}/`))
@@ -109,6 +115,13 @@ export default function DesktopSidebar({ user, pendingQuestionCount = 0 }: Deskt
                   ICON_MAP[item.icon as keyof typeof ICON_MAP] ?? LayoutDashboard
                 const showVerificationBadge =
                   item.href === "/admin/verifikasi-soal" && pendingQuestionCount > 0
+                const showExpertBadge =
+                  item.href === "/admin/verifikasi-ahli" && pendingExpertCount > 0
+                const badgeValue = showVerificationBadge
+                  ? pendingQuestionCount
+                  : showExpertBadge
+                    ? pendingExpertCount
+                    : 0
 
                 return (
                   <Link
@@ -128,11 +141,11 @@ export default function DesktopSidebar({ user, pendingQuestionCount = 0 }: Deskt
                           active ? "text-white" : "text-indigo-300"
                         )}
                       />
-                      <span className="truncate">{item.label}</span>
+                      <span className="leading-snug">{item.label}</span>
                     </div>
-                    {showVerificationBadge && (
+                    {badgeValue > 0 && (
                       <span className="shrink-0 inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[10px] font-extrabold bg-amber-400 text-zinc-950 shadow-xs">
-                        {pendingQuestionCount > 99 ? "99+" : pendingQuestionCount}
+                        {badgeValue > 99 ? "99+" : badgeValue}
                       </span>
                     )}
                   </Link>
@@ -162,7 +175,7 @@ export default function DesktopSidebar({ user, pendingQuestionCount = 0 }: Deskt
             </div>
             <div className="text-[10px] font-bold uppercase tracking-wider text-amber-300 flex items-center gap-1.5">
               <span>🌟</span>
-              <span>Kearifan Lokal Sulteng</span>
+              <span>Kearifan Lokal Sulawesi Tengah</span>
             </div>
             <p className="text-xs text-white/95 font-medium italic leading-relaxed">
               &quot;Masintuvu Kita Maroso, Morambanga Kita Marisi&quot;
@@ -185,7 +198,7 @@ export default function DesktopSidebar({ user, pendingQuestionCount = 0 }: Deskt
                 {user.fullName}
               </div>
               <div className="flex items-center gap-1.5 text-[11px] text-indigo-200 mt-0.5">
-                <span className="capitalize font-medium">{user.role.toLowerCase()}</span>
+                <span className="font-medium">{ROLE_LABELS[user.role] ?? user.role}</span>
                 {isSiswa && (
                   <>
                     <span>•</span>

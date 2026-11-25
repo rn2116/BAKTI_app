@@ -12,6 +12,7 @@ enum Role {
   SISWA
   GURU
   ADMIN
+  AHLI_BAHASA
 }
 
 enum Category {
@@ -20,20 +21,15 @@ enum Category {
   BUDAYA_SULTENG
 }
 
-enum RegionalLanguage {
-  KAILI
-  PAMONA
-  BANGGAI
-  BUNGKU
-  TOLITOLI
-  BUOL
-  SALUAN
-  MORI
-  TAA
-}
-
 enum QuestionVerificationStatus {
   PENDING_REVIEW
+  APPROVED
+  REJECTED
+}
+
+enum ExpertVerificationStatus {
+  NONE
+  PENDING_EXPERT
   APPROVED
   REJECTED
 }
@@ -49,6 +45,24 @@ model MasterRegency {
 
   @@index([name])
   @@map("master_regencies")
+}
+
+model MasterRegionalLanguage {
+  id              String   @id @db.Char(36)
+  code            String   @unique @db.VarChar(50)
+  name            String   @db.VarChar(100)
+  regencyCoverage String   @db.VarChar(255) @map("regency_coverage")
+  description     String?  @db.Text
+  isActive        Boolean  @default(true) @map("is_active")
+  createdBy       String?  @db.Char(36) @map("created_by")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  creator         MasterUser? @relation("RegionalLanguageCreator", fields: [createdBy], references: [id], onDelete: SetNull)
+
+  @@index([isActive])
+  @@index([name])
+  @@map("master_regional_languages")
 }
 
 model MasterSchool {
@@ -89,84 +103,119 @@ model MasterClass {
 }
 
 model MasterUser {
-  id            String      @id @db.Char(36)
-  email         String      @unique @db.VarChar(255)
-  passwordHash  String      @db.VarChar(255)
-  fullName      String      @db.VarChar(100)
-  nisn          String?     @unique @db.VarChar(20)
-  nip           String?     @unique @db.VarChar(20)
-  role          Role        @default(SISWA)
-  schoolId      String?     @db.Char(36)
-  classId       String?     @db.Char(36)
-  avatarUrl     String?     @db.Text
-  xp            Int         @default(0)
-  level         Int         @default(1)
-  isActive      Boolean     @default(true)
-  emailVerified Boolean     @default(false)
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  id                   String                   @id @db.Char(36)
+  email                String                   @unique @db.VarChar(255)
+  passwordHash         String                   @db.VarChar(255)
+  fullName             String                   @db.VarChar(100)
+  nisn                 String?                  @unique @db.VarChar(20)
+  nip                  String?                  @unique @db.VarChar(20)
+  role                 Role                     @default(SISWA)
+  schoolId             String?                  @db.Char(36)
+  classId              String?                  @db.Char(36)
+  domicileRegency      String?                  @db.VarChar(100) @map("domicile_regency")
+  participantCategory  String?                  @db.VarChar(60) @map("participant_category")
+  institutionName      String?                  @db.VarChar(150) @map("institution_name")
+  expertStatus         ExpertVerificationStatus @default(NONE) @map("expert_status")
+  expertLanguage       String?                  @db.VarChar(120) @map("expert_language")
+  expertAffiliation    String?                  @db.VarChar(150) @map("expert_affiliation")
+  expertProofType      String?                  @db.VarChar(100) @map("expert_proof_type")
+  expertProofNumber    String?                  @db.VarChar(120) @map("expert_proof_number")
+  expertProofFileUrl   String?                  @db.Text @map("expert_proof_file_url")
+  expertTrackRecord    String?                  @db.Text @map("expert_track_record")
+  expertReviewNotes    String?                  @db.Text @map("expert_review_notes")
+  avatarUrl            String?                  @db.Text
+  xp                   Int                      @default(0)
+  level                Int                      @default(1)
+  isActive             Boolean                  @default(true)
+  emailVerified        Boolean                  @default(false)
+  createdAt            DateTime                 @default(now())
+  updatedAt            DateTime                 @updatedAt
 
-  school        MasterSchool?   @relation(fields: [schoolId], references: [id], onDelete: SetNull)
-  class         MasterClass?    @relation(fields: [classId], references: [id], onDelete: SetNull)
-  materialProgress UserMaterialProgress[]
-  quizAttempts  QuizAttempt[]
-  userBadges    UserBadge[]
-  certificates  UserCertificate[]
-  createdMaterials LearningMaterial[] @relation("MaterialCreator")
-  createdQuizzes   Quiz[]           @relation("QuizCreator")
-  createdQuestions QuizQuestion[]   @relation("QuestionCreator")
-  verifiedQuestions QuizQuestion[]  @relation("QuestionVerifier")
-  characterMatrices CharacterMatrix[]
-  regionalProgress  RegionalModuleProgress[]
-  sertifikatBahasa  Sertifikat[]
+  school                   MasterSchool?            @relation(fields: [schoolId], references: [id], onDelete: SetNull)
+  class                    MasterClass?             @relation(fields: [classId], references: [id], onDelete: SetNull)
+  materialProgress         UserMaterialProgress[]
+  quizAttempts             QuizAttempt[]
+  userBadges               UserBadge[]
+  certificates             UserCertificate[]
+  createdMaterials         LearningMaterial[]       @relation("MaterialCreator")
+  createdQuizzes           Quiz[]                   @relation("QuizCreator")
+  createdQuestions         QuizQuestion[]           @relation("QuestionCreator")
+  verifiedQuestions        QuizQuestion[]           @relation("QuestionVerifier")
+  characterMatrices        CharacterMatrix[]
+  regionalProgress         RegionalModuleProgress[]
+  sertifikatBahasa         Sertifikat[]
+  createdRegionalLanguages MasterRegionalLanguage[] @relation("RegionalLanguageCreator")
+  notifications            Notification[]
 
   @@index([role])
   @@index([role, isActive])
   @@index([role, schoolId, isActive])
+  @@index([role, expertStatus])
+  @@index([expertStatus])
   @@index([schoolId])
   @@index([classId])
   @@index([email])
   @@map("master_users")
 }
 
-model LearningMaterial {
-  id          String     @id @db.Char(36)
-  title       String     @db.VarChar(200)
-  slug        String     @unique @db.VarChar(200)
-  category    Category
-  description String     @db.Text
-  content     String     @db.Text
-  thumbnail   String?    @db.Text
-  readingTime Int        @default(5)
-  orderIndex  Int        @default(0)
-  isPublished Boolean    @default(true)
-  createdBy   String     @db.Char(36)
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+model Notification {
+  id         String   @id @db.Char(36)
+  userId     String   @db.Char(36) @map("user_id")
+  title      String   @db.VarChar(180)
+  message    String   @db.Text
+  type       String   @default("system") @db.VarChar(40)
+  link       String?  @db.VarChar(255)
+  isPriority Boolean  @default(false) @map("is_priority")
+  isRead     Boolean  @default(false) @map("is_read")
+  createdAt  DateTime @default(now()) @map("created_at")
 
-  creator     MasterUser @relation("MaterialCreator", fields: [createdBy], references: [id], onDelete: Cascade)
-  progress    UserMaterialProgress[]
-  quizzes     Quiz[]
+  user MasterUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead, createdAt])
+  @@map("notifications")
+}
+
+model LearningMaterial {
+  id               String     @id @db.Char(36)
+  title            String     @db.VarChar(200)
+  slug             String     @unique @db.VarChar(200)
+  category         Category
+  regionalLanguage String?    @db.VarChar(50) @map("regional_language")
+  referenceSource  String?    @db.VarChar(255) @map("reference_source")
+  description      String     @db.Text
+  content          String     @db.Text
+  thumbnail        String?    @db.Text
+  readingTime      Int        @default(5)
+  orderIndex       Int        @default(0)
+  isPublished      Boolean    @default(true)
+  createdBy        String     @db.Char(36)
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+
+  creator      MasterUser             @relation("MaterialCreator", fields: [createdBy], references: [id], onDelete: Cascade)
+  progress     UserMaterialProgress[]
+  quizzes      Quiz[]
   certificates UserCertificate[]
 
   @@index([category])
+  @@index([regionalLanguage])
   @@index([slug])
   @@index([isPublished])
   @@map("learning_materials")
 }
 
 model UserMaterialProgress {
-  id             String   @id @db.Char(36)
-  userId         String   @db.Char(36)
-  materialId     String   @db.Char(36)
-  status         String   @default("IN_PROGRESS")
-  completedAt    DateTime?
-  xpEarned       Int      @default(0)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id          String    @id @db.Char(36)
+  userId      String    @db.Char(36)
+  materialId  String    @db.Char(36)
+  status      String    @default("IN_PROGRESS")
+  completedAt DateTime?
+  xpEarned    Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
-  user           MasterUser    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  material       LearningMaterial @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  user     MasterUser       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  material LearningMaterial @relation(fields: [materialId], references: [id], onDelete: Cascade)
 
   @@unique([userId, materialId])
   @@index([userId])
@@ -175,25 +224,25 @@ model UserMaterialProgress {
 }
 
 model Quiz {
-  id               String            @id @db.Char(36)
-  title            String            @db.VarChar(200)
-  description      String?           @db.Text
+  id               String   @id @db.Char(36)
+  title            String   @db.VarChar(200)
+  description      String?  @db.Text
   category         Category
-  regionalLanguage RegionalLanguage? @map("regional_language")
-  referenceSource  String?           @db.VarChar(255) @map("reference_source")
-  materialId       String?           @db.Char(36)
-  timeLimit        Int               @default(30)
-  passingScore     Int               @default(75)
-  xpReward         Int               @default(50)
-  isPublished      Boolean           @default(true)
-  createdBy        String            @db.Char(36)
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
+  regionalLanguage String?  @db.VarChar(50) @map("regional_language")
+  referenceSource  String?  @db.VarChar(255) @map("reference_source")
+  materialId       String?  @db.Char(36)
+  timeLimit        Int      @default(30)
+  passingScore     Int      @default(75)
+  xpReward         Int      @default(50)
+  isPublished      Boolean  @default(true)
+  createdBy        String   @db.Char(36)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
-  material    LearningMaterial? @relation(fields: [materialId], references: [id], onDelete: SetNull)
-  creator     MasterUser @relation("QuizCreator", fields: [createdBy], references: [id], onDelete: Cascade)
-  questions   QuizQuestion[]
-  attempts    QuizAttempt[]
+  material  LearningMaterial? @relation(fields: [materialId], references: [id], onDelete: SetNull)
+  creator   MasterUser        @relation("QuizCreator", fields: [createdBy], references: [id], onDelete: Cascade)
+  questions QuizQuestion[]
+  attempts  QuizAttempt[]
 
   @@index([category])
   @@index([regionalLanguage])
@@ -206,12 +255,12 @@ model QuizQuestion {
   id                 String                     @id @db.Char(36)
   quizId             String                     @db.Char(36)
   question           String                     @db.Text
-  options            String                     @db.Text // JSON array string (["a","b","c","d"])
+  options            String                     @db.Text
   correctIndex       Int
   explanation        String?                    @db.Text
   points             Int                        @default(10)
   orderIndex         Int                        @default(0)
-  regionalLanguage   RegionalLanguage?          @map("regional_language")
+  regionalLanguage   String?                    @db.VarChar(50) @map("regional_language")
   wiseSayingText     String?                    @db.Text @map("wise_saying_text")
   wiseSayingMeaning  String?                    @db.Text @map("wise_saying_meaning")
   referenceSource    String?                    @db.VarChar(255) @map("reference_source")
@@ -222,10 +271,10 @@ model QuizQuestion {
   reviewNotes        String?                    @db.Text @map("review_notes")
   createdAt          DateTime                   @default(now())
 
-  quiz        Quiz                @relation(fields: [quizId], references: [id], onDelete: Cascade)
-  creator     MasterUser?         @relation("QuestionCreator", fields: [createdBy], references: [id], onDelete: SetNull)
-  verifier    MasterUser?         @relation("QuestionVerifier", fields: [verifiedBy], references: [id], onDelete: SetNull)
-  answers     QuizAttemptAnswer[]
+  quiz     Quiz                @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  creator  MasterUser?         @relation("QuestionCreator", fields: [createdBy], references: [id], onDelete: SetNull)
+  verifier MasterUser?         @relation("QuestionVerifier", fields: [verifiedBy], references: [id], onDelete: SetNull)
+  answers  QuizAttemptAnswer[]
 
   @@index([quizId])
   @@index([quizId, verificationStatus])
@@ -249,9 +298,9 @@ model QuizAttempt {
   violationCount  Int       @default(0) @map("violation_count")
   isAutoSubmitted Boolean   @default(false) @map("is_auto_submitted")
 
-  user            MasterUser @relation(fields: [userId], references: [id], onDelete: Cascade)
-  quiz        Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
-  answers     QuizAttemptAnswer[]
+  user         MasterUser          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quiz         Quiz                @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  answers      QuizAttemptAnswer[]
   certificates UserCertificate[]
 
   @@index([userId])
@@ -259,27 +308,27 @@ model QuizAttempt {
   @@index([userId, quizId])
   @@index([userId, completedAt])
   @@index([completedAt])
-  @@index([quizId, score]) // composite index untuk papan peringkat per kuis
+  @@index([quizId, score])
   @@index([score])
   @@map("quiz_attempts")
 }
 
 model QuizAttemptAnswer {
-  id             String   @id @db.Char(36)
-  attemptId      String   @db.Char(36)
-  questionId     String   @db.Char(36)
-  selectedIndex  Int?
-  isCorrect      Boolean  @default(false)
-  pointsEarned   Int      @default(0)
-  answeredAt     DateTime @default(now())
+  id           String   @id @db.Char(36)
+  attemptId    String   @db.Char(36)
+  questionId   String   @db.Char(36)
+  selectedIndex Int?
+  isCorrect    Boolean  @default(false)
+  pointsEarned Int      @default(0)
+  answeredAt   DateTime @default(now())
 
-  attempt        QuizAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
-  question       QuizQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  attempt  QuizAttempt  @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question QuizQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
 
+  @@unique([attemptId, questionId])
   @@index([attemptId])
   @@index([questionId])
   @@index([questionId, isCorrect])
-  @@unique([attemptId, questionId])
   @@map("quiz_attempt_answers")
 }
 
@@ -293,7 +342,7 @@ model MasterBadge {
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
 
-  userBadges  UserBadge[]
+  userBadges UserBadge[]
 
   @@index([category])
   @@index([xpThreshold])
@@ -301,13 +350,13 @@ model MasterBadge {
 }
 
 model UserBadge {
-  id        String   @id @db.Char(36)
-  userId    String   @db.Char(36)
-  badgeId   String   @db.Char(36)
-  earnedAt  DateTime @default(now())
+  id       String   @id @db.Char(36)
+  userId   String   @db.Char(36)
+  badgeId  String   @db.Char(36)
+  earnedAt DateTime @default(now())
 
-  user      MasterUser @relation(fields: [userId], references: [id], onDelete: Cascade)
-  badge     MasterBadge @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+  user  MasterUser  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badge MasterBadge @relation(fields: [badgeId], references: [id], onDelete: Cascade)
 
   @@unique([userId, badgeId])
   @@index([userId])
@@ -316,17 +365,17 @@ model UserBadge {
 }
 
 model UserCertificate {
-  id           String   @id @db.Char(36)
-  userId       String   @db.Char(36)
-  materialId   String   @db.Char(36)
-  quizAttemptId String  @db.Char(36)
-  certificateNo String @unique @db.VarChar(50)
-  issuedAt     DateTime @default(now())
-  pdfUrl       String?  @db.Text
+  id            String   @id @db.Char(36)
+  userId        String   @db.Char(36)
+  materialId    String   @db.Char(36)
+  quizAttemptId String   @db.Char(36)
+  certificateNo String   @unique @db.VarChar(50)
+  issuedAt      DateTime @default(now())
+  pdfUrl        String?  @db.Text
 
-  user         MasterUser @relation(fields: [userId], references: [id], onDelete: Cascade)
-  material     LearningMaterial @relation(fields: [materialId], references: [id], onDelete: Cascade)
-  quizAttempt  QuizAttempt @relation(fields: [quizAttemptId], references: [id], onDelete: Cascade)
+  user        MasterUser       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  material    LearningMaterial @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  quizAttempt QuizAttempt      @relation(fields: [quizAttemptId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([materialId])
@@ -335,18 +384,18 @@ model UserCertificate {
 }
 
 model CharacterMatrix {
-  id                  Int               @id @default(autoincrement()) @map("id_matrix")
-  indonesianCharacter String            @db.VarChar(150) @map("indonesian_character")
-  regionalLanguage    RegionalLanguage  @map("regional_language")
-  regionalTerm        String            @db.VarChar(200) @map("regional_term")
-  characterSource     String            @db.Text @map("character_source")
-  implementation      String            @db.Text @map("implementation")
-  audioUrl            String?           @db.Text @map("audio_url")
-  createdBy           String?           @db.Char(36) @map("created_by")
-  createdAt           DateTime          @default(now()) @map("created_at")
-  updatedAt           DateTime          @updatedAt @map("updated_at")
+  id                  Int      @id @default(autoincrement()) @map("id_matrix")
+  indonesianCharacter String   @db.VarChar(150) @map("indonesian_character")
+  regionalLanguage    String   @db.VarChar(50) @map("regional_language")
+  regionalTerm        String   @db.VarChar(200) @map("regional_term")
+  characterSource     String   @db.Text @map("character_source")
+  implementation      String   @db.Text @map("implementation")
+  audioUrl            String?  @db.Text @map("audio_url")
+  createdBy           String?  @db.Char(36) @map("created_by")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
 
-  creator             MasterUser?       @relation(fields: [createdBy], references: [id], onDelete: SetNull)
+  creator MasterUser? @relation(fields: [createdBy], references: [id], onDelete: SetNull)
 
   @@index([regionalLanguage])
   @@index([indonesianCharacter])
@@ -355,18 +404,18 @@ model CharacterMatrix {
 }
 
 model RegionalModuleProgress {
-  id               String           @id @db.Char(36)
-  userId           String           @db.Char(36)
-  regionalLanguage RegionalLanguage @map("regional_language")
-  learnedCardIds   String           @db.Text @map("learned_card_ids")
-  stage1Completed  Boolean          @default(false) @map("stage1_completed")
-  stage2Completed  Boolean          @default(false) @map("stage2_completed")
-  stage2Score      Int              @default(0) @map("stage2_score")
-  stage3Completed  Boolean          @default(false) @map("stage3_completed")
-  bestQuizScore    Int              @default(0) @map("best_quiz_score")
-  updatedAt        DateTime         @updatedAt @map("updated_at")
+  id               String   @id @db.Char(36)
+  userId           String   @db.Char(36)
+  regionalLanguage String   @db.VarChar(50) @map("regional_language")
+  learnedCardIds   String   @db.Text @map("learned_card_ids")
+  stage1Completed  Boolean  @default(false) @map("stage1_completed")
+  stage2Completed  Boolean  @default(false) @map("stage2_completed")
+  stage2Score      Int      @default(0) @map("stage2_score")
+  stage3Completed  Boolean  @default(false) @map("stage3_completed")
+  bestQuizScore    Int      @default(0) @map("best_quiz_score")
+  updatedAt        DateTime @updatedAt @map("updated_at")
 
-  user             MasterUser       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user MasterUser @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, regionalLanguage])
   @@index([userId])
@@ -375,14 +424,14 @@ model RegionalModuleProgress {
 }
 
 model Sertifikat {
-  id              String           @id @db.Char(36)
-  nomorSertifikat String           @unique @db.VarChar(60) @map("nomor_sertifikat")
-  userId          String           @db.Char(36)
-  bahasaDaerah    RegionalLanguage @map("bahasa_daerah")
-  tanggalTerbit   DateTime         @default(now()) @map("tanggal_terbit")
-  skorAkhir       Int              @default(0) @map("skor_akhir")
+  id              String   @id @db.Char(36)
+  nomorSertifikat String   @unique @db.VarChar(60) @map("nomor_sertifikat")
+  userId          String   @db.Char(36)
+  bahasaDaerah    String   @db.VarChar(50) @map("bahasa_daerah")
+  tanggalTerbit   DateTime @default(now()) @map("tanggal_terbit")
+  skorAkhir       Int      @default(0) @map("skor_akhir")
 
-  user            MasterUser       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user MasterUser @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, bahasaDaerah])
   @@index([userId])

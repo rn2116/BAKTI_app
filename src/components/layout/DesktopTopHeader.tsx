@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { AuthUser } from "@/types"
+import { ROLE_LABELS } from "@/lib/constants"
 import { NotificationBell } from "@/components/layout/NotificationBell"
 import { TopHeaderProgressBar } from "@/components/layout/TopHeaderProgressBar"
 import { Sparkles, Calendar } from "lucide-react"
@@ -31,17 +32,21 @@ export function DesktopTopHeader({ user }: DesktopTopHeaderProps) {
 
   const roleLabel =
     user.role === "SISWA"
-      ? "Portal Siswa"
+      ? "Portal Peserta"
       : user.role === "GURU"
         ? "Portal Pendidik"
-        : "Panel Administrator"
+        : user.role === "AHLI_BAHASA"
+          ? "Portal Ahli Bahasa"
+          : "Panel Admin BBPST"
 
   const roleBadgeStyle =
     user.role === "SISWA"
       ? "bg-indigo-50 text-[#3C22BB] border-indigo-100"
       : user.role === "GURU"
         ? "bg-emerald-50 text-[#059669] border-emerald-100"
-        : "bg-purple-50 text-purple-700 border-purple-100"
+        : user.role === "AHLI_BAHASA"
+          ? "bg-teal-50 text-[#0F766E] border-teal-200"
+          : "bg-purple-50 text-purple-700 border-purple-100"
 
   return (
     <header className="hidden md:flex h-16 sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-zinc-200/90 px-8 items-center justify-between shadow-2xs relative">
@@ -78,8 +83,8 @@ export function DesktopTopHeader({ user }: DesktopTopHeaderProps) {
             <div className="text-xs font-bold text-zinc-900 leading-tight">
               {user.fullName}
             </div>
-            <div className="text-[10px] text-zinc-500 capitalize leading-tight flex items-center gap-1">
-              <span>{user.role.toLowerCase()}</span>
+            <div className="text-[10px] text-zinc-500 leading-tight flex items-center gap-1">
+              <span>{ROLE_LABELS[user.role] ?? user.role}</span>
               {user.role === "SISWA" && (
                 <span className="text-amber-600 font-bold flex items-center gap-0.5">
                   • <Sparkles className="w-2.5 h-2.5 text-amber-500" /> {user.xp} XP

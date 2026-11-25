@@ -1,9 +1,8 @@
 import { requireDashboardUser } from "@/lib/auth"
 import { getRegionalLanguageModuleData } from "@/services/regionalLearningService"
+import { getRegionalLanguageByCode } from "@/services/regionalLanguageService"
 import { RegionalLearningFlowClient } from "@/components/siswa/RegionalLearningFlowClient"
-import { REGIONAL_LANGUAGE_LABELS } from "@/lib/constants"
 import { redirect } from "next/navigation"
-import type { RegionalLanguage } from "@/types"
 
 export default async function BelajarBahasaPage({
   params,
@@ -14,11 +13,12 @@ export default async function BelajarBahasaPage({
   const { lang } = await params
   const upperLang = (lang || "").toUpperCase()
 
-  if (!(upperLang in REGIONAL_LANGUAGE_LABELS)) {
+  const langRecord = await getRegionalLanguageByCode(upperLang)
+  if (!langRecord || !langRecord.isActive) {
     redirect("/siswa/budaya-bahasa")
   }
 
-  const data = await getRegionalLanguageModuleData(user.id, upperLang as RegionalLanguage)
+  const data = await getRegionalLanguageModuleData(user.id, upperLang)
 
   return <RegionalLearningFlowClient data={data} />
 }

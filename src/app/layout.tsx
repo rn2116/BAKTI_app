@@ -5,7 +5,7 @@ import { Toaster } from "@/components/ui/toaster"
 export const metadata: Metadata = {
   title: "Bahasa & Karakter — Balai Bahasa Provinsi Sulawesi Tengah",
   description:
-    "Platform Pembelajaran Interaktif Bahasa Indonesia, Pendidikan Karakter, dan Budaya Sulawesi Tengah",
+    "Platform Pembelajaran Interaktif Bahasa Indonesia, Pendidikan Karakter, dan Kearifan Lokal Sulawesi Tengah",
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "any" },

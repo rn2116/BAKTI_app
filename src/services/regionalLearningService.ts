@@ -1,5 +1,9 @@
 import { prisma } from "@/lib/prisma"
-import { REGIONAL_LANGUAGES, REGIONAL_LANGUAGE_LABELS } from "@/lib/constants"
+import {
+  getActiveRegionalLanguages,
+  getRegionalLanguageByCode,
+  getRegionalLanguageLabelMap,
+} from "@/services/regionalLanguageService"
 import type { RegionalLanguage } from "@/types"
 
 export interface RegionalFlashcardItem {
@@ -74,10 +78,10 @@ export async function getRegionalLanguageModuleData(
   userId: string,
   lang: RegionalLanguage
 ): Promise<RegionalLanguageModuleData> {
-  const langMeta = REGIONAL_LANGUAGES.find((l) => l.code === lang)
-
-  const [matrices, allMatrices, approvedWiseQuestions, quiz, moduleProgress, certificate] =
+  const [langMeta, labelMap, matrices, allMatrices, approvedWiseQuestions, quiz, moduleProgress, certificate] =
     await Promise.all([
+      getRegionalLanguageByCode(lang),
+      getRegionalLanguageLabelMap(),
       prisma.characterMatrix.findMany({
         where: { regionalLanguage: lang },
         orderBy: { id: "asc" },
@@ -183,7 +187,7 @@ export async function getRegionalLanguageModuleData(
       if (matchingPairs.length >= 4) break
       matchingPairs.push({
         id: `extra-${extra.id}`,
-        expression: `${extra.regionalTerm} (${REGIONAL_LANGUAGE_LABELS[extra.regionalLanguage] ?? extra.regionalLanguage})`,
+        expression: `${extra.regionalTerm} (${labelMap[extra.regionalLanguage] ?? extra.regionalLanguage})`,
         meaning: extra.indonesianCharacter,
         audioUrl: extra.audioUrl ?? null,
       })
@@ -210,8 +214,8 @@ export async function getRegionalLanguageModuleData(
 
   return {
     language: lang,
-    languageName: langMeta?.name ?? REGIONAL_LANGUAGE_LABELS[lang] ?? lang,
-    region: langMeta?.region ?? "Sulawesi Tengah",
+    languageName: langMeta?.name ?? labelMap[lang] ?? lang,
+    region: langMeta?.regencyCoverage ?? "Sulawesi Tengah",
     flashcards,
     matchingPairs,
     quiz: quiz
@@ -254,7 +258,8 @@ export async function getRegionalLanguageModuleData(
 export async function getAllRegionalLanguagesSummary(
   userId: string
 ): Promise<RegionalLanguageSummaryItem[]> {
-  const [matrixCounts, wiseCounts, quizzes, progressRows, certificates] = await Promise.all([
+  const [activeLanguages, matrixCounts, wiseCounts, quizzes, progressRows, certificates] = await Promise.all([
+    getActiveRegionalLanguages(),
     prisma.characterMatrix.groupBy({
       by: ["regionalLanguage"],
       _count: { id: true },
@@ -295,8 +300,8 @@ export async function getAllRegionalLanguagesSummary(
   const progressMap = new Map(progressRows.map((p) => [p.regionalLanguage, p]))
   const certSet = new Set(certificates.map((c) => c.bahasaDaerah))
 
-  return REGIONAL_LANGUAGES.map((lang) => {
-    const code = lang.code as RegionalLanguage
+  return activeLanguages.map((lang) => {
+    const code = lang.code
     const prog = progressMap.get(code)
     const s1 = prog?.stage1Completed ?? false
     const s2 = prog?.stage2Completed ?? false
@@ -309,7 +314,7 @@ export async function getAllRegionalLanguagesSummary(
     return {
       code,
       name: lang.name,
-      region: lang.region,
+      region: lang.regencyCoverage,
       expressionCount,
       hasQuiz: Boolean(quizId),
       quizId,

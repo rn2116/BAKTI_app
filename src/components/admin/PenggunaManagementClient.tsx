@@ -144,7 +144,7 @@ export function PenggunaManagementClient({
         <div>
           <h2 className="text-lg font-bold text-[#18181B]">Daftar Akun Pengguna</h2>
           <p className="text-xs text-zinc-500">
-            Kelola akses siswa, guru pendidik, dan administrator platform
+            Kelola akses peserta, guru pendidik, ahli bahasa, dan administrator platform
           </p>
         </div>
 
@@ -202,8 +202,9 @@ export function PenggunaManagementClient({
                     className="w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#3C22BB]"
                     required
                   >
-                    <option value="SISWA">Siswa</option>
-                    <option value="GURU">Guru</option>
+                    <option value="SISWA">Peserta / Masyarakat Umum</option>
+                    <option value="GURU">Guru / Pendidik</option>
+                    <option value="AHLI_BAHASA">Ahli Bahasa / Pakar Kearifan Lokal</option>
                     <option value="ADMIN">Admin</option>
                   </select>
                 </div>
@@ -329,7 +330,7 @@ export function PenggunaManagementClient({
           className="sm:max-w-xs text-xs"
         />
         <div className="flex flex-wrap gap-1.5">
-          {["ALL", "SISWA", "GURU", "ADMIN"].map((r) => (
+          {["ALL", "SISWA", "GURU", "AHLI_BAHASA", "ADMIN"].map((r) => (
             <Button
               key={r}
               variant={roleFilter === r ? "default" : "outline"}
@@ -337,7 +338,13 @@ export function PenggunaManagementClient({
               onClick={() => setRoleFilter(r)}
               className="text-xs h-8 px-3"
             >
-              {r === "ALL" ? "Semua Peran" : r}
+              {r === "ALL"
+                ? "Semua Peran"
+                : r === "SISWA"
+                  ? "Peserta"
+                  : r === "AHLI_BAHASA"
+                    ? "Ahli Bahasa"
+                    : r}
             </Button>
           ))}
         </div>
@@ -360,10 +367,16 @@ export function PenggunaManagementClient({
                     ? "bg-purple-100 text-purple-800"
                     : u.role === "GURU"
                     ? "bg-blue-100 text-blue-800"
+                    : u.role === "AHLI_BAHASA"
+                    ? "bg-teal-100 text-teal-800"
                     : "bg-[#3C22BB]/10 text-[#3C22BB]"
                 }`}
               >
-                {u.role}
+                {u.role === "SISWA"
+                  ? "PESERTA"
+                  : u.role === "AHLI_BAHASA"
+                    ? "AHLI BAHASA"
+                    : u.role}
               </span>
             </div>
 
@@ -458,10 +471,16 @@ export function PenggunaManagementClient({
                         ? "bg-purple-100 text-purple-800"
                         : u.role === "GURU"
                         ? "bg-blue-100 text-blue-800"
+                        : u.role === "AHLI_BAHASA"
+                        ? "bg-teal-100 text-teal-800"
                         : "bg-[#3C22BB]/10 text-[#3C22BB]"
                     }`}
                   >
-                    {u.role}
+                    {u.role === "SISWA"
+                      ? "PESERTA"
+                      : u.role === "AHLI_BAHASA"
+                        ? "AHLI BAHASA"
+                        : u.role}
                   </span>
                 </td>
                 <td className="py-3 px-4">

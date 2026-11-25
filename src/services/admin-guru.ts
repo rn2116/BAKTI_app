@@ -1,6 +1,9 @@
 import { prisma } from "@/lib/prisma"
 import { unstable_cache } from "next/cache"
-import { REGIONAL_LANGUAGES, REGIONAL_LANGUAGE_LABELS } from "@/lib/constants"
+import {
+  getActiveRegionalLanguages,
+  getRegionalLanguageLabelMap,
+} from "@/services/regionalLanguageService"
 import { Category, RegionalLanguage, Role } from "@/types"
 
 // ========================
@@ -286,6 +289,12 @@ export async function getAllUsersAdmin() {
       role: true,
       nisn: true,
       nip: true,
+      domicileRegency: true,
+      participantCategory: true,
+      institutionName: true,
+      expertStatus: true,
+      expertLanguage: true,
+      expertAffiliation: true,
       isActive: true,
       createdAt: true,
       school: { select: { id: true, name: true } },
@@ -294,6 +303,30 @@ export async function getAllUsersAdmin() {
       level: true,
     },
     orderBy: { createdAt: "desc" },
+  })
+}
+
+export async function getExpertApplicantsAdmin() {
+  return prisma.masterUser.findMany({
+    where: { role: Role.AHLI_BAHASA },
+    select: {
+      id: true,
+      fullName: true,
+      email: true,
+      domicileRegency: true,
+      institutionName: true,
+      isActive: true,
+      expertStatus: true,
+      expertLanguage: true,
+      expertAffiliation: true,
+      expertProofType: true,
+      expertProofNumber: true,
+      expertProofFileUrl: true,
+      expertTrackRecord: true,
+      expertReviewNotes: true,
+      createdAt: true,
+    },
+    orderBy: [{ createdAt: "desc" }],
   })
 }
 
@@ -655,6 +688,8 @@ export interface AdminAgencyAnalyticsData {
 
 export async function getAdminAgencyAnalytics(): Promise<AdminAgencyAnalyticsData> {
   const [
+    activeLanguages,
+    languageLabelMap,
     userRoleSchoolGroups,
     activeLearnersCount,
     regencies,
@@ -666,6 +701,8 @@ export async function getAdminAgencyAnalytics(): Promise<AdminAgencyAnalyticsDat
     regionalCertSchools,
     materialCertCount,
   ] = await Promise.all([
+    getActiveRegionalLanguages(),
+    getRegionalLanguageLabelMap(),
     prisma.masterUser.groupBy({
       by: ["role", "schoolId"],
       where: { isActive: true },
@@ -856,7 +893,7 @@ export async function getAdminAgencyAnalytics(): Promise<AdminAgencyAnalyticsDat
     regionalCertGroups.map((c) => [c.bahasaDaerah, c._count.id])
   )
 
-  const languagePerformance: RegionalLanguageAnalyticsRow[] = REGIONAL_LANGUAGES.map(
+  const languagePerformance: RegionalLanguageAnalyticsRow[] = activeLanguages.map(
     (langMeta) => {
       const lStat = langAttemptStats.get(langMeta.code)
       const modStat = moduleStatMap.get(langMeta.code)
@@ -910,7 +947,7 @@ export async function getAdminAgencyAnalytics(): Promise<AdminAgencyAnalyticsDat
     const stats = aggMap.get(q.id) ?? { totalAnswered: 0, correctCount: 0 }
     const langCode = q.regionalLanguage ?? q.quiz?.regionalLanguage
     const languageName = langCode
-      ? REGIONAL_LANGUAGE_LABELS[langCode] ?? langCode
+      ? languageLabelMap[langCode] ?? langCode
       : "Literasi & Karakter"
 
     return {

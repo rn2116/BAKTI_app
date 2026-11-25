@@ -11,8 +11,21 @@ export const Role = {
   SISWA: "SISWA",
   GURU: "GURU",
   ADMIN: "ADMIN",
+  AHLI_BAHASA: "AHLI_BAHASA",
 } as const
 export type Role = (typeof Role)[keyof typeof Role]
+
+export const ExpertVerificationStatus = {
+  NONE: "NONE",
+  PENDING_EXPERT: "PENDING_EXPERT",
+  APPROVED: "APPROVED",
+  REJECTED: "REJECTED",
+} as const
+export type ExpertVerificationStatus =
+  (typeof ExpertVerificationStatus)[keyof typeof ExpertVerificationStatus]
+
+/** Kode bahasa daerah dinamis dari tabel MasterRegionalLanguage */
+export type RegionalLanguage = string
 
 export const RegionalLanguage = {
   KAILI: "KAILI",
@@ -25,7 +38,6 @@ export const RegionalLanguage = {
   MORI: "MORI",
   TAA: "TAA",
 } as const
-export type RegionalLanguage = (typeof RegionalLanguage)[keyof typeof RegionalLanguage]
 
 export const QuestionVerificationStatus = {
   PENDING_REVIEW: "PENDING_REVIEW",
@@ -35,6 +47,17 @@ export const QuestionVerificationStatus = {
 export type QuestionVerificationStatus =
   (typeof QuestionVerificationStatus)[keyof typeof QuestionVerificationStatus]
 
+export type RegionalLanguageRecord = {
+  id: string
+  code: string
+  name: string
+  regencyCoverage: string
+  description: string | null
+  isActive: boolean
+  createdAt: Date
+  updatedAt: Date
+}
+
 export type CharacterMatrix = {
   id: number
   indonesianCharacter: string
@@ -42,6 +65,7 @@ export type CharacterMatrix = {
   regionalTerm: string
   characterSource: string
   implementation: string
+  audioUrl?: string | null
   createdBy: string | null
   createdAt: Date
   updatedAt: Date
@@ -62,6 +86,11 @@ export type AuthUser = {
   role: Role
   schoolId: string | null
   classId: string | null
+  domicileRegency?: string | null
+  participantCategory?: string | null
+  institutionName?: string | null
+  expertStatus?: ExpertVerificationStatus
+  expertLanguage?: string | null
   xp: number
   level: number
 }

@@ -26,6 +26,8 @@ interface MaterialItem {
   title: string
   slug: string
   category: Category
+  regionalLanguage?: string | null
+  referenceSource?: string | null
   description: string
   content: string
   readingTime: number
@@ -39,9 +41,11 @@ interface MaterialItem {
 export function MateriManagementClient({
   materials,
   isTeacher = true,
+  languages = [],
 }: {
   materials: MaterialItem[]
   isTeacher?: boolean
+  languages?: Array<{ code: string; name: string }>
 }) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
@@ -112,7 +116,7 @@ export function MateriManagementClient({
         <div className="flex items-center gap-3 p-4 bg-indigo-50/70 border border-indigo-200/80 rounded-2xl text-xs text-indigo-900 shadow-xs">
           <Info className="w-5 h-5 text-[#3C22BB] shrink-0" />
           <p>
-            <strong>Mode Katalog Referensi Guru:</strong> Seluruh modul materi literasi disusun dan dikelola secara terpusat oleh Admin Balai Bahasa Provinsi Sulawesi Tengah. Anda dapat membaca modul lengkap untuk kebutuhan bimbingan siswa di kelas.
+            <strong>Mode Katalog Referensi Guru:</strong> Seluruh modul materi literasi disusun dan dikelola secara terpusat oleh Admin Balai Bahasa Provinsi Sulawesi Tengah. Anda dapat membaca modul lengkap untuk kebutuhan bimbingan peserta di kelas.
           </p>
         </div>
       )}
@@ -123,7 +127,7 @@ export function MateriManagementClient({
             {isTeacher ? "Katalog Materi Pembelajaran" : "Kelola Materi Literasi Sistem"}
           </h2>
           <p className="text-xs text-muted-foreground">
-            Konten literasi bahasa, pembentukan karakter, dan budaya lokal Sulawesi Tengah
+            Konten literasi bahasa, pembentukan karakter, dan kearifan lokal Sulawesi Tengah
           </p>
         </div>
 
@@ -145,7 +149,7 @@ export function MateriManagementClient({
                 </DialogTitle>
             </DialogHeader>
 
-            <form onSubmit={handleSubmit} className="space-y-4 mt-2">
+            <form key={selectedMaterial?.id ?? "new-material"} onSubmit={handleSubmit} className="space-y-4 mt-2">
               {error && (
                 <div className="p-3 text-xs bg-destructive/10 text-destructive rounded-md">
                   {error}
@@ -175,7 +179,7 @@ export function MateriManagementClient({
                   >
                     <option value="BAHASA_INDONESIA">Bahasa Indonesia</option>
                     <option value="KARAKTER">Pendidikan Karakter</option>
-                    <option value="BUDAYA_SULTENG">Budaya Sulawesi Tengah</option>
+                    <option value="BUDAYA_SULTENG">Kearifan Lokal Sulawesi Tengah</option>
                   </select>
                 </div>
 
@@ -188,6 +192,35 @@ export function MateriManagementClient({
                     min="1"
                     defaultValue={selectedMaterial?.readingTime ?? 5}
                     required
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="regionalLanguage">Bahasa Daerah (Opsional)</Label>
+                  <select
+                    id="regionalLanguage"
+                    name="regionalLanguage"
+                    defaultValue={selectedMaterial?.regionalLanguage ?? ""}
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                  >
+                    <option value="">-- Umum / Lintas Daerah --</option>
+                    {languages.map((lang) => (
+                      <option key={lang.code} value={lang.code}>
+                        {lang.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="referenceSource">Sumber Rujukan Resmi (Opsional)</Label>
+                  <Input
+                    id="referenceSource"
+                    name="referenceSource"
+                    defaultValue={selectedMaterial?.referenceSource ?? ""}
+                    placeholder="Misal: Dr. H. Suaib Djafar, M.Si"
                   />
                 </div>
               </div>

@@ -75,7 +75,7 @@ function getLevelTitle(level: number): string {
   if (level === 2) return "Sahabat Bahasa"
   if (level === 3) return "Penutur Santun"
   if (level === 4) return "Ksatria Karakter"
-  if (level === 5) return "Penjaga Budaya"
+  if (level === 5) return "Penjaga Kearifan Lokal"
   return "Tadulako Cendekia"
 }
 
@@ -199,7 +199,11 @@ export async function getStudentDashboardData(userId: string): Promise<StudentDa
   const pilarCategories = [
     { cat: "BAHASA_INDONESIA" as const, label: "Bahasa Indonesia", color: "#0284C7" },
     { cat: "KARAKTER" as const, label: "Pendidikan Karakter", color: "#059669" },
-    { cat: "BUDAYA_SULTENG" as const, label: "Budaya Sulteng", color: "#0D9488" },
+    {
+      cat: "BUDAYA_SULTENG" as const,
+      label: "Kearifan Lokal Sulawesi Tengah",
+      color: "#0D9488",
+    },
   ]
 
   const pillarProgress: PillarProgress[] = pilarCategories.map((p) => {

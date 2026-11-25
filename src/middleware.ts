@@ -7,6 +7,7 @@ const DASHBOARD_PREFIX: Record<string, string> = {
   SISWA: "/siswa",
   GURU: "/guru",
   ADMIN: "/admin",
+  AHLI_BAHASA: "/ahli-bahasa",
 }
 
 export const config = {
@@ -17,8 +18,10 @@ export const config = {
     "/siswa/:path*",
     "/guru/:path*",
     "/admin/:path*",
+    "/ahli-bahasa/:path*",
     "/api/admin/:path*",
     "/api/upload/:path*",
+    "/api/dokumen-ahli/:path*",
   ],
 }
 
@@ -27,23 +30,44 @@ export async function middleware(request: NextRequest) {
   const token = request.cookies.get("bk_token")?.value
   const payload = token ? await verifyToken(token) : null
 
-  // Proteksi API Admin & Upload di level Middleware
-  if (pathname.startsWith("/api/admin")) {
+  // Unggah dokumen bukti kepakaran saat pendaftaran mandiri (/daftar) diperbolehkan tanpa sesi login
+  if (pathname.startsWith("/api/upload/dokumen-ahli")) {
+    return NextResponse.next()
+  }
+
+  // Akses pratinjau dokumen kepakaran hanya untuk Admin BBPST
+  if (pathname.startsWith("/api/dokumen-ahli")) {
     if (!payload) {
-      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 })
+      return NextResponse.json({ success: false, error: "Tidak terautentikasi" }, { status: 401 })
     }
     if (payload.role !== "ADMIN") {
-      return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 })
+      return NextResponse.json({ success: false, error: "Akses ditolak" }, { status: 403 })
     }
     return NextResponse.next()
   }
 
+  // Proteksi API Admin di level Middleware
+  if (pathname.startsWith("/api/admin")) {
+    if (!payload) {
+      return NextResponse.json({ success: false, error: "Tidak terautentikasi" }, { status: 401 })
+    }
+    if (payload.role !== "ADMIN") {
+      return NextResponse.json({ success: false, error: "Akses ditolak" }, { status: 403 })
+    }
+    return NextResponse.next()
+  }
+
+  // Proteksi API Upload Audio untuk Admin, Pendidik, dan Ahli Bahasa Daerah
   if (pathname.startsWith("/api/upload")) {
     if (!payload) {
-      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 })
+      return NextResponse.json({ success: false, error: "Tidak terautentikasi" }, { status: 401 })
     }
-    if (payload.role !== "ADMIN" && payload.role !== "GURU") {
-      return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 })
+    if (
+      payload.role !== "ADMIN" &&
+      payload.role !== "GURU" &&
+      payload.role !== "AHLI_BAHASA"
+    ) {
+      return NextResponse.json({ success: false, error: "Akses ditolak" }, { status: 403 })
     }
     return NextResponse.next()
   }

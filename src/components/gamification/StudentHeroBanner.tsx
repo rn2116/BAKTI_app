@@ -48,7 +48,7 @@ export function StudentHeroBanner({ fullName }: StudentHeroBannerProps) {
         </h1>
 
         <p className="text-xs sm:text-sm text-indigo-100/90 leading-relaxed max-w-xl">
-          Terus belajar, tingkatkan kemampuan bahasa, tumbuhkan karakter baik, dan lestarikan kearifan budaya Sulawesi Tengah untuk masa depan yang gemilang!
+          Terus belajar, tingkatkan kemampuan bahasa, tumbuhkan karakter baik, dan lestarikan kearifan lokal Sulawesi Tengah untuk masa depan yang gemilang!
         </p>
 
         <div className="pt-2 flex flex-wrap items-center gap-2 text-[11px] font-semibold text-white/90">

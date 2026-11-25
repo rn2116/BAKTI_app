@@ -2,28 +2,36 @@ import Link from "next/link"
 import RegisterForm from "@/components/auth/RegisterForm"
 import { AuthVisualPanel } from "@/components/auth/AuthVisualPanel"
 import { BrandLogo } from "@/components/shared/BrandLogo"
+import { getActiveRegionalLanguages } from "@/services/regionalLanguageService"
 import { ShieldCheck } from "lucide-react"
 
-export default function RegisterPage() {
+export const dynamic = "force-dynamic"
+
+export default async function RegisterPage() {
+  const languages = await getActiveRegionalLanguages()
+
   return (
     <div className="min-h-screen grid grid-cols-1 lg:grid-cols-12 bg-[#FAFAF8]">
       {/* 1. Panel Visual Desktop Kiri */}
       <AuthVisualPanel />
 
       {/* 2. Panel Formulir Kanan */}
-      <div className="lg:col-span-6 flex flex-col justify-between p-6 sm:p-10 lg:p-12 xl:p-16 min-h-screen">
+      <div className="lg:col-span-6 flex flex-col justify-between p-5 sm:p-10 lg:p-12 xl:p-14 min-h-screen">
         {/* Header Mobile Logo (< lg) */}
         <div className="lg:hidden flex items-center justify-between pb-5 border-b border-zinc-200/80">
           <BrandLogo light={false} size="sm" />
         </div>
 
         {/* Form Container */}
-        <div className="my-auto max-w-md w-full mx-auto space-y-6 py-6">
+        <div className="my-auto max-w-lg w-full mx-auto space-y-5 py-6">
           <div className="space-y-4 text-center sm:text-left">
             <div className="flex flex-col items-center sm:items-start gap-2.5">
               <img
                 src="/images/logo-bbpst-kemendikdasmen.png"
                 alt="Logo Kemendikdasmen — Balai Bahasa Provinsi Sulawesi Tengah"
+                width={1024}
+                height={194}
+                decoding="async"
                 className="h-12 sm:h-14 w-auto object-contain"
               />
               <span className="inline-flex items-center px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider text-[#3C22BB] bg-indigo-50 border border-indigo-100">
@@ -33,16 +41,16 @@ export default function RegisterPage() {
 
             <div className="space-y-1.5">
               <h1 className="text-2xl sm:text-3xl font-black text-zinc-900 tracking-tight">
-                Daftar Akun Siswa Baru 🚀
+                Pendaftaran Akun BAKTI
               </h1>
               <p className="text-xs sm:text-sm text-zinc-500 leading-relaxed">
-                Bergabunglah dengan ribuan pelajar Sulawesi Tengah untuk belajar dan berprestasi bersama.
+                Terbuka bagi masyarakat umum, pelajar, pendidik, serta ahli dan pegiat bahasa daerah di Sulawesi Tengah.
               </p>
             </div>
           </div>
 
-          <div className="rounded-3xl border border-zinc-200/90 bg-white p-6 sm:p-8 shadow-sm">
-            <RegisterForm />
+          <div className="rounded-3xl border border-zinc-200/90 bg-white p-5 sm:p-7 shadow-sm">
+            <RegisterForm languages={languages.map((l) => ({ code: l.code, name: l.name }))} />
           </div>
 
           <p className="text-center text-xs text-zinc-500">

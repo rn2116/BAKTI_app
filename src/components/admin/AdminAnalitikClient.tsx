@@ -46,9 +46,9 @@ export function AdminAnalitikClient({ analytics }: AdminAnalitikClientProps) {
       // Sheet 1: Ringkasan Instansi
       const wsSummary = XLSX.utils.json_to_sheet([
         { Indikator: "Total Pengguna Aktif", Nilai: summary.totalActiveUsers },
-        { Indikator: "Jumlah Siswa Aktif", Nilai: summary.totalStudents },
+        { Indikator: "Jumlah Peserta Aktif", Nilai: summary.totalStudents },
         { Indikator: "Jumlah Guru Aktif", Nilai: summary.totalTeachers },
-        { Indikator: "Siswa Dengan Aktivitas Belajar", Nilai: summary.activeLearnersCount },
+        { Indikator: "Peserta Dengan Aktivitas Belajar", Nilai: summary.activeLearnersCount },
         { Indikator: "Sekolah Terdaftar", Nilai: summary.totalSchools },
         { Indikator: "Kabupaten / Kota Terdaftar", Nilai: summary.totalRegencies },
         { Indikator: "Total Sesi Kuis Selesai", Nilai: summary.totalQuizAttempts },
@@ -59,7 +59,7 @@ export function AdminAnalitikClient({ analytics }: AdminAnalitikClientProps) {
       wsSummary["!cols"] = [{ wch: 42 }, { wch: 16 }]
       XLSX.utils.book_append_sheet(wb, wsSummary, "Ringkasan_BBPST")
 
-      // Sheet 2: Capaian 9 Bahasa Daerah
+      // Sheet 2: Capaian Bahasa Daerah
       const wsLang = XLSX.utils.json_to_sheet(
         languagePerformance.map((item) => ({
           Kode: item.code,
@@ -80,7 +80,7 @@ export function AdminAnalitikClient({ analytics }: AdminAnalitikClientProps) {
         { wch: 24 },
         { wch: 18 },
       ]
-      XLSX.utils.book_append_sheet(wb, wsLang, "Capaian_9_Bahasa")
+      XLSX.utils.book_append_sheet(wb, wsLang, "Capaian_Bahasa_Daerah")
 
       // Sheet 3: Sebaran Kabupaten/Kota
       const wsReg = XLSX.utils.json_to_sheet(
@@ -219,7 +219,7 @@ export function AdminAnalitikClient({ analytics }: AdminAnalitikClientProps) {
       y += 6
 
       const summaryRows = [
-        ["Pengguna Aktif", `${summary.totalActiveUsers} akun (${summary.totalStudents} siswa, ${summary.totalTeachers} guru)`],
+        ["Pengguna Aktif", `${summary.totalActiveUsers} akun (${summary.totalStudents} peserta, ${summary.totalTeachers} guru)`],
         ["Cakupan Wilayah", `${summary.totalSchools} sekolah di ${summary.totalRegencies} kabupaten/kota`],
         ["Evaluasi & Skor", `${summary.totalQuizAttempts} percobaan kuis | Rata-rata skor ${summary.overallAvgScore}%`],
         ["Sertifikat Terbit", `${summary.totalRegionalCertificates} sertifikat bahasa daerah, ${summary.totalMaterialCertificates} sertifikat materi`],
@@ -238,7 +238,7 @@ export function AdminAnalitikClient({ analytics }: AdminAnalitikClientProps) {
       y += 4
       doc.setFont("helvetica", "bold")
       doc.setFontSize(11)
-      doc.text("2. Capaian 9 Bahasa Daerah Sulawesi Tengah", 14, y)
+      doc.text("2. Capaian Bahasa Daerah Sulawesi Tengah", 14, y)
       y += 6
 
       // Table Header
@@ -400,7 +400,7 @@ export function AdminAnalitikClient({ analytics }: AdminAnalitikClientProps) {
             {summary.totalActiveUsers}
           </div>
           <div className="text-[11px] text-zinc-500">
-            {summary.totalStudents} Siswa ({summary.activeLearnersCount} aktif belajar) •{" "}
+            {summary.totalStudents} Peserta ({summary.activeLearnersCount} aktif belajar) •{" "}
             {summary.totalTeachers} Guru
           </div>
         </Card>
@@ -452,7 +452,7 @@ export function AdminAnalitikClient({ analytics }: AdminAnalitikClientProps) {
         </Card>
       </div>
 
-      {/* Capaian 9 Bahasa Daerah */}
+      {/* Capaian Bahasa Daerah */}
       <Card className="rounded-2xl border-zinc-200/90 bg-white p-4 sm:p-6 shadow-xs space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-zinc-100">
           <div className="flex items-center gap-2">
@@ -462,7 +462,7 @@ export function AdminAnalitikClient({ analytics }: AdminAnalitikClientProps) {
             </h2>
           </div>
           <span className="text-[11px] text-zinc-500">
-            9 Bahasa Daerah Prioritas Sulawesi Tengah
+            Bahasa Daerah di Provinsi Sulawesi Tengah ({languagePerformance.length} Bahasa)
           </span>
         </div>
 

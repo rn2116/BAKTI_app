@@ -183,7 +183,7 @@ export function RegionalLearningFlowClient({ data }: RegionalLearningFlowClientP
     {
       num: 1 as const,
       title: "Kartu Ungkapan",
-      subtitle: "Flashcard Interaktif",
+      subtitle: "Kartu Kilas Interaktif",
       icon: Layers,
       unlocked: true,
       completed: stage1Done,
@@ -214,7 +214,7 @@ export function RegionalLearningFlowClient({ data }: RegionalLearningFlowClientP
           href="/siswa/budaya-bahasa"
           className="inline-flex items-center gap-1.5 text-xs font-bold text-[#3C22BB] hover:underline"
         >
-          <ArrowLeft className="w-4 h-4" /> Kembali ke Kamus 9 Bahasa
+          <ArrowLeft className="w-4 h-4" /> Kembali ke Kamus Besar Kearifan Lokal
         </Link>
         <span className="text-[11px] font-semibold px-3 py-1 rounded-full bg-indigo-50 text-[#3C22BB] border border-indigo-200">
           Wilayah Tutur: {data.region}
@@ -740,7 +740,7 @@ export function RegionalLearningFlowClient({ data }: RegionalLearningFlowClientP
               ) : (
                 <div className="p-6 rounded-2xl bg-zinc-50 border border-dashed border-zinc-200 text-center space-y-2">
                   <p className="text-xs text-zinc-500">
-                    Kuis evaluasi khusus {data.languageName} sedang disiapkan. Anda dapat mengikuti kuis budaya umum terlebih dahulu.
+                    Kuis evaluasi khusus {data.languageName} sedang disiapkan. Anda dapat mengikuti kuis kearifan lokal umum terlebih dahulu.
                   </p>
                   <Link
                     href="/siswa/kuis"

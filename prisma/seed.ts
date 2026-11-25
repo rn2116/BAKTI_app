@@ -1,6 +1,10 @@
-import { PrismaClient, Role, Category } from "@prisma/client"
+import { PrismaClient, Role, Category, ExpertVerificationStatus } from "@prisma/client"
 import bcrypt from "bcryptjs"
 import { randomUUID } from "crypto"
+import {
+  TO_KAILI_63_SAYINGS,
+  TO_KAILI_THEMATIC_MATERIALS,
+} from "./to-kaili-seed-data"
 
 const prisma = new PrismaClient()
 
@@ -46,7 +50,7 @@ const BADGES = [
   },
   {
     name: "Cerdas",
-    description: "Rapai nilai kuis minimal 80.",
+    description: "Raih nilai kuis minimal 80.",
     imageUrl: "/badges/cerdas.svg",
     category: "QUIZ",
     xpThreshold: 0,
@@ -59,8 +63,8 @@ const BADGES = [
     xpThreshold: 0,
   },
   {
-    name: "Cinta Budaya Sulteng",
-    description: "Selesaikan materi Budaya Sulawesi Tengah.",
+    name: "Cinta Kearifan Lokal Sulteng",
+    description: "Selesaikan materi Kearifan Lokal Sulawesi Tengah.",
     imageUrl: "/badges/budaya.svg",
     category: "LEARNING",
     xpThreshold: 0,
@@ -72,7 +76,7 @@ const BADGES = [
     category: "LEADERBOARD",
     xpThreshold: 0,
   },
-  // 9 Lencana Budaya Daerah Sulawesi Tengah
+  // Lencana Kearifan Lokal Bahasa Daerah Sulawesi Tengah
   {
     name: "Sahabat Bahasa Kaili",
     description: "Mendalami kearifan lokal nilai Sintuvu bahasa Kaili.",
@@ -142,7 +146,10 @@ async function main() {
   // ========================================================================
   // 1. BERSIHKAN DATA LAMA (urutan terbalik dependensi foreign key)
   // ========================================================================
-  await (prisma as any).characterMatrix.deleteMany()
+  await prisma.notification.deleteMany()
+  await prisma.sertifikat.deleteMany()
+  await prisma.regionalModuleProgress.deleteMany()
+  await prisma.characterMatrix.deleteMany()
   await prisma.quizAttemptAnswer.deleteMany()
   await prisma.quizAttempt.deleteMany()
   await prisma.quizQuestion.deleteMany()
@@ -152,6 +159,7 @@ async function main() {
   await prisma.userCertificate.deleteMany()
   await prisma.userBadge.deleteMany()
   await prisma.masterBadge.deleteMany()
+  await prisma.masterRegionalLanguage.deleteMany()
   await prisma.masterUser.deleteMany()
   await prisma.masterClass.deleteMany()
   await prisma.masterSchool.deleteMany()
@@ -224,18 +232,22 @@ async function main() {
 
   // ========================================================================
   // 4. AKUN DEMO (ter-hash dengan bcryptjs)
-  //    andi / siswa123  (siswa)
-  //    guru / guru123   (guru)
-  //    admin / admin123 (admin)
+  //    andi@bahasakarakter.id        / siswa123 (peserta)
+  //    guru@bahasakarakter.id        / guru123  (pendidik)
+  //    ahlibahasa@bahasakarakter.id  / ahli123  (ahli bahasa daerah)
+  //    admin@bahasakarakter.id       / admin123 (admin)
   // ========================================================================
   const adminUser = await prisma.masterUser.create({
     data: {
       id: id(),
       email: "admin@bahasakarakter.id",
       passwordHash: hash("admin123"),
-      fullName: "Administrator Sistem",
+      fullName: "Administrator BBPST",
       role: Role.ADMIN,
       schoolId: smpn1Palu.id,
+      domicileRegency: "Kota Palu",
+      participantCategory: "ASN/Pegawai",
+      institutionName: "Balai Bahasa Provinsi Sulawesi Tengah",
       isActive: true,
       emailVerified: true,
     },
@@ -245,10 +257,33 @@ async function main() {
       id: id(),
       email: "guru@bahasakarakter.id",
       passwordHash: hash("guru123"),
-      fullName: "Budi Santoso, S.Pd",
+      fullName: "Budi Santoso, S.Pd.",
       role: Role.GURU,
       schoolId: smpn1Palu.id,
       classId: classVIIA.id,
+      domicileRegency: "Kota Palu",
+      participantCategory: "Pendidik/Akademisi",
+      institutionName: "SMP Negeri 1 Palu",
+      isActive: true,
+      emailVerified: true,
+    },
+  })
+  const ahliBahasaUser = await prisma.masterUser.create({
+    data: {
+      id: id(),
+      email: "ahlibahasa@bahasakarakter.id",
+      passwordHash: hash("ahli123"),
+      fullName: "Dr. H. Suaib Djafar, M.Si.",
+      role: Role.AHLI_BAHASA,
+      domicileRegency: "Kota Palu",
+      participantCategory: "Pendidik/Akademisi",
+      institutionName: "Balai Bahasa Provinsi Sulawesi Tengah",
+      expertStatus: ExpertVerificationStatus.APPROVED,
+      expertLanguage: "KAILI",
+      expertAffiliation: "Pemerhati Bahasa & Penyuluh Bahasa Daerah Kaili",
+      expertProofType: "SK Penetapan Penyuluh Bahasa Daerah",
+      expertProofNumber: "SK-BBPST-2026-001",
+      expertTrackRecord: "Penyusun Kumpulan Ungkapan Bijak To Kaili dan penggiat revitalisasi bahasa daerah di Sulawesi Tengah.",
       isActive: true,
       emailVerified: true,
     },
@@ -263,6 +298,9 @@ async function main() {
       role: Role.SISWA,
       schoolId: smpn1Palu.id,
       classId: classVIIA.id,
+      domicileRegency: "Kota Palu",
+      participantCategory: "Pelajar/Mahasiswa",
+      institutionName: "SMP Negeri 1 Palu",
       isActive: true,
       emailVerified: true,
     },
@@ -277,6 +315,9 @@ async function main() {
       role: Role.SISWA,
       schoolId: smpn2Donggala.id,
       classId: classVIIIA.id,
+      domicileRegency: "Kabupaten Donggala",
+      participantCategory: "Pelajar/Mahasiswa",
+      institutionName: "SMP Negeri 2 Donggala",
       isActive: true,
       emailVerified: true,
     },
@@ -291,10 +332,87 @@ async function main() {
       role: Role.SISWA,
       schoolId: smpn1Palu.id,
       classId: classVIIB.id,
+      domicileRegency: "Kota Palu",
+      participantCategory: "Pelajar/Mahasiswa",
+      institutionName: "SMP Negeri 1 Palu",
       isActive: true,
       emailVerified: true,
     },
   })
+
+  // ========================================================================
+  // 4B. MASTER BAHASA DAERAH SULAWESI TENGAH (DINAMIS)
+  // ========================================================================
+  const INITIAL_LANGUAGES = [
+    {
+      code: "KAILI",
+      name: "Bahasa Kaili",
+      regencyCoverage: "Kota Palu, Kabupaten Sigi, Kabupaten Donggala, Kabupaten Parigi Moutong",
+      description: "Bahasa utama masyarakat Lembah Palu dan pesisir barat Sulawesi Tengah.",
+    },
+    {
+      code: "PAMONA",
+      name: "Bahasa Pamona",
+      regencyCoverage: "Kabupaten Poso",
+      description: "Bahasa tutur masyarakat wilayah Danau Poso dan sekitarnya.",
+    },
+    {
+      code: "BANGGAI",
+      name: "Bahasa Banggai",
+      regencyCoverage: "Kabupaten Banggai Kepulauan & Kabupaten Banggai Laut",
+      description: "Bahasa kepulauan timur Sulawesi Tengah yang kaya tradisi lisan.",
+    },
+    {
+      code: "BUNGKU",
+      name: "Bahasa Bungku",
+      regencyCoverage: "Kabupaten Morowali",
+      description: "Bahasa daerah pesisir tenggara Kabupaten Morowali.",
+    },
+    {
+      code: "TOLITOLI",
+      name: "Bahasa Tolitoli",
+      regencyCoverage: "Kabupaten Toli-Toli",
+      description: "Bahasa maritim masyarakat pesisir utara Kabupaten Toli-Toli.",
+    },
+    {
+      code: "BUOL",
+      name: "Bahasa Buol",
+      regencyCoverage: "Kabupaten Buol",
+      description: "Bahasa daerah masyarakat Kabupaten Buol di bagian utara Sulawesi Tengah.",
+    },
+    {
+      code: "SALUAN",
+      name: "Bahasa Saluan",
+      regencyCoverage: "Kabupaten Banggai",
+      description: "Bahasa daerah wilayah daratan Luwuk dan sekitarnya.",
+    },
+    {
+      code: "MORI",
+      name: "Bahasa Mori",
+      regencyCoverage: "Kabupaten Morowali Utara",
+      description: "Bahasa daerah masyarakat Kabupaten Morowali Utara.",
+    },
+    {
+      code: "TAA",
+      name: "Bahasa Taa",
+      regencyCoverage: "Kabupaten Tojo Una-Una",
+      description: "Bahasa daerah wilayah Ampana dan kawasan Tojo Una-Una.",
+    },
+  ]
+
+  for (const lang of INITIAL_LANGUAGES) {
+    await prisma.masterRegionalLanguage.create({
+      data: {
+        id: id(),
+        code: lang.code,
+        name: lang.name,
+        regencyCoverage: lang.regencyCoverage,
+        description: lang.description,
+        isActive: true,
+        createdBy: ahliBahasaUser.id,
+      },
+    })
+  }
 
   // ========================================================================
   // 5. LENCANA (BADGE)
@@ -306,18 +424,9 @@ async function main() {
   }
 
   // ========================================================================
-  // 5B. MATRIKS KARAKTER 9 BAHASA DAERAH SULAWESI TENGAH
+  // 5B. MATRIKS KARAKTER BAHASA DAERAH + 63 UNGKAPAN BIJAK TO KAILI
   // ========================================================================
   const REGIONAL_MATRICES = [
-    {
-      indonesianCharacter: "Gotong Royong & Persatuan",
-      regionalLanguage: "KAILI" as const,
-      regionalTerm: "Masintuvu Kita Maroso, Morambanga Kita Marisi",
-      characterSource:
-        "Falsafah adat suku Kaili Lembah Palu dan pesisir Teluk Palu yang diwariskan turun-temurun dalam musyawarah Banua Oge.",
-      implementation:
-        "Bekerja sama membersihkan lingkungan sekolah, saling membantu teman yang tertinggal pelajaran, dan menyelesaikan perselisihan dengan musyawarah mufakat.",
-    },
     {
       indonesianCharacter: "Kebersamaan & Solidaritas Kuat",
       regionalLanguage: "PAMONA" as const,
@@ -325,7 +434,7 @@ async function main() {
       characterSource:
         "Pepatah adat masyarakat Pamona (Poso) yang melambangkan keutuhan ikatan persaudaraan sejati yang tak tergoyahkan oleh rintangan.",
       implementation:
-        "Menjaga kerukunan antarumat beragama di sekolah, tidak membeda-bedakan latar belakang suku teman, dan saling menjenguk saat ada warga sekolah yang sakit.",
+        "Menjaga kerukunan antarumat beragama, tidak membeda-bedakan latar belakang suku teman, dan saling menjenguk saat ada warga yang sakit.",
     },
     {
       indonesianCharacter: "Persaudaraan Tiga Serangkai",
@@ -334,7 +443,7 @@ async function main() {
       characterSource:
         "Nilai luhur kemasyarakatan Banggai (Batui, Balantak, Banggai Laut) tentang persaudaraan sejati yang saling menopang harkat martabat.",
       implementation:
-        "Membela teman yang menjadi korban perundungan (bullying), berbagi bekal makanan sehat, dan setia kawan dalam kebaikan.",
+        "Membela teman yang menjadi korban perundungan, berbagi bekal makanan sehat, dan setia kawan dalam kebaikan.",
     },
     {
       indonesianCharacter: "Tolong-Menolong Tanpa Pamrih",
@@ -343,7 +452,7 @@ async function main() {
       characterSource:
         "Tradisi adat tolong-menolong suku Bungku di Morowali dalam kegiatan berladang, mendirikan rumah warga, dan hajatan kampung.",
       implementation:
-        "Sigap membantu guru menyiapkan ruang kelas, aktif dalam penggalangan dana sosial kemanusiaan, dan membimbing adik kelas dengan sabar.",
+        "Sigap membantu menyiapkan ruang belajar, aktif dalam penggalangan dana sosial kemanusiaan, dan membimbing sesama dengan sabar.",
     },
     {
       indonesianCharacter: "Kebaikan Budi & Saling Memperbaiki",
@@ -361,7 +470,7 @@ async function main() {
       characterSource:
         "Adat kebiasaan masyarakat Buol dalam bermusyawarah mufakat di bawah naungan tetua adat guna mencapai ketenteraman bersama.",
       implementation:
-        "Menghargai perbedaan pendapat saat diskusi kelompok kelas, mematuhi hasil keputusan bersama dengan ikhlas, dan tidak memaksakan kehendak pribadi.",
+        "Menghargai perbedaan pendapat saat diskusi kelompok, mematuhi hasil keputusan bersama dengan ikhlas, dan tidak memaksakan kehendak pribadi.",
     },
     {
       indonesianCharacter: "Saling Menjaga Kehormatan & Tanggung Jawab",
@@ -370,7 +479,7 @@ async function main() {
       characterSource:
         "Norma kehormatan suku Saluan (Banggai daratan) tentang kesetiaan memegang janji dan tanggung jawab menjaga marwah keluarga serta komunitas.",
       implementation:
-        "Mengerjakan tugas piket kelas sesuai jadwal, menepati janji belajar bersama tepat waktu, dan jujur mengakui hasil kerja sendiri tanpa plagiasi.",
+        "Mengerjakan tugas piket sesuai jadwal, menepati janji belajar bersama tepat waktu, dan jujur mengakui hasil kerja sendiri tanpa plagiasi.",
     },
     {
       indonesianCharacter: "Empati & Rasa Kasih Sayang Sesama",
@@ -379,7 +488,7 @@ async function main() {
       characterSource:
         "Falsafah hidup suku Mori (Morowali Utara) yang mengajarkan bahwa kemuliaan seseorang diukur dari keikhlasannya menolong sesama yang lemah.",
       implementation:
-        "Memberikan bantuan kepada teman yang mengalami kesulitan perlengkapan sekolah, menemani teman yang merasa terasing di kelas, dan menghibur yang berduka.",
+        "Memberikan bantuan kepada teman yang mengalami kesulitan perlengkapan belajar dan menghibur sesama yang berduka.",
     },
     {
       indonesianCharacter: "Keteguhan Bersama dalam Membangun Negeri",
@@ -388,72 +497,10 @@ async function main() {
       characterSource:
         "Ungkapan kearifan lokal suku Taa (Tojo Una-Una) tentang kekompakan melangkah bersama dan bahu-membahu menjaga kelestarian alam kepulauan.",
       implementation:
-        "Menjaga kebersihan dan kelestarian taman sekolah, menghemat penggunaan air dan listrik di sekolah, serta aktif merawat fasilitas umum kelas.",
+        "Menjaga kebersihan taman lingkungan, menghemat penggunaan air serta listrik, dan aktif merawat fasilitas umum.",
     },
-    // 7 Ungkapan Bijak To Kaili — Rujukan Dr. H. Suaib Djafar, M.Si
-    {
-      indonesianCharacter: "Persaudaraan, Empati & Toleransi",
-      regionalLanguage: "KAILI" as const,
-      regionalTerm: "Mosipeili, Mosimpotove, Mosimpoasi, Nosarara Nosabatutu",
-      characterSource:
-        "Kumpulan Ungkapan Bijak To Kaili — Dr. H. Suaib Djafar, M.Si (Budayawan Kaili Sulawesi Tengah)",
-      implementation:
-        "Saling menengok teman yang sakit, menyayangi dan mengasihi sesama tanpa membedakan suku atau latar belakang, serta menjaga persatuan kelas.",
-    },
-    {
-      indonesianCharacter: "Kepedulian Sosial & Kemanusiaan",
-      regionalLanguage: "KAILI" as const,
-      regionalTerm: "Ane Murasai Dua Karomu Danatuvu, Ane Komiu Mbarasai Duatonantanina, Komiu Manusia",
-      characterSource:
-        "Kumpulan Ungkapan Bijak To Kaili — Dr. H. Suaib Djafar, M.Si (Budayawan Kaili Sulawesi Tengah)",
-      implementation:
-        "Turut merasakan kesusahan teman atau warga terdampak bencana, aktif berbagi bantuan kemanusiaan, dan menumbuhkan kepekaan hati nurani.",
-    },
-    {
-      indonesianCharacter: "Gotong Royong & Kebersamaan",
-      regionalLanguage: "KAILI" as const,
-      regionalTerm: "Moenju Mosangu, Meangga Mosangu, Mompakavoe Maggali Palu Manyama Todeana",
-      characterSource:
-        "Kumpulan Ungkapan Bijak To Kaili — Dr. H. Suaib Djafar, M.Si (Budayawan Kaili Sulawesi Tengah)",
-      implementation:
-        "Bekerja bakti membersihkan lingkungan sekolah dan daerah bersama-sama agar nyaman, indah, dan membawa kebaikan bagi masyarakat luas.",
-    },
-    {
-      indonesianCharacter: "Nasionalisme & Kerja Sama Membangun Negeri",
-      regionalLanguage: "KAILI" as const,
-      regionalTerm: "Mosangu Morambanga Mombangu Ngata",
-      characterSource:
-        "Kumpulan Ungkapan Bijak To Kaili — Dr. H. Suaib Djafar, M.Si (Budayawan Kaili Sulawesi Tengah)",
-      implementation:
-        "Bersatu padu dalam kegiatan OSIS/Pramuka, mengharumkan nama sekolah dan daerah melalui prestasi, serta berperan aktif membangun lingkungan.",
-    },
-    {
-      indonesianCharacter: "Religius & Taat Norma Adat",
-      regionalLanguage: "KAILI" as const,
-      regionalTerm: "Maroso Agama, Maroso Ada, Naama Ngata",
-      characterSource:
-        "Kumpulan Ungkapan Bijak To Kaili — Dr. H. Suaib Djafar, M.Si (Budayawan Kaili Sulawesi Tengah)",
-      implementation:
-        "Rajin beribadah sesuai keyakinan, menghormati orang tua dan guru, serta menaati tata krama dan aturan adat setempat demi ketenteraman bersama.",
-    },
-    {
-      indonesianCharacter: "Cinta Bahasa Ibu & Jati Diri Budaya",
-      regionalLanguage: "KAILI" as const,
-      regionalTerm: "Nemo Rapakalipo Basa Kaili",
-      characterSource:
-        "Kumpulan Ungkapan Bijak To Kaili — Dr. H. Suaib Djafar, M.Si (Budayawan Kaili Sulawesi Tengah)",
-      implementation:
-        "Bangga mempelajari dan menuturkan bahasa daerah Kaili dengan santun di keluarga maupun kegiatan literasi budaya sekolah.",
-    },
-    {
-      indonesianCharacter: "Integritas & Kejujuran Moral",
-      regionalLanguage: "KAILI" as const,
-      regionalTerm: "Nariatona Nakanano Nasesa Haram Kalebara Nuapa Anurakande Nikitana Ripombunguna Asaladakonuapa Nipoviaka",
-      characterSource:
-        "Kumpulan Ungkapan Bijak To Kaili — Dr. H. Suaib Djafar, M.Si (Budayawan Kaili Sulawesi Tengah)",
-      implementation:
-        "Menjaga kejujuran saat ujian dan tugas, menjauhi perbuatan curang maupun mengambil hak orang lain, serta mencari rezeki dan prestasi secara halal.",
-    },
+    // Seluruh 63 Ungkapan Bijak To Kaili — Rujukan Dr. H. Suaib Djafar, M.Si
+    ...TO_KAILI_63_SAYINGS,
   ]
 
   for (const matrix of REGIONAL_MATRICES) {
@@ -520,7 +567,7 @@ Kamus Besar Bahasa Indonesia (KBBI) Daring dan Pedoman EYD V dari Balai Bahasa P
 
 Pendidikan karakter merupakan fondasi utama dalam mencetak generasi penerus yang tidak hanya cerdas secara intelektual, tetapi juga berakhlak mulia, berintegritas tinggi, dan memiliki empati mendalam terhadap lingkungan sekitarnya. Karakter luhur adalah kompas moral yang membimbing tindakan setiap individu dalam kehidupan bermasyarakat.
 
-Di tengah era globalisasi dan transformasi digital, generasi muda ditantang untuk tetap teguh memegang nilai-nilai luhur Pancasila dan kearifan budaya bangsa Indonesia.
+Di tengah era globalisasi dan transformasi digital, generasi muda ditantang untuk tetap teguh memegang nilai-nilai luhur Pancasila dan kearifan lokal bangsa Indonesia.
 
 ### Enam Pilar Utama Penguatan Karakter Siswa
 
@@ -549,20 +596,21 @@ Karakter tidak dibentuk melalui kata-kata semata, melainkan dari pembiasaan tind
   const materiBudaya = await prisma.learningMaterial.create({
     data: {
       id: id(),
-      title: "Kearifan Lokal Budaya Sulawesi Tengah",
-      slug: "kearifan-lokal-budaya-sulteng",
+      title: "Kearifan Lokal Sulawesi Tengah",
+      slug: "kearifan-lokal-sulawesi-tengah",
       category: Category.BUDAYA_SULTENG,
+      referenceSource: "Balai Bahasa Provinsi Sulawesi Tengah (Kemendikdasmen)",
       description:
-        "Mengenal budaya khas Sulawesi Tengah: tenun Donggala, tari, bahasa, makanan tradisional, dan Taman Nasional Lore Lindu.",
+        "Mengenal kearifan lokal khas Sulawesi Tengah: tenun Donggala, seni tradisi, bahasa daerah, kuliner khas, dan Situs Megalitikum Lore Lindu.",
       content: `## Menjelajahi Kekayaan Adat & Kearifan Lokal Sulawesi Tengah
 
-Provinsi Sulawesi Tengah merupakan surga peradaban di jantung Nusantara yang dianugerahi keindahan bentang alam luar biasa serta warisan kebudayaan yang kaya. Dari pesisir Teluk Palu, hamparan perbukitan Lembah Palu, perairan Danau Poso, hingga kemegahan megalitikum Lembah Napu dan Bada di kawasan Lore Lindu, bumi Tadulako menyimpan kearifan hidup yang tak ternilai harganya.
+Provinsi Sulawesi Tengah merupakan surga peradaban di jantung Nusantara yang dianugerahi keindahan bentang alam luar biasa serta warisan kearifan lokal yang kaya. Dari pesisir Teluk Palu, hamparan perbukitan Lembah Palu, perairan Danau Poso, hingga kemegahan megalitikum Lembah Napu dan Bada di kawasan Lore Lindu, bumi Tadulako menyimpan kebijaksanaan hidup yang tak ternilai harganya.
 
-Mengenal dan melestarikan budaya lokal adalah kewajiban generasi muda agar jati diri kedaerahan tidak lekang tergerus arus modernisasi.
+Mengenal dan melestarikan kearifan lokal adalah kewajiban generasi masa kini agar jati diri kedaerahan tidak lekang tergerus arus modernisasi.
 
-### Tiga Pusaka Budaya Kebanggaan Sulawesi Tengah
+### Tiga Pusaka Kearifan Lokal Kebanggaan Sulawesi Tengah
 
-Kearifan lokal masyarakat Sulawesi Tengah tercermin dalam berbagai karya seni, peninggalan purbakala, dan tradisi lisan yang hidup berdampingan secara harmonis:
+Kearifan lokal masyarakat Sulawesi Tengah tercermin dalam berbagai karya kriya, peninggalan purbakala, dan tradisi lisan yang hidup berdampingan secara harmonis:
 
 - Kain Tenun Donggala (Bomba): Tenunan tradisional khas Donggala yang dibuat dengan ketelitian jemari para penenun terampil. Motif bunga bomba, marun, dan emas melambangkan kemuliaan derajat budi pekerti dan keanggunan pemakainya.
 - Situs Megalitikum Lore Lindu: Terletak di kawasan Cagar Biosfer Lore Lindu, patung-patung batu purba seperti Arca Palindo di Lembah Bada adalah bukti peradaban agung prasejarah ribuan tahun silam yang diakui dunia internasional UNESCO.
@@ -570,7 +618,7 @@ Kearifan lokal masyarakat Sulawesi Tengah tercermin dalam berbagai karya seni, p
 
 Contoh Aturan:
 - Falsafah Sintuvu: Falsafah suku Kaili "Masintuvu Kita Maroso, Morambanga Kita Marisi" (Bersatu kita kuat, bersama kita teguh) mengajarkan prinsip musyawarah untuk mufakat dan solidaritas komunal dalam menghadapi setiap tantangan hidup.
-- Bahasa Daerah sebagai Identitas: Menguasai Bahasa Kaili, Pamona, Banggai, Saluan, dan Buol di samping mahir berbahasa Indonesia adalah kekayaan bilingualisme yang patut dibanggakan.
+- Bahasa Daerah sebagai Identitas: Menguasai Bahasa Kaili, Pamona, Banggai, Saluan, dan Buol di samping mahir berbahasa Indonesia adalah kekayaan dwibahasa yang patut dibanggakan.
 
 ### Catatan Penting
 Pelestarian bahasa daerah dan sastra lisan Sulawesi Tengah kini menjadi prioritas Balai Bahasa Provinsi Sulawesi Tengah melalui program Revitalisasi Bahasa Daerah (RBD) agar tetap dituturkan oleh anak cucu kita.`,
@@ -580,6 +628,28 @@ Pelestarian bahasa daerah dan sastra lisan Sulawesi Tengah kini menjadi priorita
       createdBy: guruUser.id,
     },
   })
+
+  // Seri Kartu Bacaan Tematik To Kaili (Dr. H. Suaib Djafar, M.Si)
+  const kailiMaterials: any[] = []
+  for (const tm of TO_KAILI_THEMATIC_MATERIALS) {
+    const createdMat = await prisma.learningMaterial.create({
+      data: {
+        id: id(),
+        title: tm.title,
+        slug: tm.slug,
+        category: Category.BUDAYA_SULTENG,
+        regionalLanguage: "KAILI",
+        referenceSource: tm.referenceSource,
+        description: tm.description,
+        content: tm.content,
+        readingTime: tm.readingTime,
+        orderIndex: tm.orderIndex,
+        isPublished: true,
+        createdBy: ahliBahasaUser.id,
+      },
+    })
+    kailiMaterials.push(createdMat)
+  }
 
   // ========================================================================
   // 7. PAKET KUIS DAN SOAL (setiap materi satu paket kuis + kuis khusus To Kaili)
@@ -740,9 +810,10 @@ Pelestarian bahasa daerah dan sastra lisan Sulawesi Tengah kini menjadi priorita
 
   await createQuizWithQuestions({
     material: materiBudaya,
-    title: "Kuis Budaya Sulawesi Tengah",
+    title: "Kuis Kearifan Lokal Sulawesi Tengah",
     description: "Uji pemahaman kearifan lokal Sulawesi Tengah.",
     category: Category.BUDAYA_SULTENG,
+    referenceSource: "Balai Bahasa Provinsi Sulawesi Tengah",
     xpReward: 50,
     questions: [
       {
@@ -781,15 +852,15 @@ Pelestarian bahasa daerah dan sastra lisan Sulawesi Tengah kini menjadi priorita
   // ========================================================================
   // 8. PAKET KUIS KHUSUS: KUMPULAN UNGKAPAN BIJAK TO KAILI (Dr. H. Suaib Djafar, M.Si)
   // ========================================================================
-  const kailiRef = "Dr. H. Suaib Djafar, M.Si — Ungkapan Bijak Masyarakat Kaili"
+  const kailiRef = "Dr. H. Suaib Djafar, M.Si — Kumpulan Ungkapan Bijak To Kaili"
   await createQuizWithQuestions({
-    material: materiBudaya,
+    material: kailiMaterials[0] ?? materiBudaya,
     title: "Uji Karakter: Kumpulan Ungkapan Bijak To Kaili",
     description:
       "Evaluasi pemahaman nilai-nilai karakter luhur masyarakat Kaili berdasarkan kumpulan ungkapan bijak To Kaili karya Dr. H. Suaib Djafar, M.Si.",
     category: Category.BUDAYA_SULTENG,
     regionalLanguage: "KAILI",
-    referenceSource: "Dr. H. Suaib Djafar, M.Si (Budayawan Kaili Sulawesi Tengah)",
+    referenceSource: "Dr. H. Suaib Djafar, M.Si (Pemerhati Bahasa & Kearifan Lokal Sulawesi Tengah)",
     timeLimit: 20,
     xpReward: 100,
     creatorId: adminUser.id,
@@ -879,7 +950,7 @@ Pelestarian bahasa daerah dan sastra lisan Sulawesi Tengah kini menjadi priorita
           "Religius & Taat Norma Adat",
           "Kecerdasan Digital & Teknologi",
           "Kecepatan Kerja & Efisiensi Waktu",
-          "Keterbukaan Budaya Asing Secara Bebas",
+          "Keterbukaan Pengaruh Asing Secara Bebas",
         ],
         correctIndex: 0,
         explanation:
@@ -889,19 +960,19 @@ Pelestarian bahasa daerah dan sastra lisan Sulawesi Tengah kini menjadi priorita
       {
         wiseSayingText: "Nemo Rapakalipo Basa Kaili",
         wiseSayingMeaning:
-          "Jangan pernah melupakan bahasa Kaili sebagai bahasa ibu dan warisan jati diri budaya leluhur.",
+          "Jangan pernah melupakan bahasa Kaili sebagai bahasa ibu dan warisan jati diri leluhur.",
         referenceSource: kailiRef,
         question:
           "Sikap mulia apakah yang diamanatkan kepada generasi muda melalui seruan 'Nemo Rapakalipo Basa Kaili'?",
         options: [
           "Mengutamakan Bahasa Asing di Rumah",
-          "Cinta Bahasa Ibu & Jati Diri Budaya",
+          "Cinta Bahasa Ibu & Jati Diri Daerah",
           "Menolak Perkembangan Ilmu Pengetahuan",
           "Membatasi Pergaulan dengan Daerah Lain",
         ],
         correctIndex: 1,
         explanation:
-          "Seruan 'Nemo Rapakalipo Basa Kaili' mengajak generasi muda menjaga kelestarian bahasa ibu sebagai wujud cinta budaya dan jati diri tanpa melupakan bahasa persatuan.",
+          "Seruan 'Nemo Rapakalipo Basa Kaili' mengajak generasi muda menjaga kelestarian bahasa ibu sebagai wujud cinta kearifan lokal dan jati diri tanpa melupakan bahasa persatuan.",
         points: 15,
       },
       {
@@ -926,7 +997,7 @@ Pelestarian bahasa daerah dan sastra lisan Sulawesi Tengah kini menjadi priorita
     ],
   })
 
-  console.log("✅ Seeding selesai. Akun demo: andi/siswa123, guru/guru123, admin/admin123")
+  console.log("✅ Seeding selesai. Akun demo: andi/siswa123, guru/guru123, ahlibahasa/ahli123, admin/admin123")
 }
 
 main()

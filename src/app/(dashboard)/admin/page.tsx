@@ -56,8 +56,8 @@ export default async function AdminDashboard() {
             </h1>
 
             <p className="text-sm text-indigo-100/90 leading-relaxed">
-              Monitoring terpusat implementasi literasi 3 pilar: Bahasa Indonesia, Pendidikan Karakter,
-              dan Bahasa & Budaya Daerah di seluruh satuan pendidikan mitra 13 Kabupaten/Kota.
+              Pemantauan terpusat implementasi literasi 3 pilar: Bahasa Indonesia, Pendidikan Karakter,
+              dan Bahasa Daerah &amp; Kearifan Lokal di 13 Kabupaten/Kota Sulawesi Tengah.
             </p>
 
             <div className="flex flex-wrap items-center gap-3 pt-2 text-xs text-indigo-200">
@@ -111,10 +111,10 @@ export default async function AdminDashboard() {
           </div>
         </Card>
 
-        {/* Siswa Terdaftar */}
+        {/* Peserta Terdaftar */}
         <Card className="border border-zinc-200/90 shadow-xs bg-white rounded-2xl p-4 sm:p-5 hover:border-emerald-300 transition-all">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-zinc-500">Siswa Aktif</span>
+            <span className="text-xs font-semibold text-zinc-500">Peserta Aktif</span>
             <div className="w-9 h-9 rounded-xl bg-emerald-50 text-[#059669] flex items-center justify-center">
               <GraduationCap className="w-5 h-5" />
             </div>
@@ -124,7 +124,7 @@ export default async function AdminDashboard() {
               {stats.totalStudents}
             </div>
             <div className="text-xs text-emerald-700 font-medium mt-0.5">
-              Dari {stats.totalClasses} Rombel
+              Pelajar &amp; Masyarakat Umum
             </div>
           </div>
         </Card>
@@ -200,7 +200,7 @@ export default async function AdminDashboard() {
               <span className="text-xs font-normal text-sky-700">Materi</span>
             </div>
             <p className="text-[11px] text-sky-800 leading-relaxed">
-              Membina kemahiran tata bahasa, literasi kritis, dan penulisan karya ilmiah siswa.
+              Membina kemahiran tata bahasa, literasi kritis, dan penulisan karya ilmiah peserta.
             </p>
           </div>
 
@@ -221,10 +221,10 @@ export default async function AdminDashboard() {
             </p>
           </div>
 
-          {/* Pilar 3: Budaya Sulteng */}
+          {/* Pilar 3: Kearifan Lokal Sulawesi Tengah */}
           <div className="p-4 rounded-xl bg-teal-50/70 border border-teal-200/80 space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-teal-900">3. Budaya Sulawesi Tengah</span>
+              <span className="text-xs font-bold text-teal-900">3. Kearifan Lokal Sulawesi Tengah</span>
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-teal-200 text-teal-800">
                 Pilar III
               </span>
@@ -234,7 +234,7 @@ export default async function AdminDashboard() {
               <span className="text-xs font-normal text-teal-700">Materi</span>
             </div>
             <p className="text-[11px] text-teal-800 leading-relaxed">
-              Revitalisasi bahasa daerah (Kaili, Pamona, Banggai, dll.) dan kearifan lokal Sulteng.
+              Revitalisasi bahasa daerah dan kearifan lokal Sulawesi Tengah.
             </p>
           </div>
         </div>

@@ -5,10 +5,11 @@ import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { prisma } from "@/lib/prisma"
 import { getSession } from "@/lib/auth"
+import { getRegionalLanguageByCode } from "@/services/regionalLanguageService"
 import { RegionalLanguage } from "@/types"
 
 const markCardSchema = z.object({
-  regionalLanguage: z.nativeEnum(RegionalLanguage),
+  regionalLanguage: z.string().trim().min(2).max(50),
   cardId: z.string().min(1),
   totalCards: z.number().min(1),
 })
@@ -34,7 +35,13 @@ export async function markFlashcardLearnedAction(input: {
     return { success: false, error: "Data kartu ungkapan tidak valid." }
   }
 
-  const { regionalLanguage, cardId, totalCards } = parsed.data
+  const regionalLanguage = parsed.data.regionalLanguage.toUpperCase()
+  const { cardId, totalCards } = parsed.data
+
+  const langExists = await getRegionalLanguageByCode(regionalLanguage)
+  if (!langExists) {
+    return { success: false, error: "Bahasa daerah tidak ditemukan atau belum aktif." }
+  }
 
   try {
     const result = await prisma.$transaction(async (tx) => {
@@ -118,7 +125,7 @@ export async function markFlashcardLearnedAction(input: {
 }
 
 const completeMatchingSchema = z.object({
-  regionalLanguage: z.nativeEnum(RegionalLanguage),
+  regionalLanguage: z.string().trim().min(2).max(50),
   score: z.number().min(0).max(100),
 })
 
@@ -140,7 +147,13 @@ export async function completeMatchingStageAction(input: {
     return { success: false, error: "Data latihan tidak valid." }
   }
 
-  const { regionalLanguage, score } = parsed.data
+  const regionalLanguage = parsed.data.regionalLanguage.toUpperCase()
+  const { score } = parsed.data
+
+  const langExists = await getRegionalLanguageByCode(regionalLanguage)
+  if (!langExists) {
+    return { success: false, error: "Bahasa daerah tidak ditemukan atau belum aktif." }
+  }
 
   try {
     const result = await prisma.$transaction(async (tx) => {

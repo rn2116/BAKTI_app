@@ -58,7 +58,7 @@ export function BrandLogo({
           </div>
           {showSubtitle && (
             <div className="text-[10px] sm:text-[11px] font-medium leading-snug mt-0.5 text-zinc-500 truncate">
-              LMS Pendidikan Bahasa &amp; Budaya
+              LMS Pendidikan Bahasa &amp; Kearifan Lokal
             </div>
           )}
         </div>

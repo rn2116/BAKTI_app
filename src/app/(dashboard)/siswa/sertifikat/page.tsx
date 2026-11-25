@@ -1,7 +1,7 @@
 import nextDynamic from "next/dynamic"
 import { getCurrentUser } from "@/lib/auth"
 import { getUserCertificates, getUserRegionalCertificates } from "@/services/user"
-import { REGIONAL_LANGUAGE_LABELS } from "@/lib/constants"
+import { getRegionalLanguageLabelMap } from "@/services/regionalLanguageService"
 import { PageHeader } from "@/components/shared/PageHeader"
 import { BadgeCard } from "@/components/gamification/BadgeCard"
 import { Card, CardContent } from "@/components/ui/card"
@@ -25,9 +25,10 @@ export default async function SertifikatSiswaPage() {
   const user = await getCurrentUser()
   if (!user) return null
 
-  const [regionalCertificates, certificates] = await Promise.all([
+  const [regionalCertificates, certificates, languageLabelMap] = await Promise.all([
     getUserRegionalCertificates(user.id),
     getUserCertificates(user.id),
+    getRegionalLanguageLabelMap(),
   ])
 
   const hasAnyCertificate = regionalCertificates.length > 0 || certificates.length > 0
@@ -52,7 +53,7 @@ export default async function SertifikatSiswaPage() {
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {regionalCertificates.map((rc) => {
               const langName =
-                REGIONAL_LANGUAGE_LABELS[rc.bahasaDaerah] ?? rc.bahasaDaerah
+                languageLabelMap[rc.bahasaDaerah] ?? rc.bahasaDaerah
               const moduleTitle = `Penguasaan ${langName} & Nilai Karakter`
               return (
                 <Card

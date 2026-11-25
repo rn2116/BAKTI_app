@@ -5,14 +5,14 @@ export interface AppNotification {
   id: string
   title: string
   message: string
-  createdAt: string // ISO string untuk serialization
+  createdAt: string
   type: "badge" | "quiz" | "material" | "system"
   link?: string
 }
 
 /**
  * Mengambil daftar aktivitas notifikasi terbaru yang relevan
- * berdasarkan role pengguna yang sedang login.
+ * berdasarkan peran pengguna yang sedang masuk.
  */
 export async function getUserNotifications(
   userId: string,
@@ -22,8 +22,24 @@ export async function getUserNotifications(
   try {
     const notifications: AppNotification[] = []
 
+    // 0. Notifikasi prioritas langsung dari tabel notifications (misal pendaftaran Ahli Bahasa Daerah)
+    const dbNotifications = await prisma.notification.findMany({
+      where: { userId },
+      orderBy: [{ isPriority: "desc" }, { createdAt: "desc" }],
+      take: 5,
+    })
+    for (const n of dbNotifications) {
+      notifications.push({
+        id: n.id,
+        title: n.title,
+        message: n.message,
+        createdAt: n.createdAt.toISOString(),
+        type: (n.type as AppNotification["type"]) || "system",
+        link: n.link ?? undefined,
+      })
+    }
+
     if (role === "SISWA") {
-      // 1. Lencana (Badge) yang baru diraih
       const userBadges = await prisma.userBadge.findMany({
         where: { userId },
         include: { badge: true },
@@ -34,16 +50,15 @@ export async function getUserNotifications(
         notifications.push({
           id: `badge-${ub.id}`,
           title: "Lencana Penghargaan Baru!",
-          message: `Selamat! Kamu meraih lencana "${ub.badge.name}".`,
+          message: `Selamat! Anda meraih lencana "${ub.badge.name}".`,
           createdAt: ub.earnedAt.toISOString(),
           type: "badge",
-          link: "/siswa/profil",
+          link: "/siswa/sertifikat",
         })
       }
 
-      // 2. Kuis yang baru diselesaikan
       const attempts = await prisma.quizAttempt.findMany({
-        where: { userId },
+        where: { userId, completedAt: { not: null } },
         include: { quiz: true },
         orderBy: { startedAt: "desc" },
         take: 3,
@@ -59,7 +74,6 @@ export async function getUserNotifications(
         })
       }
 
-      // 3. Modul pembelajaran terbaru
       const newMaterials = await prisma.learningMaterial.findMany({
         where: { isPublished: true },
         orderBy: { createdAt: "desc" },
@@ -76,9 +90,9 @@ export async function getUserNotifications(
         })
       }
     } else if (role === "GURU") {
-      // 1. Siswa yang mengumpulkan kuis
       const studentAttempts = await prisma.quizAttempt.findMany({
         where: {
+          completedAt: { not: null },
           ...(schoolId ? { user: { schoolId } } : {}),
         },
         include: {
@@ -91,26 +105,48 @@ export async function getUserNotifications(
       for (const att of studentAttempts) {
         notifications.push({
           id: `teacher-attempt-${att.id}`,
-          title: "Pengumpulan Kuis Siswa",
-          message: `${att.user.fullName} (${att.user.class?.name ?? "Siswa"}) menyelesaikan "${att.quiz.title}" (Skor: ${att.score}/${att.maxScore}).`,
+          title: "Pengumpulan Kuis Peserta",
+          message: `${att.user.fullName} (${att.user.class?.name ?? "Peserta"}) menyelesaikan "${att.quiz.title}" (Skor: ${att.score}/${att.maxScore}).`,
           createdAt: att.startedAt.toISOString(),
           type: "quiz",
           link: "/guru/rekap",
         })
       }
 
-      // 2. Pengingat Kurikulum
       notifications.push({
         id: "guru-system-guide",
         title: "Pedoman Literasi 3 Pilar",
-        message: "Periksa kelengkapan butir soal dan kunci jawaban kuis sebelum dibagikan ke siswa.",
+        message: "Periksa kelengkapan butir soal dan kunci jawaban kuis sebelum diterbitkan kepada peserta.",
         createdAt: new Date().toISOString(),
         type: "system",
         link: "/guru/kuis",
       })
+    } else if (role === "AHLI_BAHASA") {
+      const totalEntries = await prisma.characterMatrix.count()
+      notifications.push({
+        id: "expert-kamus-status",
+        title: "Ruang Kerja Ahli Bahasa Daerah",
+        message: `Tersedia ${totalEntries} entri pada Kamus Besar Kearifan Lokal Sulawesi Tengah yang siap diperkaya beserta rekaman pelafalan asli.`,
+        createdAt: new Date().toISOString(),
+        type: "material",
+        link: "/ahli-bahasa/kamus",
+      })
     } else {
       // ADMIN
-      // Modul yang menunggu moderasi
+      const pendingExperts = await prisma.masterUser.count({
+        where: { role: "AHLI_BAHASA", expertStatus: "PENDING_EXPERT" },
+      })
+      if (pendingExperts > 0) {
+        notifications.push({
+          id: "admin-pending-experts",
+          title: "Verifikasi Ahli Bahasa Daerah",
+          message: `Terdapat ${pendingExperts} pengajuan akun Ahli Bahasa Daerah yang menunggu persetujuan Admin BBPST.`,
+          createdAt: new Date().toISOString(),
+          type: "system",
+          link: "/admin/verifikasi-ahli",
+        })
+      }
+
       const pendingMaterials = await prisma.learningMaterial.findMany({
         where: { isPublished: false },
         include: { creator: { select: { fullName: true } } },
@@ -130,14 +166,13 @@ export async function getUserNotifications(
       notifications.push({
         id: "admin-sys-status",
         title: "Ekosistem BAKTI Normal",
-        message: "Monitoring seluruh satuan pendidikan se-Sulawesi Tengah beroperasi lancar.",
+        message: "Pemantauan partisipasi masyarakat dan satuan pendidikan se-Sulawesi Tengah berjalan lancar.",
         createdAt: new Date().toISOString(),
         type: "system",
         link: "/admin",
       })
     }
 
-    // Urutkan dari yang paling baru (terbaru di atas)
     return notifications
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
       .slice(0, 8)
