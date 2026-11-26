@@ -1,6 +1,7 @@
 import { getCurrentUser, AuthUser } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { getPendingVerificationCount } from "@/services/admin-guru"
+import { getPendingCurationCount } from "@/services/expert"
 import { redirect } from "next/navigation"
 import DesktopSidebar from "@/components/layout/DesktopSidebar"
 import { DesktopTopHeader } from "@/components/layout/DesktopTopHeader"
@@ -21,6 +22,7 @@ export default async function AppShell({
 
   let pendingQuestionCount = 0
   let pendingExpertCount = 0
+  let pendingCurationCount = 0
   if (user.role === "ADMIN") {
     try {
       const [qCount, eCount] = await Promise.all([
@@ -35,6 +37,12 @@ export default async function AppShell({
       pendingQuestionCount = 0
       pendingExpertCount = 0
     }
+  } else if (user.role === "AHLI_BAHASA") {
+    try {
+      pendingCurationCount = await getPendingCurationCount()
+    } catch {
+      pendingCurationCount = 0
+    }
   }
 
   return (
@@ -44,16 +52,17 @@ export default async function AppShell({
         user={user}
         pendingQuestionCount={pendingQuestionCount}
         pendingExpertCount={pendingExpertCount}
+        pendingCurationCount={pendingCurationCount}
       />
 
       {/* 2. Mobile Top Header Sticky (< 768px) */}
       <MobileTopHeader user={user} />
 
       {/* 3. Main Content Area */}
-      <main className="min-h-screen pb-24 md:pb-8 md:pl-72 transition-all duration-200 flex flex-col">
+      <main className="min-h-screen min-w-0 w-full overflow-x-hidden pb-24 md:pb-8 md:pl-72 transition-all duration-200 flex flex-col">
         <DesktopTopHeader user={user} />
 
-        <div className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-5 sm:pt-6 pb-12">
+        <div className="flex-1 min-w-0 max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-5 sm:pt-6 pb-12">
           {children}
         </div>
       </main>
@@ -63,6 +72,7 @@ export default async function AppShell({
         userRole={user.role}
         pendingQuestionCount={pendingQuestionCount}
         pendingExpertCount={pendingExpertCount}
+        pendingCurationCount={pendingCurationCount}
       />
     </div>
   )

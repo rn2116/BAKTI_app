@@ -20,7 +20,7 @@ export default async function AhliBahasaDaftarBahasaPage() {
   const countMap = new Map(counts.map((c) => [c.regionalLanguage, c._count.id]))
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full min-w-0">
       <PageHeader
         title="Kelola Daftar Bahasa Daerah Sulawesi Tengah"
         description="Tambahkan bahasa daerah baru atau perbarui keterangan wilayah penutur yang akan tampil di Kamus Besar dan Peta Eksplorasi."

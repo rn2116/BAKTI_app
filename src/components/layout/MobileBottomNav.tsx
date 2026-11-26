@@ -62,9 +62,11 @@ const ITEMS_GURU = [
 ]
 
 const ITEMS_AHLI_BAHASA = [
-  { href: "/ahli-bahasa", label: "Beranda", title: "Beranda Ahli Bahasa", icon: "LayoutDashboard" },
-  { href: "/ahli-bahasa/kamus", label: "Kamus", title: "Kamus Besar Kearifan Lokal", icon: "Compass" },
+  { href: "/ahli-bahasa", label: "Beranda", title: "Beranda", icon: "LayoutDashboard" },
+  { href: "/ahli-bahasa/kamus", label: "Kamus", title: "Kamus Besar", icon: "Compass" },
   { href: "/ahli-bahasa/bahasa", label: "Bahasa", title: "Bahasa Daerah", icon: "Languages" },
+  { href: "/ahli-bahasa/kurasi", label: "Kurasi", title: "Kurasi Usulan", icon: "ShieldCheck" },
+  { href: "/ahli-bahasa/profil", label: "Profil", title: "Profil Pakar", icon: "UserCheck" },
 ]
 
 const ITEMS_ADMIN = [
@@ -79,10 +81,12 @@ export default function MobileBottomNav({
   userRole = "SISWA",
   pendingQuestionCount = 0,
   pendingExpertCount = 0,
+  pendingCurationCount = 0,
 }: {
   userRole?: string
   pendingQuestionCount?: number
   pendingExpertCount?: number
+  pendingCurationCount?: number
 }) {
   const pathname = usePathname()
   const items =
@@ -111,7 +115,9 @@ export default function MobileBottomNav({
             ? pendingQuestionCount
             : item.href === "/admin/verifikasi-ahli"
               ? pendingExpertCount
-              : 0
+              : item.href === "/ahli-bahasa/kurasi"
+                ? pendingCurationCount
+                : 0
 
         return (
           <Link

@@ -155,7 +155,7 @@ export const ROLE_FLOW_LIST: readonly RoleFlowDefinition[] = [
           "Daftar dengan melampirkan bukti sertifikat, piagam penghargaan, atau SK kepakaran untuk diverifikasi Admin BBPST.",
         icon: "UserCheck",
         ctaLabel: "Status Akun Pakar",
-        href: "/ahli-bahasa",
+        href: "/ahli-bahasa/profil",
       },
       {
         stepNumber: 2,
@@ -182,7 +182,7 @@ export const ROLE_FLOW_LIST: readonly RoleFlowDefinition[] = [
           "Tinjau, sunting ejaan, dan setujui usulan kosakata dari masyarakat umum sebelum diterbitkan ke Kamus Besar.",
         icon: "ShieldCheck",
         ctaLabel: "Buka Antrean Kurasi",
-        href: "/ahli-bahasa",
+        href: "/ahli-bahasa/kurasi",
       },
     ],
   },

@@ -148,17 +148,17 @@ export function DictionaryCurationPanel({
   ]
 
   return (
-    <Card className="rounded-3xl border-zinc-200/90 bg-white p-5 sm:p-6 shadow-xs space-y-5">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-100 pb-4">
-        <div className="space-y-1">
+    <Card className="rounded-3xl border-zinc-200/90 bg-white p-4 sm:p-6 shadow-xs space-y-5 w-full min-w-0 overflow-hidden">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-100 pb-4 min-w-0">
+        <div className="space-y-1 min-w-0">
           <div className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-[#3C22BB]">
-            <ShieldCheck className="w-4 h-4" />
+            <ShieldCheck className="w-4 h-4 shrink-0" />
             <span>Kurasi Pakar Balai Bahasa Provinsi Sulawesi Tengah</span>
           </div>
-          <h2 className="text-lg font-black text-[#1E135E]">
+          <h2 className="text-lg font-black text-[#1E135E] break-words">
             Antrean Usulan Kosakata Masyarakat
           </h2>
-          <p className="text-xs text-zinc-500">
+          <p className="text-xs text-zinc-500 break-words leading-relaxed">
             {expertLanguage
               ? `Diprioritaskan sesuai bahasa keahlian Anda (${expertLanguage}). Sunting ejaan atau makna sebelum menerbitkan (+20 XP bagi kontributor).`
               : "Tinjau, sunting ejaan sesuai kaidah, lalu setujui atau tolak usulan kosakata masyarakat."}
@@ -171,7 +171,7 @@ export function DictionaryCurationPanel({
               key={tab.key}
               type="button"
               onClick={() => setActiveTab(tab.key)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold inline-flex items-center gap-1.5 transition-all cursor-pointer ${
+              className={`min-h-11 px-3 py-2 rounded-xl text-xs font-bold inline-flex items-center gap-1.5 transition-all cursor-pointer ${
                 activeTab === tab.key
                   ? "bg-[#3C22BB] text-white shadow-xs"
                   : "bg-zinc-100 text-zinc-600 hover:text-zinc-900"
@@ -191,7 +191,7 @@ export function DictionaryCurationPanel({
       </div>
 
       {filtered.length === 0 ? (
-        <div className="py-12 text-center rounded-2xl border border-dashed border-zinc-200 bg-[#FAFAF8] space-y-2">
+        <div className="py-12 px-4 text-center rounded-2xl border border-dashed border-zinc-200 bg-[#FAFAF8] space-y-2">
           <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto" />
           <div className="text-sm font-bold text-zinc-800">
             Tidak ada usulan pada kategori ini
@@ -201,7 +201,7 @@ export function DictionaryCurationPanel({
           </p>
         </div>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-4 md:grid-cols-2 min-w-0">
           {filtered.map((item) => {
             const langLabel =
               languageLabelMap[item.regionalLanguage] ??
@@ -211,12 +211,12 @@ export function DictionaryCurationPanel({
             return (
               <div
                 key={item.id}
-                className="p-4 sm:p-5 rounded-2xl border border-zinc-200 bg-[#FAFAF8] flex flex-col justify-between gap-4"
+                className="p-4 sm:p-5 rounded-2xl border border-zinc-200 bg-[#FAFAF8] flex flex-col justify-between gap-4 min-w-0 w-full overflow-hidden break-words"
               >
-                <div className="space-y-3">
+                <div className="space-y-3 min-w-0">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-teal-50 text-teal-800 border border-teal-200">
-                      <Languages className="w-3 h-3" />
+                      <Languages className="w-3 h-3 shrink-0" />
                       {langLabel}
                     </span>
 
@@ -297,7 +297,7 @@ export function DictionaryCurationPanel({
         open={reviewTarget !== null}
         onOpenChange={(open) => !open && setReviewTarget(null)}
       >
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl">
+        <DialogContent className="w-[calc(100%-1.5rem)] max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl">
           <DialogHeader>
             <DialogTitle className="text-lg font-black text-[#1E135E] flex items-center gap-2">
               <ShieldCheck className="w-5 h-5 text-[#065F46]" />

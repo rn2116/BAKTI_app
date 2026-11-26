@@ -54,10 +54,10 @@ export function WiseSayingQuoteCard({
       </div>
 
       {/* Label Sumber Rujukan & Tombol Audio Hybrid */}
-      <div className="relative z-10 flex items-start justify-between gap-3">
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#3C22BB]/10 border border-[#3C22BB]/20 text-[10px] sm:text-[11px] font-bold text-[#3C22BB]">
+      <div className="relative z-10 flex flex-wrap items-start justify-between gap-2.5">
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#3C22BB]/10 border border-[#3C22BB]/20 text-[10px] sm:text-[11px] font-bold text-[#3C22BB] whitespace-normal break-words">
           <Quote className="w-3 h-3 shrink-0" />
-          <span>
+          <span className="break-words">
             {languageTitle} &bull; Rujukan: {sourceLabel}
           </span>
         </span>
@@ -69,6 +69,7 @@ export function WiseSayingQuoteCard({
           playingLabel="Hentikan"
           variant="indigo"
           size="sm"
+          showTextOnMobile={true}
         />
       </div>
 

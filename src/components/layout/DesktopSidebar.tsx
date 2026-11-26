@@ -63,12 +63,14 @@ interface DesktopSidebarProps {
   user: AuthUser
   pendingQuestionCount?: number
   pendingExpertCount?: number
+  pendingCurationCount?: number
 }
 
 export default function DesktopSidebar({
   user,
   pendingQuestionCount = 0,
   pendingExpertCount = 0,
+  pendingCurationCount = 0,
 }: DesktopSidebarProps) {
   const pathname = usePathname()
   const isSiswa = user.role === "SISWA"
@@ -119,11 +121,15 @@ export default function DesktopSidebar({
                   item.href === "/admin/verifikasi-soal" && pendingQuestionCount > 0
                 const showExpertBadge =
                   item.href === "/admin/verifikasi-ahli" && pendingExpertCount > 0
+                const showCurationBadge =
+                  item.href === "/ahli-bahasa/kurasi" && pendingCurationCount > 0
                 const badgeValue = showVerificationBadge
                   ? pendingQuestionCount
                   : showExpertBadge
                     ? pendingExpertCount
-                    : 0
+                    : showCurationBadge
+                      ? pendingCurationCount
+                      : 0
 
                 return (
                   <Link

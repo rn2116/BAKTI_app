@@ -35,12 +35,12 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-  // Akses pratinjau dokumen kepakaran hanya untuk Admin BBPST
+  // Akses pratinjau dokumen kepakaran hanya untuk Admin BBPST dan Ahli Bahasa pemilik dokumen
   if (pathname.startsWith("/api/dokumen-ahli")) {
     if (!payload) {
       return NextResponse.json({ success: false, error: "Tidak terautentikasi" }, { status: 401 })
     }
-    if (payload.role !== "ADMIN") {
+    if (payload.role !== "ADMIN" && payload.role !== "AHLI_BAHASA") {
       return NextResponse.json({ success: false, error: "Akses ditolak" }, { status: 403 })
     }
     return NextResponse.next()

@@ -50,7 +50,9 @@ export function AudioButton({
           : "bg-white text-[#3C22BB] border-[#3C22BB]/25 hover:bg-[#3C22BB]/10"
 
   const sizeStyles =
-    size === "md" ? "px-3.5 py-2 text-xs min-h-[38px]" : "px-3 py-1.5 text-[11px] min-h-[34px]"
+    size === "md"
+      ? "px-4 py-2 text-xs min-h-12"
+      : "px-3.5 py-2 text-xs min-h-11"
 
   return (
     <button

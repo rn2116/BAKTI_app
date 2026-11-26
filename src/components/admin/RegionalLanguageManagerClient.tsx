@@ -102,37 +102,37 @@ export function RegionalLanguageManagerClient({
   }
 
   return (
-    <div className="space-y-6">
-      <div className="bg-white border border-zinc-200/90 rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="space-y-0.5">
+    <div className="space-y-6 w-full min-w-0">
+      <div className="bg-white border border-zinc-200/90 rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 w-full min-w-0">
+        <div className="space-y-0.5 min-w-0">
           <div className="text-xs font-bold text-[#3C22BB] uppercase tracking-wider">
             Daftar Bahasa Daerah Dinamis
           </div>
-          <p className="text-xs text-zinc-600">
+          <p className="text-xs text-zinc-600 break-words leading-relaxed">
             Tambahkan bahasa daerah Sulawesi Tengah baru kapan saja agar otomatis tampil pada Kamus Besar dan Modul Pembelajaran.
           </p>
         </div>
 
         <Button
           onClick={openCreate}
-          className="bg-[#3C22BB] hover:bg-[#2E1994] text-white rounded-xl text-xs font-bold h-10 px-4 gap-1.5 shrink-0"
+          className="bg-[#3C22BB] hover:bg-[#2E1994] text-white rounded-xl text-xs font-bold min-h-12 w-full sm:w-auto px-4 gap-1.5 shrink-0"
         >
-          <Plus className="w-4 h-4" />
+          <Plus className="w-4 h-4 shrink-0" />
           <span>Tambah Bahasa Daerah</span>
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 min-w-0">
         {languages.map((lang) => (
           <Card
             key={lang.id}
-            className="rounded-2xl border-zinc-200/90 bg-white p-5 shadow-xs flex flex-col justify-between space-y-4"
+            className="rounded-2xl border-zinc-200/90 bg-white p-4 sm:p-5 shadow-xs flex flex-col justify-between space-y-4 min-w-0 w-full overflow-hidden break-words"
           >
-            <div className="space-y-3">
-              <div className="flex items-start justify-between gap-2">
+            <div className="space-y-3 min-w-0">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <span className="inline-flex items-center gap-1 text-[11px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-indigo-50 text-[#3C22BB] border border-indigo-100">
-                  <Languages className="w-3 h-3" />
-                  {lang.code}
+                  <Languages className="w-3 h-3 shrink-0" />
+                  <span className="break-all">{lang.code}</span>
                 </span>
 
                 <span
@@ -142,29 +142,31 @@ export function RegionalLanguageManagerClient({
                       : "bg-zinc-100 text-zinc-500 border-zinc-200"
                   }`}
                 >
-                  <CheckCircle2 className="w-3 h-3" />
+                  <CheckCircle2 className="w-3 h-3 shrink-0" />
                   {lang.isActive ? "Aktif" : "Nonaktif"}
                 </span>
               </div>
 
-              <div>
-                <h3 className="text-base font-extrabold text-[#1E135E]">{lang.name}</h3>
-                <p className="text-xs text-zinc-500 flex items-center gap-1 mt-1">
-                  <MapPin className="w-3.5 h-3.5 text-[#065F46] shrink-0" />
+              <div className="min-w-0">
+                <h3 className="text-base font-extrabold text-[#1E135E] break-words">
+                  {lang.name}
+                </h3>
+                <p className="text-xs text-zinc-500 flex items-start gap-1 mt-1 break-words">
+                  <MapPin className="w-3.5 h-3.5 text-[#065F46] shrink-0 mt-0.5" />
                   <span>{lang.regencyCoverage}</span>
                 </p>
               </div>
 
               {lang.description && (
-                <p className="text-xs text-zinc-600 leading-relaxed line-clamp-3">
+                <p className="text-xs text-zinc-600 leading-relaxed line-clamp-3 break-words">
                   {lang.description}
                 </p>
               )}
             </div>
 
-            <div className="pt-3 border-t border-zinc-100 flex items-center justify-between gap-2">
+            <div className="pt-3 border-t border-zinc-100 flex flex-wrap items-center justify-between gap-2">
               <span className="inline-flex items-center gap-1 text-xs font-bold text-zinc-700">
-                <BookOpen className="w-3.5 h-3.5 text-[#3C22BB]" />
+                <BookOpen className="w-3.5 h-3.5 text-[#3C22BB] shrink-0" />
                 {lang.entryCount} Entri Kamus
               </span>
 
@@ -174,7 +176,7 @@ export function RegionalLanguageManagerClient({
                   variant="outline"
                   size="sm"
                   onClick={() => openEdit(lang)}
-                  className="h-8 px-2.5 rounded-xl text-xs font-semibold gap-1"
+                  className="min-h-11 px-3 rounded-xl text-xs font-semibold gap-1.5"
                 >
                   <Edit3 className="w-3.5 h-3.5" /> Sunting
                 </Button>
@@ -184,14 +186,15 @@ export function RegionalLanguageManagerClient({
                   size="sm"
                   disabled={togglingId === lang.id}
                   onClick={() => handleToggle(lang)}
-                  className={`h-8 px-2 rounded-xl text-xs font-semibold ${
+                  className={`min-h-11 min-w-11 px-3 rounded-xl text-xs font-semibold border ${
                     lang.isActive
-                      ? "text-amber-700 hover:bg-amber-50"
-                      : "text-emerald-700 hover:bg-emerald-50"
+                      ? "text-amber-700 border-amber-200 bg-amber-50/40 hover:bg-amber-50"
+                      : "text-emerald-700 border-emerald-200 bg-emerald-50/40 hover:bg-emerald-50"
                   }`}
                   title={lang.isActive ? "Nonaktifkan" : "Aktifkan"}
+                  aria-label={lang.isActive ? "Nonaktifkan Bahasa" : "Aktifkan Bahasa"}
                 >
-                  <Power className="w-3.5 h-3.5" />
+                  <Power className="w-4 h-4" />
                 </Button>
               </div>
             </div>
@@ -200,7 +203,7 @@ export function RegionalLanguageManagerClient({
       </div>
 
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-        <DialogContent className="max-w-lg rounded-2xl">
+        <DialogContent className="w-[calc(100%-1.5rem)] max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl">
           <DialogHeader>
             <DialogTitle className="text-base font-bold text-[#1E135E] flex items-center gap-2">
               <Languages className="w-5 h-5 text-[#3C22BB]" />
@@ -268,19 +271,19 @@ export function RegionalLanguageManagerClient({
               />
             </div>
 
-            <div className="flex justify-end gap-2 pt-3 border-t border-zinc-100">
+            <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-3 border-t border-zinc-100">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => setModalOpen(false)}
-                className="text-xs rounded-xl"
+                className="min-h-11 text-xs rounded-xl w-full sm:w-auto"
               >
                 Batal
               </Button>
               <Button
                 type="submit"
                 disabled={isSaving}
-                className="bg-[#3C22BB] hover:bg-[#2E1994] text-white rounded-xl text-xs font-bold px-4"
+                className="min-h-11 bg-[#3C22BB] hover:bg-[#2E1994] text-white rounded-xl text-xs font-bold px-4 w-full sm:w-auto"
               >
                 {isSaving ? "Menyimpan..." : "Simpan Bahasa Daerah"}
               </Button>

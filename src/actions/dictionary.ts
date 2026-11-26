@@ -4,6 +4,7 @@ import { randomUUID } from "crypto"
 import { revalidatePath } from "next/cache"
 import { prisma } from "@/lib/prisma"
 import { getSession } from "@/lib/auth"
+import { sanitizeAudioUrl, sanitizePlainText } from "@/lib/sanitize"
 import { Role } from "@/types"
 import {
   proposeDictionarySchema,
@@ -108,7 +109,7 @@ export async function proposeDictionaryEntryAction(
             type: "system",
             link:
               rev.role === Role.AHLI_BAHASA
-                ? "/ahli-bahasa"
+                ? "/ahli-bahasa/kurasi"
                 : "/admin/matriks-karakter",
             isPriority: true,
           })),
@@ -119,7 +120,10 @@ export async function proposeDictionaryEntryAction(
     revalidatePath("/siswa/budaya-bahasa")
     revalidatePath("/ahli-bahasa")
     revalidatePath("/ahli-bahasa/kamus")
+    revalidatePath("/ahli-bahasa/kurasi")
+    revalidatePath("/ahli-bahasa/profil")
     revalidatePath("/admin/matriks-karakter")
+    revalidatePath("/", "layout")
 
     return {
       success: true,
@@ -217,30 +221,40 @@ export async function curateDictionaryProposalAction(
       existing.verificationStatus !== "APPROVED"
 
     await prisma.$transaction(async (tx) => {
+      const cleanTerm = parsed.data.regionalTerm
+        ? sanitizePlainText(parsed.data.regionalTerm, 200)
+        : undefined
+      const cleanCharacter = parsed.data.indonesianCharacter
+        ? sanitizePlainText(parsed.data.indonesianCharacter, 150)
+        : undefined
+      const cleanSource = parsed.data.characterSource
+        ? sanitizePlainText(parsed.data.characterSource, 3000)
+        : undefined
+      const cleanImplementation = parsed.data.implementation
+        ? sanitizePlainText(parsed.data.implementation, 2000)
+        : undefined
+      const cleanReviewNotes = parsed.data.reviewNotes
+        ? sanitizePlainText(parsed.data.reviewNotes, 1000)
+        : null
+      const cleanAudio =
+        parsed.data.audioUrl !== undefined
+          ? sanitizeAudioUrl(parsed.data.audioUrl)
+          : undefined
+
       await tx.characterMatrix.update({
         where: { id: existing.id },
         data: {
           verificationStatus: parsed.data.decision,
           verifiedBy: curator.id,
-          reviewNotes: parsed.data.reviewNotes || null,
+          reviewNotes: cleanReviewNotes,
           ...(parsed.data.regionalLanguage
             ? { regionalLanguage: parsed.data.regionalLanguage.toUpperCase() }
             : {}),
-          ...(parsed.data.regionalTerm
-            ? { regionalTerm: parsed.data.regionalTerm }
-            : {}),
-          ...(parsed.data.indonesianCharacter
-            ? { indonesianCharacter: parsed.data.indonesianCharacter }
-            : {}),
-          ...(parsed.data.characterSource
-            ? { characterSource: parsed.data.characterSource }
-            : {}),
-          ...(parsed.data.implementation
-            ? { implementation: parsed.data.implementation }
-            : {}),
-          ...(parsed.data.audioUrl !== undefined
-            ? { audioUrl: parsed.data.audioUrl || null }
-            : {}),
+          ...(cleanTerm ? { regionalTerm: cleanTerm } : {}),
+          ...(cleanCharacter ? { indonesianCharacter: cleanCharacter } : {}),
+          ...(cleanSource ? { characterSource: cleanSource } : {}),
+          ...(cleanImplementation ? { implementation: cleanImplementation } : {}),
+          ...(cleanAudio !== undefined ? { audioUrl: cleanAudio } : {}),
         },
       })
 
@@ -291,7 +305,10 @@ export async function curateDictionaryProposalAction(
     revalidatePath("/siswa/belajar-bahasa/[lang]", "page")
     revalidatePath("/ahli-bahasa")
     revalidatePath("/ahli-bahasa/kamus")
+    revalidatePath("/ahli-bahasa/kurasi")
+    revalidatePath("/ahli-bahasa/profil")
     revalidatePath("/admin/matriks-karakter")
+    revalidatePath("/", "layout")
 
     return {
       success: true,

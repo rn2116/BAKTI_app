@@ -100,7 +100,7 @@ export default async function KuisSiswaPage() {
               <div className="pt-5 flex flex-col gap-2">
                 <Link
                   href={`/siswa/kuis/${q.id}/mulai`}
-                  className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-[#3C22BB] hover:bg-[#2E1994] text-white py-2.5 px-4 text-xs font-bold transition-all shadow-xs"
+                  className="w-full min-h-12 inline-flex items-center justify-center gap-2 rounded-xl bg-[#3C22BB] hover:bg-[#2E1994] text-white py-2.5 px-4 text-xs font-bold transition-all shadow-xs"
                 >
                   <span>{attempt?.passed ? "Uji Coba Ulang" : "Mulai Kuis Sekarang"}</span>
                   <ChevronRight className="w-4 h-4" />

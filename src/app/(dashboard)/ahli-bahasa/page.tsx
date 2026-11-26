@@ -31,7 +31,7 @@ export default async function AhliBahasaDashboardPage() {
   ])
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full min-w-0">
       <PageHeader
         title={`Selamat Datang, ${user.fullName}`}
         description="Ruang kerja resmi Ahli Bahasa Daerah untuk memperkaya Kamus Besar Kearifan Lokal Sulawesi Tengah beserta rekaman pelafalan asli."
@@ -41,24 +41,30 @@ export default async function AhliBahasaDashboardPage() {
       <RoleFlowBanner role="AHLI_BAHASA" />
 
       {/* Lencana Kepakaran */}
-      <Card className="rounded-3xl bg-gradient-to-r from-[#1E135E] via-[#3C22BB] to-[#065F46] text-white p-6 shadow-md border-0">
+      <Card className="rounded-3xl bg-gradient-to-r from-[#1E135E] via-[#3C22BB] to-[#065F46] text-white p-5 sm:p-6 shadow-md border-0 overflow-hidden">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="space-y-2">
-            <div className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider bg-white/15 px-3 py-1 rounded-full">
-              <Award className="w-3.5 h-3.5 text-amber-300" />
-              <span>Ahli Bahasa Daerah Terverifikasi BBPST</span>
+          <div className="space-y-2 min-w-0">
+            <div className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider bg-white/15 px-3 py-1 rounded-full max-w-full">
+              <Award className="w-3.5 h-3.5 text-amber-300 shrink-0" />
+              <span className="break-words">Ahli Bahasa Daerah Terverifikasi BBPST</span>
             </div>
-            <h2 className="text-xl sm:text-2xl font-black">
+            <h2 className="text-xl sm:text-2xl font-black break-words">
               Keahlian Utama: {user.expertLanguage || "Bahasa Daerah Sulawesi Tengah"}
             </h2>
-            <p className="text-xs sm:text-sm text-indigo-100/90 max-w-2xl leading-relaxed">
+            <p className="text-xs sm:text-sm text-indigo-100/90 max-w-2xl leading-relaxed break-words">
               Setiap kosakata, makna filosofis, nilai karakter padanan, dan rekaman audio pelafalan asli yang Anda sunting akan langsung memperkaya modul belajar masyarakat se-Sulawesi Tengah.
             </p>
           </div>
-          <div className="flex flex-wrap gap-2 shrink-0">
+          <div className="flex flex-col sm:flex-row flex-wrap gap-2 shrink-0 w-full sm:w-auto">
+            <Link
+              href="/ahli-bahasa/kurasi"
+              className="min-h-12 w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-white/15 hover:bg-white/25 border border-white/20 text-white font-bold text-xs px-4 py-2.5 transition-colors"
+            >
+              <span>Antrean Kurasi ({proposalSummary.counts.pending})</span>
+            </Link>
             <Link
               href="/ahli-bahasa/kamus"
-              className="inline-flex items-center gap-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-zinc-950 font-extrabold text-xs px-4 py-2.5 transition-colors"
+              className="min-h-12 w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-zinc-950 font-extrabold text-xs px-4 py-2.5 transition-colors"
             >
               <span>Kelola Kamus Besar</span>
               <ArrowRight className="w-4 h-4" />

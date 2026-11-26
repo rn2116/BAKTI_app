@@ -509,7 +509,7 @@ export function PrintCertificateButton({
         type="button"
         onClick={handleDownloadPDF}
         disabled={isGenerating || isGeneratingImage}
-        className="flex-1 min-w-[115px] text-xs gap-1.5 h-9 rounded-xl bg-[#3C22BB] hover:bg-[#2E1994] text-white font-bold shadow-xs"
+        className="flex-1 min-w-[115px] text-xs gap-1.5 min-h-12 rounded-xl bg-[#3C22BB] hover:bg-[#2E1994] text-white font-bold shadow-xs"
       >
         {isGenerating ? (
           <>
@@ -529,7 +529,7 @@ export function PrintCertificateButton({
         onClick={handleDownloadImage}
         disabled={isGenerating || isGeneratingImage}
         variant="outline"
-        className="text-xs gap-1.5 h-9 rounded-xl border-indigo-200 text-[#3C22BB] hover:bg-indigo-50 font-bold"
+        className="text-xs gap-1.5 min-h-12 rounded-xl border-indigo-200 text-[#3C22BB] hover:bg-indigo-50 font-bold"
         title="Unduh Sertifikat sebagai Gambar PNG"
       >
         {isGeneratingImage ? (
@@ -547,7 +547,7 @@ export function PrintCertificateButton({
           variant="outline"
           size="icon"
           title="Salin Nomor Registrasi Sertifikat"
-          className="h-9 w-9 rounded-xl border-zinc-200 hover:bg-zinc-100 shrink-0"
+          className="min-h-12 min-w-12 rounded-xl border-zinc-200 hover:bg-zinc-100 shrink-0"
         >
           {copied ? (
             <Check className="w-3.5 h-3.5 text-emerald-600" />

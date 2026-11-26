@@ -142,9 +142,11 @@ export const NAVIGATION_ITEMS_GURU = [
 ] as const
 
 export const NAVIGATION_ITEMS_AHLI_BAHASA = [
-  { label: "Beranda Ahli Bahasa", href: "/ahli-bahasa", icon: "LayoutDashboard" },
-  { label: "Kamus Besar Kearifan Lokal", href: "/ahli-bahasa/kamus", icon: "Compass" },
+  { label: "Beranda", href: "/ahli-bahasa", icon: "LayoutDashboard" },
+  { label: "Kamus Besar", href: "/ahli-bahasa/kamus", icon: "Compass" },
   { label: "Bahasa Daerah", href: "/ahli-bahasa/bahasa", icon: "Languages" },
+  { label: "Kurasi Usulan", href: "/ahli-bahasa/kurasi", icon: "ShieldCheck" },
+  { label: "Profil Pakar", href: "/ahli-bahasa/profil", icon: "UserCheck" },
 ] as const
 
 export const NAVIGATION_ITEMS_ADMIN = [

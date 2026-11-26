@@ -15,7 +15,7 @@ export default async function AhliBahasaKamusPage() {
   ])
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full min-w-0">
       <PageHeader
         title="Kamus Besar Kearifan Lokal Sulawesi Tengah"
         description="Tambahkan dan sunting kosakata daerah, makna harfiah, makna filosofis, nilai karakter padanan, sumber rujukan, contoh penerapan, serta rekaman pelafalan asli."

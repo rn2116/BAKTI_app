@@ -258,9 +258,9 @@ export function AdminLaporanClient({
       </div>
 
       {/* Reports Table */}
-      <div className="bg-white border border-zinc-200/90 rounded-2xl shadow-xs overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs text-left">
+      <div className="bg-white border border-zinc-200/90 rounded-2xl shadow-xs overflow-hidden w-full min-w-0">
+        <div className="w-full overflow-x-auto">
+          <table className="w-full text-xs text-left whitespace-nowrap">
             <thead className="bg-zinc-50 border-b border-zinc-200 text-zinc-700 font-bold uppercase tracking-wider text-[10px]">
               <tr>
                 <th className="px-4 py-3.5 w-10 text-center">No</th>

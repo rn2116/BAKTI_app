@@ -229,11 +229,11 @@ export function KuisManagementClient({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h2 className="text-lg font-semibold text-foreground">Bank Soal & Kuis</h2>
+          <h2 className="text-lg font-semibold text-foreground">Bank Soal &amp; Kuis</h2>
           <p className="text-xs text-muted-foreground">
-            Kelola instrumen asesmen dan kuis interaktif untuk siswa
+            Kelola instrumen asesmen dan kuis interaktif untuk peserta
           </p>
         </div>
 
@@ -242,7 +242,7 @@ export function KuisManagementClient({
             <Button
               onClick={openCreate}
               size="sm"
-              className="gap-2 text-xs bg-[#3C22BB] hover:bg-[#2E1994] text-white rounded-xl shadow-xs"
+              className="gap-2 text-xs bg-[#3C22BB] hover:bg-[#2E1994] text-white rounded-xl shadow-xs w-full sm:w-auto min-h-12"
             >
               <Plus className="w-4 h-4" /> Buat Kuis Baru
             </Button>
@@ -306,7 +306,7 @@ export function KuisManagementClient({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div className="space-y-1.5">
                     <Label htmlFor="timeLimit">Durasi (Menit)</Label>
                     <Input

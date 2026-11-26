@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
-import { stat, readFile } from "fs/promises"
 import path from "path"
+import { readStoredFile } from "@/lib/file-storage"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
@@ -27,15 +27,13 @@ export async function GET(
 
   const ext = path.extname(safeName).toLowerCase()
   const contentType = MIME_TYPES[ext] ?? "application/octet-stream"
-  const filePath = path.join(process.cwd(), "public", "uploads", "audio", safeName)
 
   try {
-    const fileStat = await stat(filePath)
-    if (!fileStat.isFile()) {
+    const fileBuffer = await readStoredFile("audio", safeName)
+    if (!fileBuffer) {
       return NextResponse.json({ error: "Berkas audio tidak ditemukan." }, { status: 404 })
     }
 
-    const fileBuffer = await readFile(filePath)
     const totalSize = fileBuffer.length
     const rangeHeader = request.headers.get("range")
 

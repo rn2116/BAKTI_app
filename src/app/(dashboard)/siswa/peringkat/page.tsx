@@ -106,10 +106,10 @@ export default function PeringkatSiswaPage() {
       />
 
       {/* Filter Cakupan Peringkat: Global, Sekolah, Kelas */}
-      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
-        <div className="flex gap-1 rounded-2xl border border-zinc-200 bg-white p-1 w-full sm:w-auto shadow-2xs">
+      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between min-w-0">
+        <div className="flex flex-wrap gap-1.5 rounded-2xl border border-zinc-200 bg-white p-1.5 w-full sm:w-auto shadow-2xs">
           {[
-            { id: "global" as Scope, label: "Semua Sekolah (Global)", icon: Globe2 },
+            { id: "global" as Scope, label: "Semua Wilayah", icon: Globe2 },
             { id: "school" as Scope, label: "Sekolah Saya", icon: School },
             { id: "class" as Scope, label: "Kelas Saya", icon: Users },
           ].map((item) => {
@@ -120,7 +120,7 @@ export default function PeringkatSiswaPage() {
                 key={item.id}
                 onClick={() => setScope(item.id)}
                 className={cn(
-                  "flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-xl transition-all duration-150 min-h-[38px]",
+                  "flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-bold rounded-xl transition-all duration-150 min-h-11 whitespace-nowrap",
                   active
                     ? "bg-[#3C22BB] text-white shadow-xs"
                     : "text-zinc-600 hover:text-zinc-950 hover:bg-zinc-100"

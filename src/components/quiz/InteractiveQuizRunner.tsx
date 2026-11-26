@@ -647,8 +647,8 @@ export function InteractiveQuizRunner({
                 />
               )}
 
-              <div className="flex items-start justify-between gap-3">
-                <h3 className="text-base sm:text-lg font-bold text-zinc-900 leading-relaxed break-words flex-1">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <h3 className="text-base sm:text-lg font-bold text-zinc-900 leading-relaxed break-words flex-1 min-w-0">
                   {currentQuestion.question}
                 </h3>
                 <AudioButton
@@ -657,6 +657,7 @@ export function InteractiveQuizRunner({
                   label="Dengarkan"
                   variant="ghost"
                   size="sm"
+                  showTextOnMobile={true}
                 />
               </div>
             </div>
@@ -697,12 +698,12 @@ export function InteractiveQuizRunner({
       </AnimatePresence>
 
       {/* 4. Navigasi Bawah: Sebelum / Selanjutnya / Selesai */}
-      <div className="flex items-center justify-between pt-2">
+      <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
         <Button
           onClick={handlePrev}
           disabled={currentIndex === 0}
           variant="outline"
-          className="rounded-xl gap-1 text-xs font-bold px-4 h-10"
+          className="rounded-xl gap-1 text-xs font-bold px-4 min-h-12"
         >
           <ChevronLeft className="w-4 h-4" /> Soal Sebelumnya
         </Button>
@@ -711,7 +712,7 @@ export function InteractiveQuizRunner({
           <Button
             onClick={() => setShowSubmitConfirm(true)}
             disabled={isSubmitting}
-            className="rounded-xl bg-[#065F46] hover:bg-[#044a36] text-white gap-2 text-xs font-bold px-5 h-10 shadow-md"
+            className="rounded-xl bg-[#065F46] hover:bg-[#044a36] text-white gap-2 text-xs font-bold px-5 min-h-12 shadow-md"
           >
             <span>{isSubmitting ? "Mengumpulkan..." : "Kumpulkan Kuis"}</span>
             <CheckCircle2 className="w-4 h-4" />
@@ -719,7 +720,7 @@ export function InteractiveQuizRunner({
         ) : (
           <Button
             onClick={handleNext}
-            className="rounded-xl bg-[#3C22BB] hover:bg-[#2E1994] text-white gap-1 text-xs font-bold px-5 h-10 shadow-xs"
+            className="rounded-xl bg-[#3C22BB] hover:bg-[#2E1994] text-white gap-1 text-xs font-bold px-5 min-h-12 shadow-xs"
           >
             <span>Soal Selanjutnya</span>
             <ChevronRight className="w-4 h-4" />

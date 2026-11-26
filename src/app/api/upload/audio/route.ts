@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
-import { mkdir, writeFile } from "fs/promises"
 import path from "path"
 import { randomUUID } from "crypto"
 import { getSession } from "@/lib/auth"
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit"
+import { isVercelBlobEnabled, saveStoredFile } from "@/lib/file-storage"
 import { Role } from "@/types"
 
 export const runtime = "nodejs"
@@ -24,6 +24,15 @@ const ALLOWED_MIME_TYPES = new Set([
   "audio/x-m4a",
   "audio/aac",
 ])
+
+const EXTENSION_MIME_MAP: Record<string, string> = {
+  ".mp3": "audio/mpeg",
+  ".wav": "audio/wav",
+  ".ogg": "audio/ogg",
+  ".webm": "audio/webm",
+  ".m4a": "audio/mp4",
+  ".aac": "audio/aac",
+}
 
 function resolveExtension(fileName: string, mimeType: string): string {
   const safeName = path.basename(fileName || "")
@@ -118,26 +127,23 @@ export async function POST(request: NextRequest) {
     }
 
     const ext = resolveExtension(originalName, normalizedMime)
-    const uploadDir = path.resolve(process.cwd(), "public", "uploads", "audio")
-    await mkdir(uploadDir, { recursive: true })
-
     const safeFilename = `audio-${Date.now()}-${randomUUID()}${ext}`
-    const targetPath = path.resolve(uploadDir, safeFilename)
-
-    if (!targetPath.startsWith(`${uploadDir}${path.sep}`)) {
-      return NextResponse.json(
-        { success: false, error: "Jalur penyimpanan berkas tidak valid." },
-        { status: 400 }
-      )
-    }
-
+    const contentType = EXTENSION_MIME_MAP[ext] ?? (normalizedMime || "audio/mpeg")
     const buffer = Buffer.from(await file.arrayBuffer())
-    await writeFile(targetPath, buffer)
+
+    const saved = await saveStoredFile({
+      folder: "audio",
+      safeFilename,
+      buffer,
+      contentType,
+    })
 
     return NextResponse.json({
       success: true,
       url: `/api/audio/${safeFilename}`,
-      publicPath: `/uploads/audio/${safeFilename}`,
+      publicPath: isVercelBlobEnabled()
+        ? saved.blobUrl ?? `/api/audio/${safeFilename}`
+        : `/uploads/audio/${safeFilename}`,
       filename: safeFilename,
     })
   } catch (err) {

@@ -341,13 +341,13 @@ export function RegionalLearningFlowClient({ data }: RegionalLearningFlowClientP
                   }}
                   className="cursor-pointer select-none rounded-3xl border border-[#3C22BB]/20 bg-white p-6 sm:p-10 shadow-sm hover:shadow-md transition-all min-h-[280px] flex flex-col justify-between relative overflow-hidden"
                 >
-                  <div className="flex items-center justify-between gap-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2.5">
                     <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#3C22BB]/10 text-[#3C22BB] text-xs font-bold">
-                      <Quote className="w-3.5 h-3.5" />
-                      {isFlipped ? "Makna & Nilai Karakter" : data.languageName}
+                      <Quote className="w-3.5 h-3.5 shrink-0" />
+                      <span>{isFlipped ? "Makna & Nilai Karakter" : data.languageName}</span>
                     </span>
 
-                    <div onClick={(e) => e.stopPropagation()} className="flex items-center gap-2">
+                    <div onClick={(e) => e.stopPropagation()} className="flex flex-wrap items-center gap-2">
                       {isCurrentCardLearned && (
                         <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800">
                           <CheckCircle2 className="w-3.5 h-3.5" /> Dipelajari
@@ -359,6 +359,7 @@ export function RegionalLearningFlowClient({ data }: RegionalLearningFlowClientP
                         label="Dengarkan"
                         variant="indigo"
                         size="sm"
+                        showTextOnMobile={true}
                       />
                     </div>
                   </div>

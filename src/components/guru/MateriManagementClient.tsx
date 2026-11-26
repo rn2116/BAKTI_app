@@ -121,7 +121,7 @@ export function MateriManagementClient({
         </div>
       )}
 
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold text-foreground">
             {isTeacher ? "Katalog Materi Pembelajaran" : "Kelola Materi Literasi Sistem"}
@@ -137,7 +137,7 @@ export function MateriManagementClient({
               <Button
                 onClick={openCreate}
                 size="sm"
-                className="gap-2 text-xs bg-[#3C22BB] hover:bg-[#2E1994] text-white rounded-xl shadow-xs"
+                className="gap-2 text-xs bg-[#3C22BB] hover:bg-[#2E1994] text-white rounded-xl shadow-xs w-full sm:w-auto min-h-12"
               >
                 <Plus className="w-4 h-4" /> Buat Materi Baru
               </Button>
@@ -167,7 +167,7 @@ export function MateriManagementClient({
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <Label htmlFor="category">Kategori Kurikulum</Label>
                   <select
@@ -249,7 +249,7 @@ export function MateriManagementClient({
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4 items-center">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
                 <div className="space-y-1.5">
                   <Label htmlFor="orderIndex">Urutan Tampil (Index)</Label>
                   <Input

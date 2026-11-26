@@ -666,8 +666,8 @@ export function AdminAnalitikClient({ analytics }: AdminAnalitikClientProps) {
             </select>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
+          <div className="w-full overflow-x-auto">
+            <table className="w-full text-left text-xs whitespace-nowrap">
               <thead>
                 <tr className="border-b border-zinc-200 text-zinc-500 font-bold">
                   <th className="py-2 pr-3">Sekolah</th>

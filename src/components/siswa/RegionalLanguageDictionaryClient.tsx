@@ -150,10 +150,10 @@ export function RegionalLanguageDictionaryClient({
   })
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 min-w-0 w-full max-w-full">
       {/* Hero Banner Inspiratif BBPST */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#1E135E] via-[#3C22BB] to-[#0284C7] p-6 sm:p-8 text-white shadow-lg">
-        <div className="relative z-10 flex flex-col lg:flex-row lg:items-end justify-between gap-5">
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#1E135E] via-[#3C22BB] to-[#0284C7] p-5 sm:p-8 text-white shadow-lg min-w-0">
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-end justify-between gap-5 min-w-0">
           <div className="max-w-2xl space-y-3">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 text-indigo-100 text-xs font-semibold backdrop-blur-md">
               <Compass className="w-3.5 h-3.5 text-amber-300" />
@@ -240,45 +240,48 @@ export function RegionalLanguageDictionaryClient({
       )}
 
       {/* Search & Filter Tabs */}
-      <div className="space-y-3">
+      <div className="space-y-3 min-w-0 w-full max-w-full">
         {/* Search input */}
-        <div className="relative max-w-md">
+        <div className="relative max-w-md w-full">
           <Search className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Cari istilah daerah, nilai karakter, kontributor..."
-            className="pl-10 h-11 text-xs rounded-2xl bg-white border-zinc-200 shadow-xs"
+            className="pl-10 h-11 text-xs rounded-2xl bg-white border-zinc-200 shadow-xs w-full"
           />
         </div>
 
-        {/* Dynamic Language Filter Tabs (Scrollable on mobile) */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-          {languageTabs.map((tab) => {
-            const isActive = activeTab === tab.code
-            return (
-              <button
-                key={tab.code}
-                onClick={() => setActiveTab(tab.code)}
-                className={`px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all duration-150 flex items-center gap-1.5 shrink-0 ${
-                  isActive
-                    ? "bg-[#3C22BB] text-white shadow-md shadow-[#3C22BB]/20 scale-102"
-                    : "bg-white text-zinc-600 border border-zinc-200/80 hover:bg-zinc-50 hover:text-zinc-900 shadow-xs"
-                }`}
-              >
-                <span>{tab.label}</span>
-                {tab.code !== "ALL" && (
-                  <span
-                    className={`text-[10px] px-1.5 py-0.2 rounded-md ${
-                      isActive ? "bg-white/20 text-white" : "bg-zinc-100 text-zinc-500"
-                    }`}
-                  >
-                    {tab.code}
-                  </span>
-                )}
-              </button>
-            )
-          })}
+        {/* Dynamic Language Filter Tabs (Scrollable internally on mobile without overflowing page) */}
+        <div className="w-full max-w-full min-w-0 overflow-x-auto pb-1.5 scrollbar-none">
+          <div className="flex items-center gap-2 w-max">
+            {languageTabs.map((tab) => {
+              const isActive = activeTab === tab.code
+              return (
+                <button
+                  key={tab.code}
+                  type="button"
+                  onClick={() => setActiveTab(tab.code)}
+                  className={`min-h-11 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all duration-150 flex items-center gap-1.5 shrink-0 ${
+                    isActive
+                      ? "bg-[#3C22BB] text-white shadow-md shadow-[#3C22BB]/20"
+                      : "bg-white text-zinc-600 border border-zinc-200/80 hover:bg-zinc-50 hover:text-zinc-900 shadow-xs"
+                  }`}
+                >
+                  <span>{tab.label}</span>
+                  {tab.code !== "ALL" && (
+                    <span
+                      className={`text-[10px] px-1.5 py-0.2 rounded-md ${
+                        isActive ? "bg-white/20 text-white" : "bg-zinc-100 text-zinc-500"
+                      }`}
+                    >
+                      {tab.code}
+                    </span>
+                  )}
+                </button>
+              )
+            })}
+          </div>
         </div>
 
         {/* CTA Alur Belajar Bertahap 3 Tahap saat memilih bahasa */}
@@ -308,7 +311,7 @@ export function RegionalLanguageDictionaryClient({
       </div>
 
       {/* Cards Grid */}
-      <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 sm:gap-5 md:grid-cols-2 lg:grid-cols-3 min-w-0">
         {filteredMatrices.map((item) => {
           const isCopied = copiedId === item.id
           const verifierName = item.verifier?.fullName
@@ -321,24 +324,28 @@ export function RegionalLanguageDictionaryClient({
           return (
             <div
               key={item.id}
-              className="bg-white border border-zinc-200/90 rounded-3xl p-5 shadow-xs flex flex-col justify-between hover:border-[#3C22BB]/50 hover:shadow-lg transition-all duration-200 group"
+              className="min-w-0 overflow-hidden break-words bg-white border border-zinc-200/90 rounded-3xl p-4 sm:p-5 shadow-xs flex flex-col justify-between hover:border-[#3C22BB]/50 hover:shadow-lg transition-all duration-200 group"
             >
-              <div className="space-y-4">
+              <div className="space-y-4 min-w-0">
                 {/* Card Top: Regional Badge & Copy */}
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-1.5">
+                <div className="flex flex-wrap items-center justify-between gap-2 min-w-0">
+                  <div className="flex items-center gap-1.5 min-w-0">
                     <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-teal-50 text-teal-800 border border-teal-200">
-                      <Languages className="w-3 h-3 text-teal-600" />
-                      {languageLabelMap[item.regionalLanguage] ??
-                        REGIONAL_LANGUAGE_LABELS[item.regionalLanguage] ??
-                        item.regionalLanguage}
+                      <Languages className="w-3 h-3 text-teal-600 shrink-0" />
+                      <span className="whitespace-normal break-words">
+                        {languageLabelMap[item.regionalLanguage] ??
+                          REGIONAL_LANGUAGE_LABELS[item.regionalLanguage] ??
+                          item.regionalLanguage}
+                      </span>
                     </span>
                   </div>
 
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1 shrink-0">
                     <button
+                      type="button"
                       onClick={() => handleCopy(item.id, item.regionalTerm)}
-                      className="p-1.5 rounded-xl text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition-colors"
+                      className="min-h-11 min-w-11 inline-flex items-center justify-center rounded-xl text-zinc-500 hover:text-zinc-800 hover:bg-zinc-100 transition-colors"
+                      aria-label="Salin Istilah"
                       title="Salin Istilah"
                     >
                       {isCopied ? (
@@ -351,9 +358,9 @@ export function RegionalLanguageDictionaryClient({
                 </div>
 
                 {/* Regional Term & Pronunciation */}
-                <div>
-                  <div className="flex items-center justify-between gap-2">
-                    <h3 className="text-xl font-extrabold text-zinc-900 group-hover:text-[#3C22BB] transition-colors tracking-tight break-words">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-start justify-between gap-2 min-w-0">
+                    <h3 className="text-lg sm:text-xl font-extrabold text-zinc-900 group-hover:text-[#3C22BB] transition-colors tracking-tight break-words min-w-0 flex-1">
                       &ldquo;{item.regionalTerm}&rdquo;
                     </h3>
                     <AudioButton
@@ -362,71 +369,76 @@ export function RegionalLanguageDictionaryClient({
                       label="Lafalkan"
                       variant="indigo"
                       size="sm"
-                      className="rounded-full"
+                      showTextOnMobile={true}
+                      className="rounded-xl"
                     />
                   </div>
 
                   {/* Indonesian Character Value Badge */}
-                  <div className="inline-flex items-center gap-1.5 mt-2 px-2.5 py-1 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200/80 text-xs font-bold shadow-2xs">
-                    <Sparkles className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                    <span>Nilai: {item.indonesianCharacter}</span>
+                  <div className="inline-flex items-start gap-1.5 mt-2.5 px-2.5 py-1.5 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200/80 text-xs font-bold shadow-2xs max-w-full whitespace-normal break-words">
+                    <Sparkles className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
+                    <span className="break-words">Nilai: {item.indonesianCharacter}</span>
                   </div>
                 </div>
 
                 {/* Cultural Source Callout */}
-                <div className="p-3 bg-zinc-50/80 rounded-2xl border border-zinc-100 text-xs space-y-1">
+                <div className="p-3 bg-zinc-50/80 rounded-2xl border border-zinc-100 text-xs space-y-1 min-w-0 break-words">
                   <div className="font-semibold text-zinc-700 flex items-center gap-1.5 text-[11px]">
-                    <BookOpen className="w-3.5 h-3.5 text-[#3C22BB]" />
+                    <BookOpen className="w-3.5 h-3.5 text-[#3C22BB] shrink-0" />
                     <span>Makna Filosofis &amp; Sumber Rujukan:</span>
                   </div>
-                  <p className="text-zinc-600 leading-relaxed line-clamp-3">
+                  <p className="text-zinc-600 leading-relaxed break-words">
                     {item.characterSource}
                   </p>
                 </div>
 
                 {/* Practical Implementation Callout */}
-                <div className="p-3 bg-indigo-50/50 rounded-2xl border border-indigo-100/70 text-xs space-y-1">
+                <div className="p-3 bg-indigo-50/50 rounded-2xl border border-indigo-100/70 text-xs space-y-1 min-w-0 break-words">
                   <div className="font-semibold text-indigo-900 flex items-center gap-1.5 text-[11px]">
-                    <GraduationCap className="w-3.5 h-3.5 text-indigo-600" />
+                    <GraduationCap className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
                     <span>Contoh Penerapan Sehari-hari:</span>
                   </div>
-                  <p className="text-indigo-800 leading-relaxed line-clamp-3">
+                  <p className="text-indigo-800 leading-relaxed break-words">
                     {item.implementation}
                   </p>
                 </div>
               </div>
 
               {/* Blok Atribusi Kontributor & Ahli Bahasa + Footer */}
-              <div className="pt-3.5 mt-4 border-t border-zinc-100 space-y-2.5">
-                <div className="space-y-1.5">
+              <div className="pt-3.5 mt-4 border-t border-zinc-100 space-y-2.5 min-w-0">
+                <div className="space-y-1.5 min-w-0">
                   {item.proposer && (
-                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-amber-50 text-amber-900 border border-amber-200/80 text-[10px] font-bold w-full">
-                      <UserCheck className="w-3.5 h-3.5 text-[#D97706] shrink-0" />
-                      <span className="truncate">
+                    <div className="inline-flex items-start gap-1.5 px-2.5 py-1.5 rounded-xl bg-amber-50 text-amber-900 border border-amber-200/80 text-[10px] font-bold w-full">
+                      <UserCheck className="w-3.5 h-3.5 text-[#D97706] shrink-0 mt-0.5" />
+                      <span className="whitespace-normal break-words leading-snug">
                         Kontributor: {item.proposer.fullName}
                         {item.proposer.regencyName ? ` (${item.proposer.regencyName})` : ""}
                       </span>
                     </div>
                   )}
 
-                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-emerald-50 text-[#065F46] border border-emerald-200/80 text-[10px] font-bold w-full">
-                    <ShieldCheck className="w-3.5 h-3.5 text-[#065F46] shrink-0" />
-                    <span className="truncate" title={`Diverifikasi oleh: ${verifierLabel}`}>
+                  <div className="inline-flex items-start gap-1.5 px-2.5 py-1.5 rounded-xl bg-emerald-50 text-[#065F46] border border-emerald-200/80 text-[10px] font-bold w-full">
+                    <ShieldCheck className="w-3.5 h-3.5 text-[#065F46] shrink-0 mt-0.5" />
+                    <span
+                      className="whitespace-normal break-words leading-snug"
+                      title={`Diverifikasi oleh: ${verifierLabel}`}
+                    >
                       Diverifikasi oleh: {verifierLabel}
                     </span>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between gap-2 text-[11px] text-zinc-400">
+                <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-zinc-100 text-xs text-zinc-400">
                   <Link
                     href={`/siswa/belajar-bahasa/${item.regionalLanguage}`}
-                    className="inline-flex items-center gap-1 font-bold text-[#3C22BB] hover:underline"
+                    className="min-h-11 inline-flex items-center gap-1.5 font-bold text-[#3C22BB] hover:underline px-1"
                   >
-                    <Layers className="w-3 h-3" /> Belajar 3 Tahap
+                    <Layers className="w-3.5 h-3.5 shrink-0" />
+                    <span>Belajar 3 Tahap</span>
                   </Link>
                   <AudioButton
                     text={`${item.regionalTerm}. Maknanya adalah nilai ${item.indonesianCharacter}. ${item.implementation}`}
-                    label="Dengar Makna"
+                    label="Dengarkan"
                     variant="ghost"
                     size="sm"
                     showTextOnMobile={true}

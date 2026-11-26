@@ -1,13 +1,17 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createHash, randomUUID } from "crypto"
 import { mkdir, readFile, rename, unlink, writeFile } from "fs/promises"
+import os from "os"
 import path from "path"
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
 
-const TTS_CACHE_DIR = path.resolve(process.cwd(), "public", "uploads", "tts-cache")
+const TTS_CACHE_DIR =
+  process.env.VERCEL === "1"
+    ? path.resolve(os.tmpdir(), "tts-cache")
+    : path.resolve(process.cwd(), "public", "uploads", "tts-cache")
 const ALLOWED_LANGS = new Set(["id", "en"])
 const inFlightSynthesis = new Map<string, Promise<Buffer>>()
 

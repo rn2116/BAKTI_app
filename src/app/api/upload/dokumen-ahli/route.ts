@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
-import { mkdir, writeFile } from "fs/promises"
 import path from "path"
 import { randomUUID } from "crypto"
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit"
+import { saveStoredFile } from "@/lib/file-storage"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
@@ -10,6 +10,12 @@ export const dynamic = "force-dynamic"
 const MAX_DOC_SIZE_BYTES = 5 * 1024 * 1024 // Maksimal 5 MB
 const ALLOWED_EXTENSIONS = new Set([".pdf", ".jpg", ".jpeg", ".png"])
 const ALLOWED_MIMES = new Set(["application/pdf", "image/jpeg", "image/jpg", "image/png"])
+
+const MIME_BY_EXT: Record<".pdf" | ".jpg" | ".png", string> = {
+  ".pdf": "application/pdf",
+  ".jpg": "image/jpeg",
+  ".png": "image/png",
+}
 
 function detectMagicType(buffer: Buffer): ".pdf" | ".jpg" | ".png" | null {
   if (buffer.length < 4) return null
@@ -112,20 +118,13 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const uploadDir = path.resolve(process.cwd(), "public", "uploads", "dokumen-ahli")
-    await mkdir(uploadDir, { recursive: true })
-
     const safeFilename = `dokumen-${Date.now()}-${randomUUID()}${detectedExt}`
-    const targetPath = path.resolve(uploadDir, safeFilename)
-
-    if (!targetPath.startsWith(`${uploadDir}${path.sep}`)) {
-      return NextResponse.json(
-        { success: false, error: "Jalur penyimpanan berkas tidak valid." },
-        { status: 400 }
-      )
-    }
-
-    await writeFile(targetPath, buffer)
+    await saveStoredFile({
+      folder: "dokumen-ahli",
+      safeFilename,
+      buffer,
+      contentType: MIME_BY_EXT[detectedExt],
+    })
 
     return NextResponse.json({
       success: true,

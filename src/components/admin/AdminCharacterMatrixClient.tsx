@@ -348,18 +348,18 @@ export function AdminCharacterMatrixClient({
   const validParsedCount = parsedRows.filter((r) => r.isValid).length
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full min-w-0">
       {/* Header Controls & Filter */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white p-4 sm:p-5 rounded-2xl border border-zinc-200/90 shadow-xs">
-        <div className="flex flex-wrap items-center gap-2.5 flex-1">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white p-4 sm:p-5 rounded-2xl border border-zinc-200/90 shadow-xs w-full min-w-0">
+        <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2.5 flex-1 min-w-0">
           {/* Search Bar */}
-          <div className="relative w-full sm:w-64">
+          <div className="relative w-full sm:w-64 min-w-0">
             <Search className="w-4 h-4 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Cari nilai, istilah daerah, atau pepatah..."
-              className="pl-9 h-10 text-xs rounded-xl border-zinc-200"
+              className="pl-9 h-11 text-xs rounded-xl border-zinc-200 w-full"
             />
           </div>
 
@@ -367,7 +367,7 @@ export function AdminCharacterMatrixClient({
           <select
             value={selectedLanguage}
             onChange={(e) => setSelectedLanguage(e.target.value)}
-            className="h-10 text-xs rounded-xl border border-zinc-200 bg-white px-3 text-zinc-700 outline-hidden focus:border-[#3C22BB] focus:ring-1 focus:ring-[#3C22BB]"
+            className="w-full sm:w-auto h-11 text-xs rounded-xl border border-zinc-200 bg-white px-3 text-zinc-700 outline-hidden focus:border-[#3C22BB] focus:ring-1 focus:ring-[#3C22BB]"
           >
             <option value="ALL">Semua Bahasa Daerah</option>
             {languageOptions.map((lang) => (
@@ -378,107 +378,115 @@ export function AdminCharacterMatrixClient({
           </select>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2 shrink-0 w-full lg:w-auto">
           <Button
             onClick={() => setExcelModalOpen(true)}
             variant="outline"
-            className="text-xs font-semibold rounded-xl border-emerald-300 text-emerald-700 hover:bg-emerald-50 h-10 gap-1.5"
+            className="w-full sm:w-auto text-xs font-semibold rounded-xl border-emerald-300 text-emerald-700 hover:bg-emerald-50 min-h-12 gap-1.5"
           >
-            <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
-            Impor Massal Excel
+            <FileSpreadsheet className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span>Impor Massal Excel</span>
           </Button>
           <Button
             onClick={openCreate}
-            className="bg-[#3C22BB] hover:bg-[#2E1994] text-white rounded-xl text-xs font-semibold px-4 h-10 shadow-xs gap-1.5"
+            className="w-full sm:w-auto bg-[#3C22BB] hover:bg-[#2E1994] text-white rounded-xl text-xs font-semibold px-4 min-h-12 shadow-xs gap-1.5"
           >
-            <Plus className="w-4 h-4" /> Tambah Kosakata / Nilai
+            <Plus className="w-4 h-4 shrink-0" />
+            <span>Tambah Kosakata / Nilai</span>
           </Button>
         </div>
       </div>
 
       {/* Grid of Character Matrices */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 min-w-0">
         {filteredMatrices.map((item) => (
           <div
             key={item.id}
-            className="bg-white border border-zinc-200/90 rounded-2xl p-5 shadow-xs flex flex-col justify-between hover:border-[#3C22BB]/40 hover:shadow-md transition-all group"
+            className="bg-white border border-zinc-200/90 rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col justify-between min-w-0 w-full overflow-hidden break-words hover:border-[#3C22BB]/40 hover:shadow-md transition-all group"
           >
-            <div className="space-y-3">
-              <div className="flex items-center justify-between gap-2">
-                <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-teal-50 text-teal-800 border border-teal-200">
-                  <Languages className="w-3 h-3" />
-                  {languageLabelMap[item.regionalLanguage] ??
-                    REGIONAL_LANGUAGE_LABELS[item.regionalLanguage] ??
-                    item.regionalLanguage}
+            <div className="space-y-3 min-w-0">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-teal-50 text-teal-800 border border-teal-200 max-w-full">
+                  <Languages className="w-3 h-3 shrink-0" />
+                  <span className="break-words">
+                    {languageLabelMap[item.regionalLanguage] ??
+                      REGIONAL_LANGUAGE_LABELS[item.regionalLanguage] ??
+                      item.regionalLanguage}
+                  </span>
                 </span>
 
-                <div className="flex items-center gap-1">
+                <div className="flex flex-wrap items-center gap-1.5">
                   <AudioButton
                     audioUrl={item.audioUrl}
                     text={item.regionalTerm}
-                    label="Dengar"
+                    label="Dengarkan"
                     size="sm"
+                    showTextOnMobile={true}
                   />
                   <Button
+                    type="button"
                     variant="ghost"
                     size="sm"
                     onClick={() => openEdit(item)}
-                    className="h-7 w-7 p-0 text-zinc-500 hover:text-zinc-900"
-                    title="Edit"
+                    className="min-h-11 min-w-11 h-11 w-11 p-0 text-zinc-600 hover:text-zinc-900 rounded-xl border border-zinc-200/80 bg-zinc-50/70"
+                    title="Sunting Entri"
+                    aria-label="Sunting Entri"
                   >
-                    <Edit3 className="w-3.5 h-3.5" />
+                    <Edit3 className="w-4 h-4" />
                   </Button>
                   <Button
+                    type="button"
                     variant="ghost"
                     size="sm"
                     onClick={() => setDeleteTargetId(item.id)}
-                    className="h-7 w-7 p-0 text-rose-500 hover:text-rose-700 hover:bg-rose-50"
-                    title="Hapus"
+                    className="min-h-11 min-w-11 h-11 w-11 p-0 text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-xl border border-rose-200/80 bg-rose-50/40"
+                    title="Hapus Entri"
+                    aria-label="Hapus Entri"
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
+                    <Trash2 className="w-4 h-4" />
                   </Button>
                 </div>
               </div>
 
-              <div>
-                <h3 className="font-extrabold text-lg text-zinc-900 group-hover:text-[#3C22BB] transition-colors">
+              <div className="min-w-0">
+                <h3 className="font-extrabold text-base sm:text-lg text-zinc-900 group-hover:text-[#3C22BB] transition-colors break-words">
                   &ldquo;{item.regionalTerm}&rdquo;
                 </h3>
-                <div className="inline-flex items-center gap-1 mt-1 text-xs font-bold text-[#059669] bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                  <Sparkles className="w-3 h-3" />
-                  {item.indonesianCharacter}
+                <div className="inline-flex items-center gap-1.5 mt-1.5 text-xs font-bold text-[#059669] bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200 max-w-full whitespace-normal break-words">
+                  <Sparkles className="w-3.5 h-3.5 shrink-0" />
+                  <span>{item.indonesianCharacter}</span>
                 </div>
               </div>
 
-              <div className="space-y-2 text-xs pt-1">
-                <div className="p-2.5 bg-zinc-50 rounded-xl border border-zinc-100">
+              <div className="space-y-2 text-xs pt-1 min-w-0">
+                <div className="p-3 bg-zinc-50 rounded-xl border border-zinc-100 min-w-0">
                   <span className="font-semibold text-zinc-700 block text-[11px] mb-0.5">
-                    Sumber Karakter & Tradisi:
+                    Sumber Karakter &amp; Tradisi:
                   </span>
-                  <p className="text-zinc-600 line-clamp-3 leading-relaxed">
+                  <p className="text-zinc-600 line-clamp-3 leading-relaxed break-words">
                     {item.characterSource}
                   </p>
                 </div>
 
-                <div className="p-2.5 bg-indigo-50/50 rounded-xl border border-indigo-100/70">
+                <div className="p-3 bg-indigo-50/50 rounded-xl border border-indigo-100/70 min-w-0">
                   <span className="font-semibold text-indigo-900 block text-[11px] mb-0.5">
                     Contoh Penerapan Sehari-hari:
                   </span>
-                  <p className="text-indigo-800 line-clamp-3 leading-relaxed">
+                  <p className="text-indigo-800 line-clamp-3 leading-relaxed break-words">
                     {item.implementation}
                   </p>
                 </div>
               </div>
             </div>
 
-            <div className="pt-3 mt-3 border-t border-zinc-100 space-y-1 text-[10px] text-zinc-500">
+            <div className="pt-3 mt-3 border-t border-zinc-100 space-y-1.5 text-[11px] text-zinc-500 min-w-0">
               {item.proposer && (
-                <div className="font-semibold text-amber-800 truncate">
+                <div className="font-semibold text-amber-800 whitespace-normal break-words leading-snug">
                   Kontributor: {item.proposer.fullName}
                 </div>
               )}
-              <div className="flex items-center justify-between gap-2">
-                <span className="font-semibold text-[#065F46] truncate">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="font-semibold text-[#065F46] whitespace-normal break-words leading-snug">
                   Diverifikasi oleh:{" "}
                   {item.verifier
                     ? item.verifier.role === "AHLI_BAHASA"
@@ -490,35 +498,36 @@ export function AdminCharacterMatrixClient({
                       : `${item.verifier.fullName} — Balai Bahasa Provinsi Sulawesi Tengah`
                     : "Balai Bahasa Provinsi Sulawesi Tengah"}
                 </span>
-                <span className="shrink-0 text-zinc-400">#{item.id}</span>
+                <span className="shrink-0 text-zinc-400 font-mono">#{item.id}</span>
               </div>
             </div>
           </div>
         ))}
 
         {filteredMatrices.length === 0 && (
-          <div className="col-span-full py-16 text-center bg-white border border-dashed border-zinc-200 rounded-2xl p-8">
+          <div className="col-span-full py-12 sm:py-16 text-center bg-white border border-dashed border-zinc-200 rounded-2xl p-6 sm:p-8">
             <Compass className="w-12 h-12 text-zinc-300 mx-auto mb-3" />
             <h4 className="text-base font-semibold text-zinc-800">
               Belum Ada Entri Kamus Besar
             </h4>
-            <p className="text-xs text-zinc-500 max-w-sm mx-auto mt-1 mb-5">
+            <p className="text-xs text-zinc-500 max-w-sm mx-auto mt-1 mb-5 leading-relaxed">
               Tambahkan istilah karakter kearifan lokal bahasa daerah Sulawesi Tengah atau gunakan fitur impor massal Excel.
             </p>
-            <div className="flex flex-wrap items-center justify-center gap-2">
+            <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center justify-center gap-2">
               <Button
                 onClick={() => setExcelModalOpen(true)}
                 variant="outline"
-                className="text-xs font-semibold rounded-xl border-emerald-300 text-emerald-700 hover:bg-emerald-50 h-9"
+                className="w-full sm:w-auto text-xs font-semibold rounded-xl border-emerald-300 text-emerald-700 hover:bg-emerald-50 min-h-11 gap-1.5"
               >
-                <FileSpreadsheet className="w-4 h-4 mr-1.5 text-emerald-600" />
-                Impor Massal Excel
+                <FileSpreadsheet className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>Impor Massal Excel</span>
               </Button>
               <Button
                 onClick={openCreate}
-                className="bg-[#3C22BB] hover:bg-[#2E1994] text-white rounded-xl text-xs font-semibold h-9 shadow-xs"
+                className="w-full sm:w-auto bg-[#3C22BB] hover:bg-[#2E1994] text-white rounded-xl text-xs font-semibold min-h-11 shadow-xs gap-1.5"
               >
-                <Plus className="w-4 h-4 mr-1.5" /> Tambah Entri Manual
+                <Plus className="w-4 h-4 shrink-0" />
+                <span>Tambah Entri Manual</span>
               </Button>
             </div>
           </div>
@@ -527,7 +536,7 @@ export function AdminCharacterMatrixClient({
 
       {/* Modal Tambah / Edit Matriks */}
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-        <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto rounded-2xl">
+        <DialogContent className="w-[calc(100%-1.5rem)] max-w-xl max-h-[90vh] overflow-y-auto rounded-2xl">
           <DialogHeader>
             <DialogTitle className="text-lg font-bold text-zinc-900 flex items-center gap-2">
               <Compass className="w-5 h-5 text-[#3C22BB]" />
@@ -622,19 +631,19 @@ export function AdminCharacterMatrixClient({
               label="Audio Pelafalan Bahasa Daerah (Rekam / Unggah)"
             />
 
-            <div className="flex justify-end gap-2 pt-4 border-t border-zinc-100">
+            <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-4 border-t border-zinc-100">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => setModalOpen(false)}
-                className="text-xs rounded-xl"
+                className="min-h-11 text-xs rounded-xl w-full sm:w-auto"
               >
                 Batal
               </Button>
               <Button
                 type="submit"
                 disabled={loading}
-                className="bg-[#3C22BB] hover:bg-[#2E1994] text-white rounded-xl text-xs font-semibold px-4 shadow-xs"
+                className="min-h-11 bg-[#3C22BB] hover:bg-[#2E1994] text-white rounded-xl text-xs font-semibold px-4 shadow-xs w-full sm:w-auto"
               >
                 {loading ? "Menyimpan..." : "Simpan Entri"}
               </Button>
@@ -645,7 +654,7 @@ export function AdminCharacterMatrixClient({
 
       {/* Modal Impor Massal Excel */}
       <Dialog open={excelModalOpen} onOpenChange={setExcelModalOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl">
+        <DialogContent className="w-[calc(100%-1.5rem)] max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl">
           <DialogHeader>
             <DialogTitle className="text-lg font-bold text-zinc-900 flex items-center gap-2">
               <FileSpreadsheet className="w-5 h-5 text-emerald-600" />
@@ -666,7 +675,7 @@ export function AdminCharacterMatrixClient({
               <Button
                 onClick={handleDownloadTemplate}
                 size="sm"
-                className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shrink-0 gap-1.5 shadow-xs"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shrink-0 gap-1.5 shadow-xs min-h-11 w-full sm:w-auto"
               >
                 <Download className="w-3.5 h-3.5" /> Unduh Template (.xlsx)
               </Button>
@@ -707,8 +716,8 @@ export function AdminCharacterMatrixClient({
                   Pratinjau Hasil Pembacaan Excel ({validParsedCount} dari {parsedRows.length} baris valid)
                 </Label>
 
-                <div className="border border-zinc-200 rounded-xl overflow-hidden max-h-60 overflow-y-auto">
-                  <table className="w-full text-[11px] text-left">
+                <div className="w-full overflow-x-auto border border-zinc-200 rounded-xl max-h-60 overflow-y-auto">
+                  <table className="w-full text-[11px] text-left whitespace-nowrap">
                     <thead className="bg-zinc-100 text-zinc-700 border-b border-zinc-200 sticky top-0">
                       <tr>
                         <th className="px-3 py-2 w-8">#</th>
@@ -749,19 +758,19 @@ export function AdminCharacterMatrixClient({
               </div>
             )}
 
-            <div className="flex justify-end gap-2 pt-4 border-t border-zinc-100">
+            <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-4 border-t border-zinc-100">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => setExcelModalOpen(false)}
-                className="text-xs rounded-xl"
+                className="min-h-11 text-xs rounded-xl w-full sm:w-auto"
               >
                 Batal
               </Button>
               <Button
                 onClick={handleExecuteBulkImport}
                 disabled={isImporting || validParsedCount === 0}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold px-4 shadow-xs"
+                className="min-h-11 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold px-4 shadow-xs w-full sm:w-auto"
               >
                 {isImporting
                   ? "Menyimpan ke Database..."
